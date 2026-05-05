@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Product Design Framework
 
-## Getting Started
+End-to-end product lifecycle — from business idea inception through multi-team analysis, BRD/PRD creation, and Python implementation.
 
-First, run the development server:
+## Lifecycle Phases
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+01-ideation/          → Business idea capture, market analysis, value proposition
+02-analysis/          → Multi-team review (legal, compliance, risk, ops, product, bizdev, finance)
+03-brd/               → Business Requirements Documents
+04-prd/               → Product Requirements Documents
+05-technical-design/  → Architecture, API specs, data models, integrations
+06-implementation/    → Python code, APIs, services, tests
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## How to Use
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Phase 1: Ideation
+1. Copy `01-ideation/templates/idea-canvas.md` to `01-ideation/<project-name>.md`
+2. Fill in the business idea, target market, value proposition, revenue model
+3. Run initial feasibility check
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Phase 2: Multi-Team Analysis
+Each team reviews the idea through their lens:
+- **Legal** — IP, licensing, regulatory, contracts
+- **Compliance** — Industry regulations, data privacy (GDPR/CCPA), audit requirements
+- **Risk** — Market risk, technical risk, operational risk, financial risk
+- **Operations** — Infrastructure, staffing, SLAs, support model
+- **Product** — User research, competitive analysis, feature prioritization
+- **Business Development** — Partnerships, go-to-market, channel strategy
+- **Finance** — Cost modeling, revenue projections, ROI analysis, funding
 
-## Learn More
+### Phase 3: BRD (Business Requirements Document)
+Synthesize analysis into formal business requirements with stakeholder sign-off.
 
-To learn more about Next.js, take a look at the following resources:
+### Phase 4: PRD (Product Requirements Document)
+Translate BRDs into product specs: user stories, acceptance criteria, wireframes, metrics.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Phase 5: Technical Design
+Architecture decisions, API specifications (OpenAPI), data models, external integrations.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Phase 6: Implementation
+Python codebase with FastAPI, database models, service layer, external API integrations, tests.
 
-## Deploy on Vercel
+## Quick Start
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+# Start a new product
+cp 01-ideation/templates/idea-canvas.md 01-ideation/my-product.md
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Generate analysis reports
+python shared/scripts/generate_analysis.py --idea 01-ideation/my-product.md
+
+# Generate BRD from analysis
+python shared/scripts/generate_brd.py --analysis 02-analysis/
+
+# Generate PRD from BRD
+python shared/scripts/generate_prd.py --brd 03-brd/approved/<brd>.md
+
+# Scaffold implementation from PRD
+python shared/scripts/scaffold_code.py --prd 04-prd/approved/<prd>.md
+```
+
+## AI-Assisted Workflow
+
+Each phase includes prompts in `shared/prompts/` for use with Claude Code:
+
+```bash
+claude -p "$(cat shared/prompts/ideation.md) $(cat 01-ideation/my-product.md)" --max-turns 10
+claude -p "$(cat shared/prompts/legal-review.md) $(cat 01-ideation/my-product.md)" --max-turns 10
+claude -p "$(cat shared/prompts/generate-brd.md) $(cat 02-analysis/)" --max-turns 15
+```
