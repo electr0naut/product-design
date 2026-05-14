@@ -1,43 +1,44 @@
 # CLAUDE.md
 
 ## Project
-[One line: what this project does]
+
+Clone-per-product template for generating product lifecycle documents in order:
+idea canvas, team analysis, BRD, PRD, technical design, and implementation
+scaffold.
 
 ## Stack
-[Framework, language, database, deployment target]
+
+- Markdown templates and prompts
+- Python standard-library scripts in `shared/scripts/`
+- Optional Claude CLI for document generation
+- Lightweight Next.js dashboard in `src/app/`
 
 ## Commands
-- Dev: `pnpm dev`
-- Build: `pnpm build`
-- Test single: `pnpm vitest run src/lib/__tests__/[file]`
-- Test all: `pnpm test`
-- Lint: `pnpm lint --fix`
-- Type check: `npx tsc --noEmit`
 
-## Architecture
-- src/app/ → pages and API routes
-- src/components/ → stateless UI components
-- src/lib/services/ → business logic and data fetching
-- src/lib/hooks/ → custom React hooks
-- src/lib/utils/ → shared helpers
-- src/lib/types/ → TypeScript types
+- Generate analyses: `python shared/scripts/generate_analysis.py --idea 01-ideation/<product>.md`
+- Generate BRD: `python shared/scripts/generate_brd.py --idea 01-ideation/<product>.md --analysis 02-analysis/`
+- Generate PRD: `python shared/scripts/generate_prd.py --brd 03-brd/<product>-brd.md`
+- Generate technical design: `python shared/scripts/generate_technical_design.py --prd 04-prd/<product>-prd.md`
+- Generate implementation scaffold: `python shared/scripts/scaffold_code.py --technical-design 05-technical-design/architecture/<product>-technical-design.md`
+- Prompt only: add `--prompt-only` to any generation command
+- Dev app: `npm run dev`
+- Lint app: `npm run lint`
+- Build app: `npm run build`
 
-## Rules
-- NEVER commit .env files or secrets
-- All database queries through src/lib/services/, never in components
-- All async calls must use try/catch
-- Prefix commits: feat:, fix:, docs:, refactor:, test:, chore:
-- IMPORTANT: run type check after every code change
-- No console.log in production code
+## Workflow Rules
 
-## Workflow
-- Ask before making architectural decisions
-- Make minimal changes, don't refactor unrelated code
-- Run tests after every change, fix failures before moving on
-- Create separate commits per logical change
-- When unsure between two approaches, explain both and let me choose
+- Treat earlier approved documents as the source of truth for later phases.
+- Keep generated documents traceable to their inputs.
+- Edit phase documents in order: `01` before `02`, `02` before `03`, and so on.
+- Do not overwrite approved product documents without confirming intent.
+- Keep reusable instructions in `shared/prompts/`, not in generated output files.
+- Keep templates generic enough to clone for unrelated products.
 
-## Out of scope
-- migrations/ → managed by ORM CLI, don't create manually
-- public/assets/ → static files, don't modify
-- .github/workflows/ → CI/CD, don't touch without asking
+## Directory Contract
+
+- `01-ideation/` stores one or more product idea canvases.
+- `02-analysis/<role>/` stores generated and reviewed analysis docs.
+- `03-brd/` stores BRDs; `03-brd/approved/` may hold signed-off versions.
+- `04-prd/` stores PRDs; `04-prd/approved/` may hold signed-off versions.
+- `05-technical-design/` stores architecture, API, data model, and integration specs.
+- `06-implementation/` stores generated implementation plans or scaffolded code.
