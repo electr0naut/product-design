@@ -1,72 +1,98 @@
-# Product Design Framework
+# Product Design Template
 
-End-to-end product lifecycle — from business idea inception through multi-team analysis, BRD/PRD creation, and Python implementation.
+Clone this repository once for each new product. The repo is a structured
+workspace for moving from an initial idea to team analysis, BRD, PRD, technical
+design, and implementation scaffolding.
 
-## Lifecycle Phases
+Each phase builds on the approved documents from earlier phases:
 
+```text
+01-ideation/          -> idea canvas
+02-analysis/          -> legal, compliance, risk, ops, product, bizdev, finance
+03-brd/               -> business requirements
+04-prd/               -> product requirements
+05-technical-design/  -> architecture, APIs, data models, integrations
+06-implementation/    -> implementation scaffold and generated code
 ```
-01-ideation/          → Business idea capture, market analysis, value proposition
-02-analysis/          → Multi-team review (legal, compliance, risk, ops, product, bizdev, finance)
-03-brd/               → Business Requirements Documents
-04-prd/               → Product Requirements Documents
-05-technical-design/  → Architecture, API specs, data models, integrations
-06-implementation/    → Python code, APIs, services, tests
-```
 
-## How to Use
+## Workflow
 
-### Phase 1: Ideation
-1. Copy `01-ideation/templates/idea-canvas.md` to `01-ideation/<project-name>.md`
-2. Fill in the business idea, target market, value proposition, revenue model
-3. Run initial feasibility check
+1. Copy `01-ideation/templates/idea-canvas.md` into `01-ideation/<product>.md`.
+2. Edit the idea canvas until it reflects the product you want to explore.
+3. Generate phase-02 analyses from the idea canvas.
+4. Review and edit the generated analysis documents.
+5. Generate the BRD from the idea canvas plus approved analyses.
+6. Review and edit the BRD.
+7. Generate the PRD from the approved BRD.
+8. Review and edit the PRD.
+9. Generate the technical design from the approved PRD.
+10. Review and edit the technical design.
+11. Generate the implementation scaffold from the approved technical design.
 
-### Phase 2: Multi-Team Analysis
-Each team reviews the idea through their lens:
-- **Legal** — IP, licensing, regulatory, contracts
-- **Compliance** — Industry regulations, data privacy (GDPR/CCPA), audit requirements
-- **Risk** — Market risk, technical risk, operational risk, financial risk
-- **Operations** — Infrastructure, staffing, SLAs, support model
-- **Product** — User research, competitive analysis, feature prioritization
-- **Business Development** — Partnerships, go-to-market, channel strategy
-- **Finance** — Cost modeling, revenue projections, ROI analysis, funding
+The scripts use the files in `shared/prompts/` and the templates in each phase
+folder. By default they call `claude -p`. If the Claude CLI is not installed,
+they write a `.prompt.md` file that can be pasted into another model.
 
-### Phase 3: BRD (Business Requirements Document)
-Synthesize analysis into formal business requirements with stakeholder sign-off.
-
-### Phase 4: PRD (Product Requirements Document)
-Translate BRDs into product specs: user stories, acceptance criteria, wireframes, metrics.
-
-### Phase 5: Technical Design
-Architecture decisions, API specifications (OpenAPI), data models, external integrations.
-
-### Phase 6: Implementation
-Python codebase with FastAPI, database models, service layer, external API integrations, tests.
-
-## Quick Start
+## Commands
 
 ```bash
-# Start a new product
+# 1. Start a new product
 cp 01-ideation/templates/idea-canvas.md 01-ideation/my-product.md
 
-# Generate analysis reports
-python shared/scripts/generate_analysis.py --idea 01-ideation/my-product.md
+# 2. Generate all team analyses
+python shared/scripts/generate_analysis.py \
+  --idea 01-ideation/my-product.md
 
-# Generate BRD from analysis
-python shared/scripts/generate_brd.py --analysis 02-analysis/
+# Generate one analysis only
+python shared/scripts/generate_analysis.py \
+  --idea 01-ideation/my-product.md \
+  --role legal
 
-# Generate PRD from BRD
-python shared/scripts/generate_prd.py --brd 03-brd/approved/<brd>.md
+# 3. Generate BRD from idea plus analyses
+python shared/scripts/generate_brd.py \
+  --idea 01-ideation/my-product.md \
+  --analysis 02-analysis/
 
-# Scaffold implementation from PRD
-python shared/scripts/scaffold_code.py --prd 04-prd/approved/<prd>.md
+# 4. Generate PRD from approved BRD
+python shared/scripts/generate_prd.py \
+  --brd 03-brd/my-product-brd.md
+
+# 5. Generate technical design from approved PRD
+python shared/scripts/generate_technical_design.py \
+  --prd 04-prd/my-product-prd.md
+
+# 6. Generate implementation scaffold from approved technical design
+python shared/scripts/scaffold_code.py \
+  --technical-design 05-technical-design/architecture/my-product-technical-design.md
 ```
 
-## AI-Assisted Workflow
-
-Each phase includes prompts in `shared/prompts/` for use with Claude Code:
+Use `--prompt-only` on any command to write the assembled prompt without calling
+Claude:
 
 ```bash
-claude -p "$(cat shared/prompts/ideation.md) $(cat 01-ideation/my-product.md)" --max-turns 10
-claude -p "$(cat shared/prompts/legal-review.md) $(cat 01-ideation/my-product.md)" --max-turns 10
-claude -p "$(cat shared/prompts/generate-brd.md) $(cat 02-analysis/)" --max-turns 15
+python shared/scripts/generate_prd.py \
+  --brd 03-brd/my-product-brd.md \
+  --prompt-only
+```
+
+## Repository Roles
+
+- `01-ideation/templates/` contains the first editable seed document.
+- `02-analysis/templates/` contains role-specific review structures.
+- `03-brd/templates/` and `04-prd/templates/` define the document formats used
+  by the generation scripts.
+- `05-technical-design/architecture/template.md` defines the architecture output.
+- `shared/prompts/` contains the model instructions for each generation step.
+- `shared/scripts/` contains orchestration scripts that assemble context and
+  write the next phase.
+
+## App Shell
+
+The included Next.js app is a lightweight dashboard for browsing the template
+workflow. It is not required for document generation.
+
+```bash
+npm run dev
+npm run lint
+npm run build
 ```
