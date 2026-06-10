@@ -24,7 +24,7 @@ def project_path(value: str) -> Path:
 
 def read_text(path: Path) -> str:
     if not path.exists():
-        raise FileNotFoundError(f"Missing file: {path.relative_to(ROOT)}")
+        raise SystemExit(f"Missing file: {display_path(path)}")
     return path.read_text(encoding="utf-8")
 
 
@@ -51,7 +51,7 @@ def markdown_files(path: Path) -> list[Path]:
     if path.is_file():
         return [path]
     if not path.exists():
-        raise FileNotFoundError(f"Missing directory: {path.relative_to(ROOT)}")
+        raise SystemExit(f"Missing directory: {display_path(path)}")
     return sorted(
         item
         for item in path.rglob("*.md")
@@ -62,8 +62,7 @@ def markdown_files(path: Path) -> list[Path]:
 def bundle_documents(title: str, paths: list[Path]) -> str:
     sections = [f"# {title}"]
     for path in paths:
-        rel = path.relative_to(ROOT)
-        sections.append(f"\n## Source: {rel}\n\n{read_text(path)}")
+        sections.append(f"\n## Source: {display_path(path)}\n\n{read_text(path)}")
     return "\n".join(sections)
 
 
@@ -111,7 +110,8 @@ def generate(prompt: str, output: Path, prompt_only: bool, claude_bin: str) -> N
         )
 
     result = subprocess.run(
-        [claude_bin, "-p", prompt],
+        [claude_bin, "-p"],
+        input=prompt,
         cwd=ROOT,
         check=False,
         text=True,
