@@ -49,7 +49,6 @@
       "Write(package-lock.json)",
       "Bash(rm -rf *)",
       "Bash(sudo *)",
-      "Bash(git push *)",
       "Bash(git merge *)",
       "Bash(git rebase *)",
       "Bash(npm publish *)",
