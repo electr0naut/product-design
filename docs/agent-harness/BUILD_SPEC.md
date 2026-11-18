@@ -43,7 +43,8 @@ Builder settings:
 1. Create a folder `agent-harness/` and a subfolder `docs/`. Save `DESIGN.md` and `BUILD_SPEC.md` in
    `docs/`.
 2. Copy the extractor below to `tools/extract_literals.py` by hand. It is the only file you copy by hand.
-3. Extract everything else:
+3. Extract everything else, either with Python 3.10 or newer on the host
+   (`python tools/extract_literals.py docs/BUILD_SPEC.md .`) or in a throwaway container:
 
 ```bash
 docker run --rm -v "$PWD":/k -w /k python:3.12-slim python3 tools/extract_literals.py docs/BUILD_SPEC.md .
@@ -62,7 +63,7 @@ FENCE = re.compile(r"^(`{3,})[\w.+-]*\s*$")
 
 
 def extract(spec: Path, root: Path) -> list[Path]:
-    """Write each literal block of spec below root and return the written paths."""
+    """Write each literal block of spec below root with LF endings; return the written paths."""
     lines = spec.read_text(encoding="utf-8").splitlines()
     written: list[Path] = []
     i = 0
@@ -85,7 +86,8 @@ def extract(spec: Path, root: Path) -> list[Path]:
             raise SystemExit(f"Unclosed code fence for {match.group(1)}")
         target = root / match.group(1)
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text("\n".join(lines[start:i]) + "\n", encoding="utf-8")
+        # Force LF even on Windows hosts: the files run inside a Linux container.
+        target.write_text("\n".join(lines[start:i]) + "\n", encoding="utf-8", newline="\n")
         written.append(target)
         i += 1
     return written
