@@ -29,18 +29,21 @@
 - **Goals:** 
 - **Tech savviness:** 
 
-## 3. User Stories & Acceptance Criteria
+## 3. Epics & Story Map
+One row per story. Number stories US-001, US-002, ... across the whole PRD and
+never reuse an ID. Acceptance criteria, dependencies and tasks are written per
+epic in phase 06 (`06-backlog/`), after the technical design.
 
-### Epic 1: [Name]
-#### US-001: [Story Title]
-**As a** [persona], **I want** [action], **so that** [benefit].
+### E01: [Epic Name]
+**Goal:** [Outcome this epic delivers]
+**Traces to:** BR-001, BR-002
 
-**Acceptance Criteria:**
-- [ ] Given [context], when [action], then [result]
-- [ ] Given [context], when [action], then [result]
+| ID | Story | Persona | Traces to | Priority |
+|----|-------|---------|-----------|----------|
+| US-001 | As a [persona], I want [action], so that [benefit]. | [Persona] | BR-001 | Must |
+| US-002 | | | | Should |
 
-**Priority:** Must Have | Should Have | Could Have | Won't Have
-**Estimate:** S | M | L | XL
+Priority is one of Must, Should, Could, Won't.
 
 ## 4. Functional Specifications
 

@@ -9,4 +9,6 @@ Design:
 - Infrastructure design (containers, CI/CD, monitoring)
 - Performance strategy (caching, indexing, async processing)
 
+Give every component, endpoint group and data entity a stable name and use it consistently, and say which epics (E01, E02, ...) each component serves. Phase 06 user stories reference these names.
+
 Use Python/FastAPI stack. Design for scalability. Output architecture doc + OpenAPI spec + data model definitions.

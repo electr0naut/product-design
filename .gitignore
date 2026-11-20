@@ -44,6 +44,13 @@ Thumbs.db
 coverage/
 .nyc_output/
 
+# Python
+__pycache__/
+
+# Assembled prompts and saved model responses (regenerate with --prompt-only)
+*.prompt.md
+06-backlog/*/prompts/
+
 # Terraform
 .terraform/
 *.tfstate
