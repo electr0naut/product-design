@@ -872,7 +872,9 @@ claude -p --agent orchestrator --max-budget-usd 0.50 --output-format json "Where
    locator) and no Opus model.
 
 5. **Interactive check, in the same copy.** Run `claude --agent orchestrator`:
-   - `/agents` does not list Explore or Plan.
+   - Asked to list every `subagent_type` its Agent tool accepts, it names no Explore, Plan or
+     general-purpose. (`/agents` was removed in Claude Code 2.1.x.) The built-ins `claude` and
+     `fork` remain listed in a plain session; `guard_agent.py` denies them (verified live).
    - `/hooks` lists the three hooks.
    - Asking "use general-purpose with model opus to find X" ends with a denial and a locator call.
 
