@@ -39,7 +39,7 @@ const phases = [
     id: "07",
     name: "Implementation",
     path: "07-implementation/",
-    output: "Scaffold plan or code",
+    output: "Implementation plan",
   },
 ];
 

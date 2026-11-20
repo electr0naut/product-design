@@ -20,6 +20,16 @@ from workflow_common import (
     slug_from_path,
 )
 
+ANALYSIS_ROLES = (
+    "bizdev",
+    "compliance",
+    "finance",
+    "legal",
+    "operations",
+    "product",
+    "risk",
+)
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -32,11 +42,11 @@ def main() -> None:
     idea = project_path(args.idea)
     slug = slug_from_path(idea)
     analysis = project_path(args.analysis)
-    analyses = markdown_files(analysis, product=slug)
+    expected_names = {f"{slug}-{role}-analysis.md" for role in ANALYSIS_ROLES}
+    analyses = markdown_files(analysis, names=expected_names)
     if not analyses:
         raise SystemExit(
-            f"No analysis documents for '{slug}' in {display_path(analysis)} "
-            f"(expected files named {slug}-*.md)."
+            f"No phase-02 analysis documents for '{slug}' in {display_path(analysis)}."
         )
     sources = [idea] + analyses
     print("Sources:")

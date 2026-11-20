@@ -2,9 +2,11 @@
 
 Clone this repository once for each new product. The repo is a structured
 workspace for moving from an initial idea to team analysis, BRD, PRD, technical
-design, a traceable user-story backlog, and implementation scaffolding.
+design, a traceable user-story backlog, and an implementation plan.
 
-Each phase builds on the approved documents from earlier phases:
+Each phase builds on the reviewed documents from earlier phases. The scripts
+support iterative draft-to-draft exploration; approval is a human workflow gate,
+not a status check enforced by the CLI.
 
 ```text
 01-ideation/          -> idea canvas
@@ -13,7 +15,7 @@ Each phase builds on the approved documents from earlier phases:
 04-prd/               -> product requirements and the epic/story map
 05-technical-design/  -> architecture, APIs, data models, integrations
 06-backlog/           -> one file per user story, plus a traceability report
-07-implementation/    -> implementation scaffold and generated code
+07-implementation/    -> implementation plan
 ```
 
 ## Workflow
@@ -22,16 +24,16 @@ Each phase builds on the approved documents from earlier phases:
 2. Edit the idea canvas until it reflects the product you want to explore.
 3. Generate phase-02 analyses from the idea canvas.
 4. Review and edit the generated analysis documents.
-5. Generate the BRD from the idea canvas plus approved analyses.
+5. Generate the BRD from the idea canvas plus reviewed analyses.
 6. Review and edit the BRD.
-7. Generate the PRD, including its epic and story map, from the approved BRD.
+7. Generate the PRD, including its epic and story map, from the reviewed BRD.
 8. Review and edit the PRD.
-9. Generate the technical design from the approved PRD.
+9. Generate the technical design from the reviewed PRD.
 10. Review and edit the technical design.
-11. Generate user stories, one epic at a time, from the approved PRD and
+11. Generate user stories, one epic at a time, from the reviewed PRD and
     technical design.
 12. Review and edit the stories, then check traceability and fix any errors.
-13. Generate the implementation scaffold from the approved technical design.
+13. Generate the implementation plan from the reviewed technical design.
 
 The scripts use the files in `shared/prompts/` and the templates in each phase
 folder. By default they call `claude -p`. If the Claude CLI is not installed,
@@ -179,8 +181,8 @@ full change, testing, specification and AI-review rules. Use
 
 ## App Shell
 
-The included Next.js app is a lightweight dashboard for browsing the template
-workflow. It is not required for document generation.
+The included Next.js app is a static workflow overview. It is not required for
+document generation and does not browse or execute repository artefacts.
 
 ```bash
 npm run dev

@@ -29,13 +29,30 @@ def project_path(value: str) -> Path:
     return path
 
 
+def reject_symlink(path: Path, kind: str) -> None:
+    current = path
+    while not current.exists():
+        if current.is_symlink():
+            raise SystemExit(f"Refusing symlinked {kind}: {display_path(current)}")
+        if current == current.parent:
+            return
+        current = current.parent
+    if current.is_symlink():
+        raise SystemExit(f"Refusing symlinked {kind}: {display_path(current)}")
+
+
 def read_text(path: Path) -> str:
+    reject_symlink(path, "input")
     if not path.exists():
         raise SystemExit(f"Missing file: {display_path(path)}")
+    if not path.is_file():
+        raise SystemExit(f"Expected regular file: {display_path(path)}")
     return path.read_text(encoding="utf-8")
 
 
 def write_text(path: Path, content: str) -> None:
+    reject_symlink(path, "output")
+    reject_symlink(path.parent, "output parent directory")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content.rstrip() + "\n", encoding="utf-8")
 
@@ -66,13 +83,16 @@ def is_prompt_file(path: Path) -> bool:
     return path.name.endswith(PROMPT_SUFFIX)
 
 
-def markdown_files(path: Path, product: str | None = None) -> list[Path]:
-    """Return the reviewed markdown documents in `path`.
+def markdown_files(
+    path: Path, product: str | None = None, names: set[str] | None = None
+) -> list[Path]:
+    """Return reviewed, regular Markdown documents in `path`.
 
     Skips templates, hidden files and assembled `.prompt.md` files. With
-    `product`, keeps only files named `<product>.md` or `<product>-*.md`, so one
-    product's documents never end up in another product's context.
+    `product`, keeps only files named `<product>.md` or `<product>-*.md`; pass
+    `names` when a caller accepts an exact set of artefact names.
     """
+    reject_symlink(path, "input")
     if path.is_file():
         return [path]
     if not path.exists():
@@ -84,8 +104,13 @@ def markdown_files(path: Path, product: str | None = None) -> list[Path]:
             continue
         if is_prompt_file(item):
             continue
+        if names is not None and item.name not in names:
+            continue
         if product and not (item.stem == product or item.stem.startswith(f"{product}-")):
             continue
+        reject_symlink(item, "discovered input")
+        if not item.is_file():
+            raise SystemExit(f"Expected regular file: {display_path(item)}")
         files.append(item)
     return files
 

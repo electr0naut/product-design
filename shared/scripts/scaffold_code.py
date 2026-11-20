@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate implementation scaffold instructions from technical design."""
+"""Generate a Markdown implementation plan from a technical design."""
 
 from __future__ import annotations
 
@@ -24,9 +24,9 @@ def main() -> None:
     parser.add_argument(
         "--technical-design",
         required=True,
-        help="Path to the approved technical design.",
+        help="Path to the reviewed technical design.",
     )
-    parser.add_argument("--out", help="Output implementation scaffold path.")
+    parser.add_argument("--out", help="Output implementation-plan path.")
     add_common_args(parser)
     args = parser.parse_args()
 

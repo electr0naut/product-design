@@ -500,17 +500,20 @@ class ScriptTests(unittest.TestCase):
         prompts = list((self.dir / "analysis").rglob("*.prompt.md"))
         self.assertEqual(len(prompts), 7)
 
-    def test_brd_uses_only_this_products_reviewed_analyses(self):
+    def test_brd_uses_only_this_products_exact_reviewed_analyses(self):
         analysis = self.dir / "analysis"
         (analysis / "legal").mkdir(parents=True)
         (analysis / "legal" / "my-product-legal-analysis.md").write_text("MINE", encoding="utf-8")
         (analysis / "legal" / "my-product-legal-analysis.prompt.md").write_text(
             "PROMPT", encoding="utf-8"
         )
+        (analysis / "legal" / "my-product-v2-legal-analysis.md").write_text(
+            "PREFIX NEIGHBOUR", encoding="utf-8"
+        )
         (analysis / "legal" / "other-product-legal-analysis.md").write_text(
             "OTHER", encoding="utf-8"
         )
-        files = markdown_files(analysis, product="my-product")
+        files = markdown_files(analysis, names={"my-product-legal-analysis.md"})
         self.assertEqual([p.name for p in files], ["my-product-legal-analysis.md"])
 
         idea = self.dir / "my-product.md"
@@ -528,8 +531,91 @@ class ScriptTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         prompt = (self.dir / "out-brd.prompt.md").read_text(encoding="utf-8")
         self.assertIn("MINE", prompt)
+        self.assertNotIn("PREFIX NEIGHBOUR", prompt)
         self.assertNotIn("OTHER", prompt)
         self.assertNotIn("PROMPT", prompt)
+
+    def test_brd_rejects_symlinked_analysis_document(self):
+        analysis = self.dir / "analysis" / "legal"
+        analysis.mkdir(parents=True)
+        external = self.dir / "external-analysis.md"
+        external.write_text("EXTERNAL", encoding="utf-8")
+        (analysis / "my-product-legal-analysis.md").symlink_to(external)
+        idea = self.dir / "my-product.md"
+        idea.write_text("# Idea\n", encoding="utf-8")
+
+        result = run_script(
+            "generate_brd.py",
+            "--idea",
+            str(idea),
+            "--analysis",
+            str(analysis.parent),
+            "--out",
+            str(self.dir / "out-brd.md"),
+            "--prompt-only",
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("symlink", result.stderr.lower())
+
+    def test_brd_rejects_symlinked_output_without_changing_external_target(self):
+        analysis = self.dir / "analysis" / "legal"
+        analysis.mkdir(parents=True)
+        (analysis / "my-product-legal-analysis.md").write_text("MINE", encoding="utf-8")
+        idea = self.dir / "my-product.md"
+        idea.write_text("# Idea\n", encoding="utf-8")
+        external = self.dir / "external-brd.md"
+        original = "reviewed external document\n"
+        external.write_text(original, encoding="utf-8")
+        output = self.dir / "out-brd.md"
+        output.symlink_to(external)
+        claude = self.dir / "fake_brd_claude"
+        claude.write_text("#!/bin/sh\nprintf '# Generated BRD\\n'\n", encoding="utf-8")
+        claude.chmod(0o755)
+
+        result = run_script(
+            "generate_brd.py",
+            "--idea",
+            str(idea),
+            "--analysis",
+            str(analysis.parent),
+            "--out",
+            str(output),
+            "--claude-bin",
+            str(claude),
+            "--force",
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("symlink", result.stderr.lower())
+        self.assertEqual(external.read_text(encoding="utf-8"), original)
+
+    def test_brd_rejects_output_below_symlinked_ancestor_directory(self):
+        analysis = self.dir / "analysis" / "legal"
+        analysis.mkdir(parents=True)
+        (analysis / "my-product-legal-analysis.md").write_text("MINE", encoding="utf-8")
+        idea = self.dir / "my-product.md"
+        idea.write_text("# Idea\n", encoding="utf-8")
+        external_dir = self.dir / "external-output"
+        external_dir.mkdir()
+        redirected = self.dir / "redirected"
+        redirected.symlink_to(external_dir, target_is_directory=True)
+        output = redirected / "nested" / "out-brd.md"
+
+        result = run_script(
+            "generate_brd.py",
+            "--idea",
+            str(idea),
+            "--analysis",
+            str(analysis.parent),
+            "--out",
+            str(output),
+            "--prompt-only",
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("symlink", result.stderr.lower())
+        self.assertFalse((external_dir / "nested" / "out-brd.prompt.md").exists())
 
 
 if __name__ == "__main__":
