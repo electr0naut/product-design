@@ -27,7 +27,6 @@ from backlog import (  # noqa: E402
 )
 from workflow_common import markdown_files  # noqa: E402
 
-
 BRD = textwrap.dedent(
     """\
     # Business Requirements Document: Invoicer
@@ -133,7 +132,9 @@ RESPONSES = {
     + story_text("US-002", "Verify email address", "E01", "BR-001", "US-001", "Should")
     + "```\n",
     "E02": "<!-- story: US-003 -->\n"
-    + story_text("US-003", "Pay an invoice by card (café test)", "E02", "BR-002, NFR-001", "US-001"),
+    + story_text(
+        "US-003", "Pay an invoice by card (café test)", "E02", "BR-002, NFR-001", "US-001"
+    ),
 }
 
 FAKE_CLAUDE = textwrap.dedent(
@@ -178,14 +179,17 @@ class ParsingTests(unittest.TestCase):
         self.assertEqual(story_map.unassigned, [])
 
     def test_story_rows_outside_epics_and_duplicates(self):
-        text = PRD + "\n| US-009 | Stray story | Admin | BR-001 | Could |\n| US-001 | Again | x | BR-001 | Must |\n"
+        text = (
+            PRD
+            + "\n| US-009 | Stray story | Admin | BR-001 | Could |\n| US-001 | Again | x | BR-001 | Must |\n"
+        )
         story_map = parse_story_map(text)
         self.assertEqual(story_map.unassigned, ["US-009"])
         self.assertEqual(story_map.duplicates, ["US-001"])
 
     def test_frontmatter(self):
         meta, body = parse_frontmatter(
-            "---\nid: US-004\ntitle: \"Quoted: title\"\ntraces_to: [BR-1, NFR-002]\n"
+            '---\nid: US-004\ntitle: "Quoted: title"\ntraces_to: [BR-1, NFR-002]\n'
             "depends_on:\n  - US-001\n  - US-002\ncomponents: []\n---\n# Body\n"
         )
         self.assertEqual(meta["title"], "Quoted: title")
@@ -223,7 +227,9 @@ class CheckTests(unittest.TestCase):
 
     def write_clean_backlog(self):
         self.write("US-001-sign-up.md", story_text("US-001", "Sign up", "E01", "BR-001"))
-        self.write("US-002-verify.md", story_text("US-002", "Verify", "E01", "BR-001", "US-001", "Should"))
+        self.write(
+            "US-002-verify.md", story_text("US-002", "Verify", "E01", "BR-001", "US-001", "Should")
+        )
         self.write("US-003-pay.md", story_text("US-003", "Pay", "E02", "BR-002, NFR-001", "US-001"))
 
     def test_clean_backlog_passes(self):
@@ -276,7 +282,10 @@ class CheckTests(unittest.TestCase):
 
     def test_story_quality_warnings(self):
         self.write_clean_backlog()
-        self.write("US-002-verify.md", "---\nid: US-002\nepic: E01\ntraces_to: [BR-001]\npriority: Should\nestimate: S\n---\nNo criteria.\n")
+        self.write(
+            "US-002-verify.md",
+            "---\nid: US-002\nepic: E01\ntraces_to: [BR-001]\npriority: Should\nestimate: S\n---\nNo criteria.\n",
+        )
         warnings = self.check().warnings
         self.assertIn("US-002: no Given/When/Then acceptance criteria.", warnings)
         self.assertIn("US-002: no tasks.", warnings)
@@ -302,18 +311,25 @@ class ScriptTests(unittest.TestCase):
         script.write_text(FAKE_CLAUDE, encoding="utf-8")
         if os.name == "nt":
             wrapper = self.dir / "fake_claude.cmd"
-            wrapper.write_text(f'@"{sys.executable}" "{script}" "{responses}"\r\n', encoding="utf-8")
+            wrapper.write_text(
+                f'@"{sys.executable}" "{script}" "{responses}"\r\n', encoding="utf-8"
+            )
         else:
             wrapper = self.dir / "fake_claude"
-            wrapper.write_text(f'#!/bin/sh\nexec "{sys.executable}" "{script}" "{responses}"\n', encoding="utf-8")
+            wrapper.write_text(
+                f'#!/bin/sh\nexec "{sys.executable}" "{script}" "{responses}"\n', encoding="utf-8"
+            )
             wrapper.chmod(0o755)
         return str(wrapper)
 
     def stories_args(self, *extra: str) -> list[str]:
         return [
-            "--prd", str(self.dir / "prd.md"),
-            "--technical-design", str(self.dir / "design.md"),
-            "--out-dir", str(self.backlog),
+            "--prd",
+            str(self.dir / "prd.md"),
+            "--technical-design",
+            str(self.dir / "design.md"),
+            "--out-dir",
+            str(self.backlog),
             *extra,
         ]
 
@@ -321,7 +337,9 @@ class ScriptTests(unittest.TestCase):
         claude = self.fake_claude()
         result = run_script("generate_stories.py", *self.stories_args("--claude-bin", claude))
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        files = sorted(p.relative_to(self.backlog).as_posix() for p in self.backlog.rglob("US-*.md"))
+        files = sorted(
+            p.relative_to(self.backlog).as_posix() for p in self.backlog.rglob("US-*.md")
+        )
         self.assertEqual(
             files,
             [
@@ -335,9 +353,12 @@ class ScriptTests(unittest.TestCase):
 
         validate = run_script(
             "validate_backlog.py",
-            "--brd", str(self.dir / "brd.md"),
-            "--prd", str(self.dir / "prd.md"),
-            "--backlog", str(self.backlog),
+            "--brd",
+            str(self.dir / "brd.md"),
+            "--prd",
+            str(self.dir / "prd.md"),
+            "--backlog",
+            str(self.backlog),
             "--strict",
         )
         self.assertEqual(validate.returncode, 0, validate.stdout + validate.stderr)
@@ -347,13 +368,18 @@ class ScriptTests(unittest.TestCase):
         self.assertIn("| 2 | US-003 |", report)
 
         edited = self.backlog / "E01-accounts" / "US-001-sign-up-with-email.md"
-        edited.write_text(edited.read_text(encoding="utf-8") + "\nReviewed by PM.\n", encoding="utf-8")
+        edited.write_text(
+            edited.read_text(encoding="utf-8") + "\nReviewed by PM.\n", encoding="utf-8"
+        )
         again = run_script("generate_stories.py", *self.stories_args("--claude-bin", claude))
         self.assertEqual(again.returncode, 0, again.stdout + again.stderr)
         self.assertIn("Skipped E01", again.stdout)
         self.assertIn("Reviewed by PM.", edited.read_text(encoding="utf-8"))
 
-        forced = run_script("generate_stories.py", *self.stories_args("--claude-bin", claude, "--epic", "E01", "--force"))
+        forced = run_script(
+            "generate_stories.py",
+            *self.stories_args("--claude-bin", claude, "--epic", "E01", "--force"),
+        )
         self.assertEqual(forced.returncode, 0, forced.stdout + forced.stderr)
         self.assertNotIn("Reviewed by PM.", edited.read_text(encoding="utf-8"))
 
@@ -366,13 +392,17 @@ class ScriptTests(unittest.TestCase):
 
         response = self.dir / "e01.md"
         response.write_text(RESPONSES["E01"], encoding="utf-8")
-        imported = run_script("generate_stories.py", *self.stories_args("--epic", "E01", "--response", str(response)))
+        imported = run_script(
+            "generate_stories.py", *self.stories_args("--epic", "E01", "--response", str(response))
+        )
         self.assertEqual(imported.returncode, 0, imported.stdout + imported.stderr)
         self.assertEqual(len(list((self.backlog / "E01-accounts").glob("US-*.md"))), 2)
 
         bad = self.dir / "bad.md"
         bad.write_text("Sorry, I cannot help with that.", encoding="utf-8")
-        failed = run_script("generate_stories.py", *self.stories_args("--epic", "E02", "--response", str(bad)))
+        failed = run_script(
+            "generate_stories.py", *self.stories_args("--epic", "E02", "--response", str(bad))
+        )
         self.assertEqual(failed.returncode, 1)
         self.assertTrue((self.backlog / "prompts" / "E02-billing.response.md").exists())
 
@@ -381,9 +411,12 @@ class ScriptTests(unittest.TestCase):
         idea.write_text("# Idea Canvas: My Product\n", encoding="utf-8")
         result = run_script(
             "generate_analysis.py",
-            "--idea", str(idea),
-            "--out-dir", str(self.dir / "analysis"),
-            "--claude-bin", "definitely-not-installed-claude",
+            "--idea",
+            str(idea),
+            "--out-dir",
+            str(self.dir / "analysis"),
+            "--claude-bin",
+            "definitely-not-installed-claude",
         )
         self.assertEqual(result.returncode, 1)
         prompts = list((self.dir / "analysis").rglob("*.prompt.md"))
@@ -393,16 +426,26 @@ class ScriptTests(unittest.TestCase):
         analysis = self.dir / "analysis"
         (analysis / "legal").mkdir(parents=True)
         (analysis / "legal" / "my-product-legal-analysis.md").write_text("MINE", encoding="utf-8")
-        (analysis / "legal" / "my-product-legal-analysis.prompt.md").write_text("PROMPT", encoding="utf-8")
-        (analysis / "legal" / "other-product-legal-analysis.md").write_text("OTHER", encoding="utf-8")
+        (analysis / "legal" / "my-product-legal-analysis.prompt.md").write_text(
+            "PROMPT", encoding="utf-8"
+        )
+        (analysis / "legal" / "other-product-legal-analysis.md").write_text(
+            "OTHER", encoding="utf-8"
+        )
         files = markdown_files(analysis, product="my-product")
         self.assertEqual([p.name for p in files], ["my-product-legal-analysis.md"])
 
         idea = self.dir / "my-product.md"
         idea.write_text("# Idea\n", encoding="utf-8")
         result = run_script(
-            "generate_brd.py", "--idea", str(idea), "--analysis", str(analysis),
-            "--out", str(self.dir / "out-brd.md"), "--prompt-only",
+            "generate_brd.py",
+            "--idea",
+            str(idea),
+            "--analysis",
+            str(analysis),
+            "--out",
+            str(self.dir / "out-brd.md"),
+            "--prompt-only",
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         prompt = (self.dir / "out-brd.prompt.md").read_text(encoding="utf-8")

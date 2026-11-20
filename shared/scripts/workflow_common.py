@@ -10,7 +10,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
 PROMPTS = ROOT / "shared" / "prompts"
 PROMPT_SUFFIX = ".prompt.md"

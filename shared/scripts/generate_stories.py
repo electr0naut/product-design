@@ -12,7 +12,14 @@ import argparse
 import sys
 from pathlib import Path
 
-from backlog import Epic, files_for_story, normalize_epic_id, parse_frontmatter, parse_story_map, split_stories
+from backlog import (
+    Epic,
+    files_for_story,
+    normalize_epic_id,
+    parse_frontmatter,
+    parse_story_map,
+    split_stories,
+)
 from workflow_common import (
     FAILED,
     FALLBACK,
@@ -35,13 +42,12 @@ from workflow_common import (
     write_text,
 )
 
-
 STORY_TEMPLATE = ROOT / "06-backlog" / "templates" / "story-template.md"
 TEMPLATE_INTRO = "Write each story in exactly this template structure, frontmatter included:"
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     parser.add_argument("--prd", required=True, help="Path to the approved PRD.")
     parser.add_argument(
         "--technical-design", required=True, help="Path to the approved technical design."
@@ -62,7 +68,9 @@ def main() -> None:
 
     prd = project_path(args.prd)
     design = project_path(args.technical_design)
-    out_dir = project_path(args.out_dir) if args.out_dir else ROOT / "06-backlog" / slug_from_path(prd)
+    out_dir = (
+        project_path(args.out_dir) if args.out_dir else ROOT / "06-backlog" / slug_from_path(prd)
+    )
 
     story_map = parse_story_map(read_text(prd))
     if not story_map.epics:
@@ -184,13 +192,16 @@ def write_stories(epic: Epic, epic_dir: Path, out_dir: Path, response: str, forc
 
         existing = files_for_story(out_dir, sid)
         if existing and not force:
-            print(f"Skipped {sid}: {display_path(existing[0])} already exists (use --force to overwrite).")
+            print(
+                f"Skipped {sid}: {display_path(existing[0])} already exists (use --force to overwrite)."
+            )
             skipped += 1
             continue
         for path in existing:
             path.unlink()
 
-        title = meta.get("title") if isinstance(meta.get("title"), str) else ""
+        title_value = meta.get("title")
+        title = title_value if isinstance(title_value, str) else ""
         if not title and sid in expected:
             title = expected[sid].summary
         name = slugify(title or "", "story")[:60].strip("-")

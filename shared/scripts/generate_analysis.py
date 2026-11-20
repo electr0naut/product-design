@@ -18,7 +18,6 @@ from workflow_common import (
     slug_from_path,
 )
 
-
 ROLES = {
     "bizdev": ("02-analysis-bizdev.md", "business-development-template.md", "business-development"),
     "compliance": ("02-analysis-compliance.md", "compliance-template.md", "compliance"),
@@ -52,9 +51,7 @@ def main() -> None:
         )
         suffix = PROMPT_SUFFIX if args.prompt_only else ".md"
         output = project_path(args.out_dir) / folder / f"{slug}-{role}-analysis{suffix}"
-        outcomes.append(
-            generate(prompt, output, args.prompt_only, args.claude_bin, args.force)
-        )
+        outcomes.append(generate(prompt, output, args.prompt_only, args.claude_bin, args.force))
     exit_status(outcomes)
 
 

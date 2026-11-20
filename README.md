@@ -163,6 +163,18 @@ out of sync with the PRD story map. Add `--strict` to fail on warnings too.
   traceability logic; its tests run with
   `python -m unittest discover shared/scripts/tests`.
 
+## Engineering Checks
+
+The repository includes a reproducible local quality gate for the Python pipeline and the Next.js overview:
+
+```bash
+uv sync
+npm ci
+make check
+```
+
+See `ENGINEERING.md` for the change, testing, specification and AI-review rules. Use `docs/specs/TEMPLATE.md` for behaviour-changing work.
+
 ## App Shell
 
 The included Next.js app is a lightweight dashboard for browsing the template

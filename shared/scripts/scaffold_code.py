@@ -34,9 +34,7 @@ def main() -> None:
     context = bundle_documents("Technical Design", [technical_design])
     prompt = compose_prompt(PROMPTS / "07-scaffold-code.md", None, context)
     default_out = (
-        ROOT
-        / "07-implementation"
-        / f"{slug_from_path(technical_design)}-implementation-plan.md"
+        ROOT / "07-implementation" / f"{slug_from_path(technical_design)}-implementation-plan.md"
     )
     output = project_path(args.out) if args.out else default_out
     if args.prompt_only:
