@@ -14,7 +14,15 @@ import argparse
 import datetime as dt
 from pathlib import Path
 
-from backlog import Check, StoryMap, check_backlog, load_stories, parse_requirements, parse_story_map
+from backlog import (
+    Check,
+    StoryMap,
+    check_backlog,
+    load_stories,
+    parse_requirements,
+    parse_story_map,
+    table_cell,
+)
 from workflow_common import ROOT, display_path, plural, project_path, read_text, slug_from_path, write_text
 
 
@@ -93,7 +101,7 @@ def render_report(slug: str, sources: list[str], requirements, story_map: StoryM
         "|-------------|-------------|---------|",
     ]
     for req_id, requirement in requirements.items():
-        lines.append(f"| {req_id} | {_cell(requirement.text)} | {_coverage(req_id, story_map, check)} |")
+        lines.append(f"| {req_id} | {table_cell(requirement.text)} | {_coverage(req_id, story_map, check)} |")
     lines.append("")
 
     lines += [
@@ -105,8 +113,8 @@ def render_report(slug: str, sources: list[str], requirements, story_map: StoryM
     ]
     for number, story in enumerate(check.build_order, start=1):
         lines.append(
-            f"| {number} | {story.id} | {_cell(story.title)} | {story.epic or '-'} | "
-            f"{_cell(story.priority) or '-'} | {story.estimate or '-'} | "
+            f"| {number} | {story.id} | {table_cell(story.title)} | {story.epic or '-'} | "
+            f"{table_cell(story.priority) or '-'} | {story.estimate or '-'} | "
             f"{', '.join(story.depends_on) or '-'} |"
         )
     lines.append("")
@@ -129,10 +137,6 @@ def _coverage(req_id: str, story_map: StoryMap, check: Check) -> str:
     if parts:
         return "; ".join(parts)
     return "**None**" if req_id.startswith("BR-") else "-"
-
-
-def _cell(text: str) -> str:
-    return (text or "").replace("|", "\\|").replace("\n", " ").strip()
 
 
 if __name__ == "__main__":

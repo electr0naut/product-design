@@ -26,6 +26,7 @@ from backlog import (  # noqa: E402
     split_stories,
 )
 from workflow_common import markdown_files  # noqa: E402
+import generate_stories  # noqa: E402
 
 
 BRD = textwrap.dedent(
@@ -176,6 +177,26 @@ class ParsingTests(unittest.TestCase):
         self.assertEqual(us3.priority, "Must Have")
         self.assertEqual(story_map.non_goals, ["BR-003"])
         self.assertEqual(story_map.unassigned, [])
+
+    def test_escaped_pipes_stay_inside_cells(self):
+        text = (
+            "### E01: Message Input\n\n"
+            "| ID | Story | Persona | Traces to | Priority |\n"
+            "|----|-------|---------|-----------|----------|\n"
+            "| US-001 | Auto-detect the delimiter (SOH, `\\|`, `;`) | Connectivity Engineer"
+            " | BR-001, NFR-001 | Must |\n"
+            "| US-002 | Split values that contain `\\|` | Trade Support Analyst | BR-001 | Should |\n"
+        )
+        stories = parse_story_map(text).stories
+        self.assertEqual(stories["US-001"].summary, "Auto-detect the delimiter (SOH, `|`, `;`)")
+        self.assertEqual(stories["US-001"].persona, "Connectivity Engineer")
+        self.assertEqual(stories["US-001"].traces_to, ["BR-001", "NFR-001"])
+        self.assertEqual(stories["US-001"].priority, "Must")
+        self.assertEqual(stories["US-002"].persona, "Trade Support Analyst")
+        self.assertEqual(stories["US-002"].priority, "Should")
+        # The story prompt re-escapes the pipe so its table stays intact.
+        brief = generate_stories.epic_brief(parse_story_map(text).epics["E01"])
+        self.assertIn("| US-002 | Split values that contain `\\|` | Trade Support Analyst |", brief)
 
     def test_story_rows_outside_epics_and_duplicates(self):
         text = PRD + "\n| US-009 | Stray story | Admin | BR-001 | Could |\n| US-001 | Again | x | BR-001 | Must |\n"
