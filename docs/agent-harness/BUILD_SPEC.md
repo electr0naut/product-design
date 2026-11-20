@@ -181,7 +181,9 @@ Credentials and options:
 
 - **Bedrock.** Pass `-e CLAUDE_CODE_USE_BEDROCK=1` and your AWS variables instead of the API key.
 - **Vertex.** Pass `-e CLAUDE_CODE_USE_VERTEX=1`, `-e CLOUD_ML_REGION` and the Google credentials.
-- **Other lab.** The refuter's credentials go in via `-e OPENAI_API_KEY` or `-e GEMINI_API_KEY`.
+- **Other lab.** The refuter's credentials go in via `-e CODEX_API_KEY` or `-e GEMINI_API_KEY`.
+  `codex exec` reads `CODEX_API_KEY`, not `OPENAI_API_KEY` (codex-cli 0.170, verified live); from a
+  host that stores the key as `OPENAI_API_KEY`, run `CODEX_API_KEY="$OPENAI_API_KEY" docker run -e CODEX_API_KEY ...`.
 - **Replay mode** (M5) needs a real repository: add `-v /path/to/repo:/work`.
 - **Corporate proxy.** Pass `--build-arg HTTPS_PROXY=...` and add your CA certificate to the image. Most
   corporate networks need this.
@@ -1049,7 +1051,9 @@ Config rules:
   `*` crosses directory separators. Python 3.12's `PurePath.match` does not support `**`.
 - **Other lab command.** `other_lab_cmd` is a command template with `{schema}` and `{out}` placeholders.
   The prompt goes on stdin; the JSON result is read from `{out}`. Examples:
-  - `codex exec --sandbox read-only --output-schema {schema} -o {out} -`
+  - `codex exec --skip-git-repo-check --ephemeral --sandbox read-only --output-schema {schema} -o {out} -`
+    (the command runs in a temporary directory that is not a git repository, so codex needs
+    `--skip-git-repo-check`; `--ephemeral` keeps it from saving a session per call)
   - `sh -c 'gemini -p "$(cat)" --output-format json > {out}'`. Gemini does not enforce the schema, so
     validate its output yourself.
 
