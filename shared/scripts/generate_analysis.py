@@ -6,11 +6,13 @@ from __future__ import annotations
 import argparse
 
 from workflow_common import (
+    PROMPT_SUFFIX,
     PROMPTS,
     ROOT,
     add_common_args,
     bundle_documents,
     compose_prompt,
+    exit_status,
     generate,
     project_path,
     slug_from_path,
@@ -41,15 +43,19 @@ def main() -> None:
     context = bundle_documents("Idea Canvas", [idea])
     roles = {args.role: ROLES[args.role]} if args.role else ROLES
 
+    outcomes = []
     for role, (prompt_name, template_name, folder) in roles.items():
         prompt = compose_prompt(
             PROMPTS / prompt_name,
             ROOT / "02-analysis" / "templates" / template_name,
             context,
         )
-        suffix = ".prompt.md" if args.prompt_only else ".md"
+        suffix = PROMPT_SUFFIX if args.prompt_only else ".md"
         output = project_path(args.out_dir) / folder / f"{slug}-{role}-analysis{suffix}"
-        generate(prompt, output, args.prompt_only, args.claude_bin)
+        outcomes.append(
+            generate(prompt, output, args.prompt_only, args.claude_bin, args.force)
+        )
+    exit_status(outcomes)
 
 
 if __name__ == "__main__":

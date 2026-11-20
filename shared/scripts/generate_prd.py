@@ -6,11 +6,13 @@ from __future__ import annotations
 import argparse
 
 from workflow_common import (
+    PROMPT_SUFFIX,
     PROMPTS,
     ROOT,
     add_common_args,
     bundle_documents,
     compose_prompt,
+    exit_status,
     generate,
     project_path,
     slug_from_path,
@@ -34,8 +36,8 @@ def main() -> None:
     default_out = ROOT / "04-prd" / f"{slug_from_path(brd)}-prd.md"
     output = project_path(args.out) if args.out else default_out
     if args.prompt_only:
-        output = output.with_suffix(".prompt.md")
-    generate(prompt, output, args.prompt_only, args.claude_bin)
+        output = output.with_suffix(PROMPT_SUFFIX)
+    exit_status([generate(prompt, output, args.prompt_only, args.claude_bin, args.force)])
 
 
 if __name__ == "__main__":
