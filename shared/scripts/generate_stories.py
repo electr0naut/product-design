@@ -14,6 +14,7 @@ from pathlib import Path
 
 from backlog import (
     Epic,
+    StoryRef,
     files_for_story,
     normalize_epic_id,
     parse_frontmatter,
@@ -174,21 +175,15 @@ def write_stories(epic: Epic, epic_dir: Path, out_dir: Path, response: str, forc
         return FAILED
 
     expected = {s.id: s for s in epic.stories}
+    if not validate_story_response(epic, chunks, expected):
+        return FAILED
+
     seen: set[str] = set()
     written = skipped = 0
     for sid, content in chunks:
-        if not sid or sid in seen:
-            print(f"Warning: skipped a duplicate or unreadable story marker ({sid or 'no ID'}).")
-            continue
         seen.add(sid)
-        if sid not in expected:
-            print(f"Warning: {sid} is not in {epic.id} in the PRD story map; writing it anyway.")
 
         meta, _ = parse_frontmatter(content)
-        if not meta:
-            print(f"Warning: {sid} has no frontmatter; validate_backlog.py will flag it.")
-        elif str(meta.get("id", "")).upper() not in {"", sid}:
-            print(f"Warning: {sid} has id '{meta.get('id')}' in its frontmatter.")
 
         existing = files_for_story(out_dir, sid)
         if existing and not force:
@@ -217,6 +212,46 @@ def write_stories(epic: Epic, epic_dir: Path, out_dir: Path, response: str, forc
         f"to {display_path(epic_dir)}, skipped {skipped}."
     )
     return WROTE if written else SKIPPED
+
+
+def validate_story_response(
+    epic: Epic, chunks: list[tuple[str, str]], expected: dict[str, StoryRef]
+) -> bool:
+    """Reject incomplete or contradictory imports before changing story files."""
+    marker_ids = [sid for sid, _ in chunks]
+    marker_set = set(marker_ids)
+    errors: list[str] = []
+
+    duplicates = sorted({sid for sid in marker_ids if marker_ids.count(sid) > 1})
+    if duplicates:
+        errors.append(f"duplicate story marker IDs: {', '.join(duplicates)}")
+
+    unknown = sorted(marker_set - expected.keys())
+    if unknown:
+        errors.append(f"story IDs not in {epic.id}: {', '.join(unknown)}")
+
+    missing = sorted(expected.keys() - marker_set)
+    if missing:
+        errors.append(f"missing story IDs for {epic.id}: {', '.join(missing)}")
+
+    for sid, content in chunks:
+        meta, _ = parse_frontmatter(content)
+        if not meta:
+            errors.append(f"{sid}: missing frontmatter")
+            continue
+        if meta.get("id") != sid:
+            errors.append(f"{sid}: frontmatter id is {meta.get('id')!r}")
+        if meta.get("epic") != epic.id:
+            errors.append(f"{sid}: frontmatter epic is {meta.get('epic')!r}, expected {epic.id}")
+
+    if not errors:
+        return True
+    print(
+        f"Error: rejected response for {epic.id}; no story files were changed:\n"
+        + "\n".join(f"- {error}" for error in errors),
+        file=sys.stderr,
+    )
+    return False
 
 
 if __name__ == "__main__":

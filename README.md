@@ -173,7 +173,9 @@ npm ci
 make check
 ```
 
-See `ENGINEERING.md` for the change, testing, specification and AI-review rules. Use `docs/specs/TEMPLATE.md` for behaviour-changing work.
+See `AGENTS.md` for portable coding-agent instructions and `ENGINEERING.md` for the
+full change, testing, specification and AI-review rules. Use
+`docs/specs/TEMPLATE.md` for behaviour-changing work.
 
 ## App Shell
 

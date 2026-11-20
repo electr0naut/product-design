@@ -13,6 +13,13 @@ implementation scaffold.
 - Optional Claude CLI for document generation
 - Lightweight Next.js dashboard in `src/app/`
 
+## Agent and Engineering Rules
+
+Read `AGENTS.md` before editing. It is the portable operational policy for any
+coding agent. `ENGINEERING.md` is the canonical policy; behaviour-changing work
+needs a concise spec under `docs/specs/`, regression tests for core pipeline
+logic, and `make check` before completion.
+
 ## Commands
 
 - Generate analyses: `python shared/scripts/generate_analysis.py --idea 01-ideation/<product>.md`

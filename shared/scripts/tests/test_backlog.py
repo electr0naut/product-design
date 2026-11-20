@@ -406,6 +406,84 @@ class ScriptTests(unittest.TestCase):
         self.assertEqual(failed.returncode, 1)
         self.assertTrue((self.backlog / "prompts" / "E02-billing.response.md").exists())
 
+    def test_response_import_rejects_unknown_story_id_without_writing_files(self):
+        response = self.dir / "unknown-story.md"
+        response.write_text(
+            RESPONSES["E01"]
+            + "\n<!-- story: US-999 -->\n"
+            + story_text("US-999", "Unknown", "E01", "BR-001"),
+            encoding="utf-8",
+        )
+        result = run_script(
+            "generate_stories.py", *self.stories_args("--epic", "E01", "--response", str(response))
+        )
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(list(self.backlog.rglob("US-*.md")), [])
+
+    def test_response_import_rejects_missing_expected_story_id_without_writing_files(self):
+        response = self.dir / "missing-story.md"
+        response.write_text(
+            "<!-- story: US-001 -->\n"
+            + story_text("US-001", "Sign up with email", "E01", "BR-001"),
+            encoding="utf-8",
+        )
+        result = run_script(
+            "generate_stories.py", *self.stories_args("--epic", "E01", "--response", str(response))
+        )
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(list(self.backlog.rglob("US-*.md")), [])
+
+    def test_response_import_rejects_duplicate_marker_without_writing_files(self):
+        duplicate = "<!-- story: US-001 -->\n" + story_text(
+            "US-001", "Sign up again", "E01", "BR-001"
+        )
+        response = self.dir / "duplicate-marker.md"
+        response.write_text(RESPONSES["E01"] + "\n" + duplicate, encoding="utf-8")
+        result = run_script(
+            "generate_stories.py", *self.stories_args("--epic", "E01", "--response", str(response))
+        )
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(list(self.backlog.rglob("US-*.md")), [])
+
+    def test_response_import_rejects_frontmatter_id_mismatch_without_writing_files(self):
+        response = self.dir / "frontmatter-id-mismatch.md"
+        response.write_text(RESPONSES["E01"].replace("id: US-002", "id: US-001"), encoding="utf-8")
+        result = run_script(
+            "generate_stories.py", *self.stories_args("--epic", "E01", "--response", str(response))
+        )
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(list(self.backlog.rglob("US-*.md")), [])
+
+    def test_response_import_rejects_frontmatter_epic_mismatch_without_writing_files(self):
+        response = self.dir / "frontmatter-epic-mismatch.md"
+        response.write_text(RESPONSES["E01"].replace("epic: E01", "epic: E02"), encoding="utf-8")
+        result = run_script(
+            "generate_stories.py", *self.stories_args("--epic", "E01", "--response", str(response))
+        )
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(list(self.backlog.rglob("US-*.md")), [])
+
+    def test_rejected_response_preserves_existing_story_byte_for_byte(self):
+        existing = self.backlog / "E01-accounts" / "US-001-existing.md"
+        existing.parent.mkdir(parents=True)
+        original = story_text("US-001", "Existing story", "E01", "BR-001") + "\nReviewed by PM.\n"
+        existing.write_text(original, encoding="utf-8")
+        response = self.dir / "invalid-after-valid-story.md"
+        response.write_text(
+            "<!-- story: US-001 -->\n"
+            + story_text("US-001", "Replacement", "E01", "BR-001")
+            + "\n<!-- story: US-999 -->\n"
+            + story_text("US-999", "Unknown", "E01", "BR-001"),
+            encoding="utf-8",
+        )
+        result = run_script(
+            "generate_stories.py",
+            *self.stories_args("--epic", "E01", "--response", str(response), "--force"),
+        )
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(existing.read_text(encoding="utf-8"), original)
+        self.assertEqual(list(self.backlog.rglob("US-*.md")), [existing])
+
     def test_missing_cli_writes_every_analysis_prompt(self):
         idea = self.dir / "my-product.md"
         idea.write_text("# Idea Canvas: My Product\n", encoding="utf-8")
