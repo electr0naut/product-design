@@ -264,6 +264,13 @@ File: `template/.claude/settings.json`
     "CLAUDE_CODE_DISABLE_EXPLORE_PLAN_AGENTS": "1"
   },
   "permissions": {
+    "allow": [
+      "Bash(rg *)",
+      "Bash(grep *)",
+      "Bash(git grep *)",
+      "Bash(git log *)",
+      "Bash(ls *)"
+    ],
     "deny": [
       "Agent(general-purpose)"
     ]
@@ -411,6 +418,8 @@ def build_context(project_dir: Path) -> str:
 def main() -> None:
     """Read the SessionStart payload from stdin and print additional context."""
     payload = json.load(sys.stdin)
+    if os.environ.get("HARNESS_PIPELINE") == "1":
+        return  # pipeline stages get their whole context from the driver's prompt
     project_dir = Path(os.environ.get("CLAUDE_PROJECT_DIR") or payload.get("cwd") or ".")
     output = {"hookEventName": "SessionStart", "additionalContext": build_context(project_dir)}
     json.dump({"hookSpecificOutput": output}, sys.stdout)
@@ -493,6 +502,8 @@ if __name__ == "__main__":
 Every worker agent pins its model in frontmatter. The guard hook reads these pins, so a model change is
 made in one place. In pipeline mode the driver runs each stage agent as the main thread
 (`claude -p --agent <name>`), which is where `Agent(x, y)` allowlists in `tools` take effect.
+Agents that return JSON list `StructuredOutput` in `tools`: on Claude Code 2.1.327 any `tools`
+allowlist that omits it silently disables `--json-schema` (verified live; M0 probes it).
 
 File: `template/.claude/agents/orchestrator.md`
 ````markdown
@@ -527,7 +538,9 @@ disallowedTools: Edit, Write
 ---
 Answer lookups with locations.
 
-Prefer exact tools: Grep for text and symbols, Glob for paths, `git log -S '<text>' --oneline` for history.
+Prefer exact tools, run through Bash: `rg -n '<pattern>'` for text and symbols, `rg --files -g '<glob>'`
+for paths, `git log -S '<text>' --oneline` for history. Recent Claude Code versions have no separate
+Grep or Glob tool; use Grep or Glob only if they are listed among your tools.
 If `.harness/wiki_search` exists, also run `.harness/wiki_search "<query>"`.
 Use Bash only for read-only commands.
 
@@ -578,7 +591,7 @@ name: readiness
 description: Decides whether a ticket is ready to implement. Pipeline stage; returns JSON.
 model: haiku
 maxTurns: 4
-tools: Read, Agent(locator)
+tools: Read, Agent(locator), StructuredOutput
 skills: ticket-readiness
 ---
 Follow the ticket-readiness skill. Return only the JSON object the schema asks for.
@@ -591,7 +604,7 @@ name: planner
 description: Turns a ready ticket into a step plan with an acceptance-criterion-to-test map. Pipeline stage; returns JSON.
 model: sonnet
 maxTurns: 30
-tools: Agent(locator), Read, Grep, Glob
+tools: Agent(locator), Read, Grep, Glob, StructuredOutput
 skills: plan-ticket
 ---
 Follow the plan-ticket skill. Use locator for every lookup. Return only the JSON object the schema asks for.
@@ -604,7 +617,7 @@ name: implementer
 description: Implements one planned ticket or one fix list, with the tests named in the plan. Use for every code change.
 model: sonnet
 maxTurns: 80
-tools: Agent(locator, test-runner), Read, Edit, Write, Bash, Grep, Glob
+tools: Agent(locator, test-runner), Read, Edit, Write, Bash, Grep, Glob, StructuredOutput
 skills: implement-ticket
 ---
 Follow the implement-ticket skill. Use locator for lookups and test-runner for test runs, so their output stays out of your context.
@@ -617,7 +630,7 @@ name: test-critic
 description: Prunes new tests that the gates flagged as useless or over budget. Pipeline stage; returns JSON.
 model: haiku
 maxTurns: 15
-tools: Read, Edit, Bash
+tools: Read, Edit, Bash, StructuredOutput
 ---
 You receive gate results: new tests flagged `passes_on_base`, the acceptance-criterion-to-test map, and the per-criterion budget.
 
@@ -635,7 +648,7 @@ name: reviewer
 description: Finds defects in a diff against the ticket's acceptance criteria. Author-blind; returns JSON findings.
 model: sonnet
 maxTurns: 25
-tools: Agent(locator), Read, Grep, Glob, Bash
+tools: Agent(locator), Read, Grep, Glob, Bash, StructuredOutput
 disallowedTools: Edit, Write
 skills: review-evidence
 ---
@@ -649,7 +662,7 @@ name: prover
 description: Writes the smallest failing test that demonstrates one review finding. Pipeline stage; returns JSON.
 model: sonnet
 maxTurns: 20
-tools: Read, Write, Edit, Bash, Grep, Glob
+tools: Read, Write, Edit, Bash, Grep, Glob, StructuredOutput
 ---
 You get one finding: file, line, claim, failure and test idea.
 
@@ -672,11 +685,16 @@ A ticket is ready only if all of these hold:
 
 1. Every acceptance criterion is observable: an input or action, and an expected result a test can check.
 2. The scope is bounded. You can name the module or area it touches; ask locator if you need to. It does not say "and other improvements" or similar.
-3. Every ticket listed as blocking it is done. The input states blocker status.
+3. Every ticket listed as blocking it is done. The input states blocker status; trust it.
+
+Judge only rules 1 to 3. Edge cases the criteria do not mention, input validation and
+implementation choices do not make a ticket unready: put them in `questions_for_author` and
+keep `ready` true. A criterion that shows the call (`table.unit_price("SKU-1", 10)`) defines
+that interface; it does not need a separate signature.
 
 Output fields:
 - `acceptance_criteria`: the criteria rewritten as AC1..ACn, keeping the author's values exactly. Do not invent criteria. If one is implied but not written, put it in `questions_for_author`.
-- `missing`: which of rules 1 to 3 fail, quoting the ticket text that fails.
+- `missing`: which of rules 1 to 3 fail, quoting the ticket text that fails. Nothing else.
 - `questions_for_author`: questions that, once answered, would make the ticket ready.
 - `ready`: true only when `missing` is empty.
 ````
@@ -827,6 +845,8 @@ python3 tools/extract_literals.py docs/BUILD_SPEC.md . && python3 -m json.tool t
      text.
    - **session_context, with handoff.** A ticket and a 70-line handoff: the context includes the first 60
      handoff lines only.
+   - **session_context, pipeline mode.** `HARNESS_PIPELINE=1` prints nothing. Live runs showed the
+     routing reminder confusing headless stage agents (the scribe refused to act as the scribe).
    - **stop_gate, loop guard.** `stop_hook_active: true` prints nothing.
    - **stop_gate, pipeline mode.** `HARNESS_PIPELINE=1` prints nothing.
    - **stop_gate, clean tree.** Nothing changed: prints nothing.
@@ -906,6 +926,9 @@ allowed_tools = [
   "Bash(git status *)",
   "Bash(git log *)",
   "Bash(rg *)",
+  "Bash(grep *)",
+  "Bash(git grep *)",
+  "Bash(ls *)",
 ]
 
 [commands]
@@ -953,6 +976,8 @@ update_cmd = ""
 [stages.readiness]
 agent = "readiness"
 model = "haiku"
+# A bounce drops the ticket, so a stronger model confirms it before it stands (live-tested).
+model_confirm = "sonnet"
 max_turns = 4
 max_usd = 0.10
 schema = "schemas/readiness.json"
