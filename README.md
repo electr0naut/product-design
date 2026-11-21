@@ -211,6 +211,24 @@ partial BRD input cannot claim gate release. Use `--draft` for exploratory
 output; it is labelled only on stderr and is never reported as approved. With
 no manifest at all, generation stays draft-only and says so.
 
+`--draft` also routes the write to a visibly draft path: a single document goes
+to `name.draft.md` and a multi-file product (split PRD, story backlog) goes to
+`<product>.draft/`. A canonical `--out` is refused, because exploring must never
+overwrite reviewed words; the canonical default path is suffixed instead. Draft
+output needs no manifest, and its provenance sidecar records `draft`.
+
+Promotion is a separate, explicit copy:
+
+```bash
+python shared/scripts/promote.py 04-prd/my-product.draft.md
+python shared/scripts/promote.py 06-backlog/my-product.draft --force
+```
+
+It refuses to overwrite an existing canonical file unless `--force` is given,
+copies the bytes and the sidecar unchanged apart from the recorded path, and
+never writes a review record or an approval. The promoted file still needs a
+recorded decision before any gate counting it is released.
+
 Record a decision from a review packet — the packet is untrusted, so the
 recorder re-hashes the artifacts and assigns IDs:
 

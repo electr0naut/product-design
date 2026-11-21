@@ -12,7 +12,14 @@ import argparse
 import re
 
 from backlog import EPIC_HEADING, epic_id
-from workflow_common import display_path, project_path, read_text, write_text
+from workflow_common import (
+    check_draft_out,
+    display_path,
+    draft_path,
+    project_path,
+    read_text,
+    write_text,
+)
 
 H2 = re.compile(r"^##\s+")
 FENCE = re.compile(r"^\s*(```|~~~)")
@@ -38,9 +45,13 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     parser.add_argument("--prd", required=True, help="Monolithic PRD path")
     parser.add_argument("--out", help="Output directory. Default: <prd parent>/<product>/")
+    parser.add_argument("--draft", action="store_true", help="Write to <product>.draft/")
     args = parser.parse_args()
 
     prd = project_path(args.prd)
+    out = project_path(args.out) if args.out else prd.parent / prd.stem.replace("-prd", "")
+    check_draft_out(out, draft=args.draft, explicit=args.out is not None)
+    out = draft_path(out) if args.draft else out
     text = read_text(prd)
     lines = text.splitlines(keepends=True)
     starts = headings(lines)
@@ -80,7 +91,6 @@ def main() -> int:
     if tail:
         core += "\n" + "".join(tail).lstrip("\n")
 
-    out = project_path(args.out) if args.out else prd.parent / prd.stem.replace("-prd", "")
     if (out / "core.md").exists() or (
         (out / "epics").is_dir() and any((out / "epics").glob("*.md"))
     ):

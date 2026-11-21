@@ -96,6 +96,38 @@ def display_path(path: Path) -> str:
         return str(path)
 
 
+def is_draft_path(path: Path) -> bool:
+    return path.name.endswith(".draft.md") or path.name.endswith(".draft")
+
+
+def draft_path(path: Path) -> Path:
+    """The visibly-draft sibling of a canonical output path."""
+    if is_draft_path(path):
+        return path
+    if path.suffix == ".md":
+        return path.with_name(f"{path.stem}.draft.md")
+    return path.with_name(f"{path.name}.draft")
+
+
+def canonical_path(path: Path) -> Path:
+    """Strip the draft marker; raise when the path is not a draft path."""
+    if path.name.endswith(".draft.md"):
+        return path.with_name(path.name[: -len(".draft.md")] + ".md")
+    if path.name.endswith(".draft"):
+        return path.with_name(path.name[: -len(".draft")])
+    raise SystemExit(f"Not a draft path: {display_path(path)}")
+
+
+def check_draft_out(path: Path, *, draft: bool, explicit: bool) -> None:
+    """A canonical --out would overwrite reviewed words, so --draft refuses it."""
+    if draft and explicit and not is_draft_path(path):
+        raise SystemExit(
+            f"--draft refuses the canonical --out {display_path(path)}: write to a "
+            ".draft.md file or a .draft directory, or omit --out and let the default "
+            "path be suffixed."
+        )
+
+
 def plural(count: int, word: str, many: str | None = None) -> str:
     return f"{count} {word}" if count == 1 else f"{count} {many or word + 's'}"
 

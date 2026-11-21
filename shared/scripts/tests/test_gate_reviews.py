@@ -462,11 +462,23 @@ def test_backlog_expands_only_approved_epic_and_draft_override_is_explicit():
         )
         assert billing.returncode != 0
         assert not (out / "prompts" / "E02-billing.prompt.md").exists()
-        draft = subprocess.run(
+        refused = subprocess.run(
             [*command, "--epic", "E02", "--draft"], text=True, capture_output=True, check=False
+        )
+        assert refused.returncode != 0
+        assert "--draft refuses" in refused.stderr
+        draft_out = out.with_name(out.name + ".draft")
+        draft_command = [str(draft_out) if item == str(out) else item for item in command]
+        draft = subprocess.run(
+            [*draft_command, "--epic", "E02", "--draft"],
+            text=True,
+            capture_output=True,
+            check=False,
         )
         assert draft.returncode == 0, draft.stderr
         assert "DRAFT ONLY" in draft.stderr
+        assert (draft_out / "prompts" / "E02-billing.prompt.md").exists()
+        assert not (out / "prompts" / "E02-billing.prompt.md").exists()
 
 
 @pytest.mark.parametrize(
@@ -635,9 +647,18 @@ def test_partial_brd_cannot_claim_gate_release_even_if_subset_was_approved():
         blocked = subprocess.run(command, capture_output=True, text=True, check=False)
         assert blocked.returncode != 0
         assert not output.exists()
-        draft = subprocess.run([*command, "--draft"], capture_output=True, text=True, check=False)
+        draft_out = root / "03-brd" / "demo-brd.draft.md"
+        draft_command = [
+            str(draft_out) if item == str(root / "03-brd" / "demo-brd.md") else item
+            for item in command
+        ]
+        draft = subprocess.run(
+            [*draft_command, "--draft"], capture_output=True, text=True, check=False
+        )
         assert draft.returncode == 0, draft.stderr
         assert "DRAFT ONLY" in draft.stderr
+        assert (root / "03-brd" / "demo-brd.draft.prompt.md").exists()
+        assert not output.exists()
 
 
 def test_duplicate_json_keys_are_rejected():
