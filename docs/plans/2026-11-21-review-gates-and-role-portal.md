@@ -1,7 +1,7 @@
 # Review Gates Hardening and Role Portal Plan
 
-**Status:** revised after adversarial review. One decision (epic isolation) is
-still open before the last Part 1 task; everything else is specified.
+**Status:** revised after adversarial review; epic isolation decided as a
+physical PRD split (Task 1.6).
 
 **Goal:** Close the known gaps in the review-gate engine, then ship a role-based
 review surface that shows each stakeholder what decision is pending and lets
@@ -137,35 +137,56 @@ files it never consumes would be theatre.
 generation before any write; `--draft` succeeds and is labelled; a failed
 `validate_backlog` leaves no lock.
 
-### Task 1.6 Epic isolation (decision required)
+### Task 1.6 Epic isolation by splitting the PRD
 
 **Problem:** epic lanes hash the shared PRD and design, so one PRD edit stales
 every epic, and `--epic E01` still bundles the whole PRD — including unapproved
 E02 edits.
 
-**Option (a) — physically split epics (recommended if the PRD template may
-change).** `04-prd/<product>/core.md` holds overview, personas, NFRs, data, UX,
-release; `04-prd/<product>/epics/E01.md` holds the epic goal, story table and
-open questions. Epic lanes hash their own file; a cross-cutting `architecture`
-lane hashes core and design; `generate_stories --epic E01` bundles core + E01 +
-design only. The story-map parser reads epic files instead of PRD headings.
-Migration: a one-off splitter for existing PRDs, with a golden fixture.
+**Chosen approach:** the PRD becomes one core document plus one file per epic.
+Epic lanes hash only their epic file; shared concerns stay in a cross-cutting
+lane.
 
-**Option (b) — section selectors.** Lane artifacts may be
-`{path, section: "E01"}`; hashes are keyed `path#E01`; the gate hashes sections
-in memory, the prompt is assembled from exactly those bytes, and `verify_bundle`
-compares them. No files are written, but the PRD stays monolithic and legal
-still reviews shared sections.
+**New document shape**
 
-**Option (c) — accept the limitation.** Keep shared hashing, delete this task,
-and state in README/spec 008 that a shared PRD makes every epic stale and that
-`--epic` still consumes the whole document. This is honest and cheap; it gives
-up the "decision only affects part of the rest of the project" property.
+```text
+04-prd/<product>/
+  core.md            overview, personas, NFRs, data/privacy, UX, release, metrics
+  epics/E01.md       epic goal, story table (IDs, persona, traces_to, priority),
+                     epic-specific functional detail, open questions
+  epics/E02.md
+```
 
-**Acceptance (a or b):** with a cross-cutting lane approved, editing E02's
-content leaves `generate_stories --epic E01` passing, and the E01 prompt
-contains no E02 bytes; editing shared content blocks both epics. Pipeline order
-stays check-then-write (never write scope files before the gate).
+**Work**
+
+1. Amend the PRD template: `prd-template.md` becomes `prd-core-template.md`;
+   add `epic-template.md`. `generate_prd.py` gains `--format split` and emits
+   core + epic files (plus sidecars); the monolithic `--format single` remains
+   for exploration and is marked draft.
+2. `split_prd.py` deterministically converts an existing monolithic PRD into
+   core + epics, preserving bytes and stable IDs; it refuses ambiguous heading
+   layouts and writes nothing on error. Run once per existing product.
+3. `parse_story_map` reads the product directory (core + `epics/*.md`) instead
+   of a single PRD heading tree. IDs remain globally unique across epics.
+4. `generate_stories.py --epic E01` bundles `core.md` + `epics/E01.md` +
+   technical design only. The whole-gate path bundles every epic file.
+5. Manifest: epic lane artifacts are `epics/E01.md`; the cross-cutting
+   `architecture` lane hashes `core.md` and the technical design; the design
+   remains shared until the design template is split the same way (explicitly
+   out of scope here, and stated as a limitation).
+6. Spec 008 is amended: remove "section-hash parsing" from the non-goals and
+   define epic-scoped artifacts. README documents the directory layout.
+
+**Security/order invariant:** the gate runs before any write; the splitter is a
+separate, explicit command and is never invoked implicitly by generation.
+
+**Acceptance:**
+- Editing `epics/E02.md` leaves `generate_stories --epic E01` passing; the E01
+  prompt contains no bytes from E02.
+- Editing `core.md` blocks every epic lane (and the architecture lane).
+- The splitter round-trips a fixture PRD byte-for-byte and is idempotent.
+- A monolithic PRD is refused by generators that expect the split layout, with
+  a message naming `split_prd.py`.
 
 ### Task 1.7 Review packs and the stale report
 
@@ -322,7 +343,8 @@ Reserved, not built now:
 10. 2.4 pages, 2.5 packets.
 11. 2.6 assist.
 12. 1.7 packs and report.
-13. 1.6 epic isolation, once the option is chosen.
+13. 1.6 PRD split (schedule after the portal read model is testable; it changes
+    document layout, not gate logic).
 
 The portal does not depend on epic isolation; running 1.6 last stops the hardest
 document-format question from blocking the surface.
@@ -337,7 +359,7 @@ document-format question from blocking the surface.
 
 ## Risks
 
-- **Document split (1.6a) is a contract change.** Mitigate with a splitter, a
+- **Document split (1.6) is a contract change.** Mitigate with a splitter, a
   golden fixture, and the rule that section extraction never loses bytes.
 - **Question extraction proposes wrong owners.** It proposes; a human accepts.
 - **AI over-trust.** Verified quotes, grounded/ungrounded split, `ai_assisted`
