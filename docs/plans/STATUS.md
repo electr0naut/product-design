@@ -46,13 +46,17 @@ The generic product-design scaffold is the scope; FIX is only a later test run. 
 - Step 1d: `CLAUDE.md` corrected (PR #21). It no longer says approval is an unenforced convention: it states that generation scripts enforce `review/<product>.json`, re-hash inputs and outputs, and that only the owner's `record_decision.py` records decisions; it documents `--draft` routing and `promote.py`, points at `make check`, and drops the stale `approved/` folder claim.
   In plain English: the repository's own instructions to coding assistants now match how the scripts actually behave, so a new agent will not assume approvals are only a convention. The risk is stale references elsewhere: two document templates still link to `03-brd/approved/` and `04-prd/approved/`, folders that no longer exist.
 
+- Item (c): the write-failure test no longer depends on `chmod` (PR #22). It injects a failing `workflow_common.write_text` instead, so it still asserts the same guarantee — no document, no sidecar — when the suite runs as root, where directory permissions are ignored. `make check` green: 148 tests plus 6 subtests.
+  In plain English: one test passed only because a normal user cannot write into a read-only folder, so it failed for the wrong reason as root. It now forces the write to fail directly and checks the same safety property on any account.
+
 ## Open
-- Ordered next work (one small PR each): (a) security triage — PR #18 makes `actions/checkout` set `persist-credentials: false`; there are no CodeRabbit findings to triage because it never reviewed; Dependabot's only alert (Next.js image-optimization RCE) is already fixed and CodeQL reports zero alerts. (b) nanoid "DoS via infinite loop" — PR #19 records in `docs/security/dependency-audit.md` that the lock resolves 3.3.20, outside both affected ranges, with `npm audit` reporting zero vulnerabilities, so no dependency change is needed. Both PRs are CI-green. Review gate: PR #18 was opened at 19:36 and PR #19 at 19:37 and both waited the full 30-minute window with no CodeRabbit review, comment or check; the owner then directed the work to continue, so they are merged with that missing independent review recorded here.
+
+- Security triage is merged: PR #18 sets `persist-credentials: false` and records the two accepted loopback risks; PR #19 records why the nanoid advisory does not apply (3.3.20 is outside both ranges, `npm audit` clean). No CodeRabbit findings existed; Dependabot's only alert was already fixed and CodeQL reports zero alerts.
 - Template clean-up: `04-prd/templates/prd-template.md` and `05-technical-design/architecture/template.md` still link to `approved/` folders that do not exist; sign-off lives in `review/<product>.json`.
-- Story directories (`06-backlog/<product>/`) are written by the story importer, which creates no provenance sidecars; snapshot coverage there remains a gap for 1c.
-- Queued, not started: mutation testing with mutmut on changed lines only in `gate_reviews.py` and `backlog.py`, advisory, tests only, with before/after scores and an explanation of surviving mutants. It waits until Step 1 (1b–1d) is merged.
+- Story directories (`06-backlog/<product>/`) are written by the story importer, which creates no provenance sidecars; snapshot coverage there remains a gap.
+- Mutation testing with mutmut on changed lines only in `gate_reviews.py` and `backlog.py` is now unblocked (1b–1d merged). Advisory, tests only, with before/after scores and an explanation of surviving mutants; not started.
 - Steps 2–4 (role-shaped output, decision constraints, Atlassian) are outside this planning pass.
-- `CLAUDE.md` still describes approvals as unenforced; its correction is deferred to Step 1d per the owner's ordered PRs.
+- Independent review is still unavailable: no CodeRabbit review, comment or check exists on any PR, so PRs #18–#22 were merged with that gap recorded instead of a review.
 
 ## Questions
 - None blocking: the owner answered the Step 1 policy questions in `step1-owner-decisions.md`. Stop and ask if implementation would require weakening a gate.
