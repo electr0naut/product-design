@@ -12,7 +12,9 @@ from workflow_common import (
     ROOT,
     add_common_args,
     bundle_documents,
+    check_draft_out,
     compose_prompt,
+    draft_path,
     exit_status,
     generate,
     project_path,
@@ -31,6 +33,7 @@ def main() -> None:
     brd = project_path(args.brd)
     default_out = ROOT / "04-prd" / f"{slug_from_path(brd)}-prd.md"
     output = project_path(args.out) if args.out else default_out
+    check_draft_out(output, draft=args.draft, explicit=args.out is not None)
     statuses = maybe_enforce_gate(
         args,
         slug_from_path(brd),
@@ -39,6 +42,7 @@ def main() -> None:
         output_product=slug_from_path(output),
         search_from=output,
     )
+    output = draft_path(output) if args.draft else output
     context = bundle_documents("BRD", [brd])
     verify_bundle(context, statuses)
     prompt = compose_prompt(

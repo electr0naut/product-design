@@ -34,8 +34,10 @@ from workflow_common import (
     WROTE,
     add_common_args,
     bundle_documents,
+    check_draft_out,
     compose_prompt,
     display_path,
+    draft_path,
     exit_status,
     generate,
     plural,
@@ -77,6 +79,7 @@ def main() -> None:
     design = project_path(args.technical_design)
     product = prd.name if prd.is_dir() else slug_from_path(prd)
     out_dir = project_path(args.out_dir) if args.out_dir else ROOT / "06-backlog" / product
+    check_draft_out(out_dir, draft=args.draft, explicit=args.out_dir is not None)
 
     try:
         prd_files = prd_sources(prd)
@@ -104,6 +107,7 @@ def main() -> None:
         search_from=out_dir,
         include_cross_cutting=bool(args.epic),
     )
+    out_dir = draft_path(out_dir) if args.draft else out_dir
     for sid in story_map.unassigned:
         print(f"Warning: {sid} is not under an epic heading in the PRD; it will not be generated.")
 

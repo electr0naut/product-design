@@ -21,8 +21,10 @@ from workflow_common import (
     ROOT,
     add_common_args,
     bundle_documents,
+    check_draft_out,
     compose_prompt,
     display_path,
+    draft_path,
     exit_status,
     generate,
     project_path,
@@ -145,6 +147,8 @@ def main() -> None:
     prompt = compose_prompt(PROMPTS / "07-scaffold-code.md", None, context)
     default_out = ROOT / "07-implementation" / f"{product}-implementation-plan.md"
     output = project_path(args.out) if args.out else default_out
+    check_draft_out(output, draft=args.draft, explicit=args.out is not None)
+    output = draft_path(output) if args.draft else output
     if args.prompt_only:
         output = output.with_suffix(PROMPT_SUFFIX)
     snapshot = None if args.prompt_only else generation_receipt(statuses, output)

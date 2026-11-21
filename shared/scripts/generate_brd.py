@@ -12,6 +12,7 @@ from workflow_common import (
     ROOT,
     add_common_args,
     bundle_documents,
+    check_draft_out,
     compose_prompt,
     display_path,
     exit_status,
@@ -68,6 +69,7 @@ def main() -> None:
     sources = [idea] + analyses
     default_out = ROOT / "03-brd" / f"{slug}-brd.md"
     output = project_path(args.out) if args.out else default_out
+    check_draft_out(output, draft=args.draft, explicit=args.out is not None)
     statuses = maybe_enforce_gate(
         args,
         slug,

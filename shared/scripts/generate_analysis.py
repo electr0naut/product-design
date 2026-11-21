@@ -61,7 +61,8 @@ def main() -> None:
             context,
         )
         suffix = PROMPT_SUFFIX if args.prompt_only else ".md"
-        output = project_path(args.out_dir) / folder / f"{slug}-{role}-analysis{suffix}"
+        draft = ".draft" if args.draft else ""
+        output = project_path(args.out_dir) / folder / f"{slug}-{role}-analysis{draft}{suffix}"
         outcomes.append(
             generate(
                 prompt,

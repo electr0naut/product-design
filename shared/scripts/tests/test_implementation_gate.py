@@ -166,7 +166,7 @@ def manifest(root: Path, design: Path, *, approved: bool) -> Path:
 
 
 def scaffold(
-    root: Path, design: Path, manifest_path: Path, *extra: str
+    root: Path, design: Path, manifest_path: Path, *extra: str, out: Path | None = None
 ) -> subprocess.CompletedProcess:
     return subprocess.run(
         [
@@ -177,7 +177,7 @@ def scaffold(
             "--backlog",
             str(root / "06-backlog" / "demo"),
             "--out",
-            str(root / "07-implementation" / "plan.md"),
+            str(out or root / "07-implementation" / "plan.md"),
             "--prompt-only",
             "--review-manifest",
             str(manifest_path),
@@ -229,10 +229,17 @@ def test_unapproved_backlog_blocks_but_draft_is_explicit():
         blocked = scaffold(root, design, path)
         assert blocked.returncode != 0
         assert not (root / "07-implementation" / "plan.prompt.md").exists()
-        draft = scaffold(root, design, path, "--draft")
+        refused = scaffold(root, design, path, "--draft")
+        assert refused.returncode != 0
+        assert "--draft refuses" in refused.stderr
+        assert not (root / "07-implementation" / "plan.prompt.md").exists()
+        draft = scaffold(
+            root, design, path, "--draft", out=root / "07-implementation" / "plan.draft.md"
+        )
         assert draft.returncode == 0, draft.stderr
         assert "DRAFT ONLY" in draft.stderr
-        assert (root / "07-implementation" / "plan.prompt.md").exists()
+        assert (root / "07-implementation" / "plan.draft.prompt.md").exists()
+        assert not (root / "07-implementation" / "plan.prompt.md").exists()
 
 
 def test_failed_validation_removes_the_previous_lock_and_scaffold_refuses():
