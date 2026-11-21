@@ -16,6 +16,7 @@ from pathlib import Path
 SCRIPTS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS))
 
+import generate_stories  # noqa: E402
 from backlog import (  # noqa: E402
     Story,
     check_backlog,
@@ -24,6 +25,7 @@ from backlog import (  # noqa: E402
     parse_requirements,
     parse_story_map,
     split_stories,
+    table_cell,
 )
 from workflow_common import markdown_files  # noqa: E402
 
@@ -177,6 +179,51 @@ class ParsingTests(unittest.TestCase):
         self.assertEqual(us3.priority, "Must Have")
         self.assertEqual(story_map.non_goals, ["BR-003"])
         self.assertEqual(story_map.unassigned, [])
+
+    def test_escaped_pipes_stay_inside_cells(self):
+        text = (
+            "### E01: Message Input\n\n"
+            "| ID | Story | Persona | Traces to | Priority |\n"
+            "|----|-------|---------|-----------|----------|\n"
+            "| US-001 | Auto-detect the delimiter (SOH, `\\|`, `;`) | Connectivity Engineer"
+            " | BR-001, NFR-001 | Must |\n"
+            "| US-002 | Split values that contain `\\|` | Trade Support Analyst | BR-001 | Should |\n"
+        )
+        stories = parse_story_map(text).stories
+        self.assertEqual(stories["US-001"].summary, "Auto-detect the delimiter (SOH, `|`, `;`)")
+        self.assertEqual(stories["US-001"].persona, "Connectivity Engineer")
+        self.assertEqual(stories["US-001"].traces_to, ["BR-001", "NFR-001"])
+        self.assertEqual(stories["US-001"].priority, "Must")
+        self.assertEqual(stories["US-002"].persona, "Trade Support Analyst")
+        self.assertEqual(stories["US-002"].priority, "Should")
+        # The story prompt re-escapes the pipe so its table stays intact.
+        brief = generate_stories.epic_brief(parse_story_map(text).epics["E01"])
+        self.assertIn("| US-002 | Split values that contain `\\|` | Trade Support Analyst |", brief)
+
+    def test_even_backslashes_leave_pipe_as_cell_separator(self):
+        text = (
+            "### E01: Message Input\n\n"
+            "| ID | Story | Persona | Traces to | Priority |\n"
+            "|----|-------|---------|-----------|----------|\n"
+            r"| US-003 | Show backslash \\| Analyst | BR-001 | Must |"
+        )
+        story = parse_story_map(text).stories["US-003"]
+        self.assertEqual(story.summary, "Show backslash \\")
+        self.assertEqual(story.persona, "Analyst")
+        self.assertEqual(story.priority, "Must")
+
+    def test_table_cell_round_trips_backslashes_before_pipe(self):
+        for count in range(4):
+            with self.subTest(backslashes=count):
+                summary = "Delimiter " + "\\" * count + "| value"
+                text = (
+                    "### E01: Message Input\n\n"
+                    "| ID | Story | Persona | Traces to | Priority |\n"
+                    f"| US-003 | {table_cell(summary)} | Analyst | BR-001 | Must |\n"
+                )
+                story = parse_story_map(text).stories["US-003"]
+                self.assertEqual(story.summary, summary)
+                self.assertEqual(story.persona, "Analyst")
 
     def test_story_rows_outside_epics_and_duplicates(self):
         text = (

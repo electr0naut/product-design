@@ -21,6 +21,7 @@ EPIC_HEADING = re.compile(
     re.IGNORECASE,
 )
 HEADING = re.compile(r"^(#{1,6})\s")
+CELL_SEPARATOR = re.compile(r"(?<!\\)(?:\\\\)*\|")
 STORY_MARKER = re.compile(
     r"^[ \t]*<!--\s*story:\s*(US-\d+)\s*-->[ \t]*$", re.IGNORECASE | re.MULTILINE
 )
@@ -206,13 +207,40 @@ def _non_goal_refs(prd_text: str) -> list[str]:
 
 
 def _table_cells(line: str) -> list[str]:
-    """Cells of a markdown table row; the first (ID) cell loses bold/code marks."""
+    """Cells of a markdown table row; the first (ID) cell loses bold/code marks.
+
+    Splits only on unescaped pipes, so `\\|` inside a cell (as in "delimiter
+    `\\|`") stays in the cell, unescaped to `|`.
+    """
     stripped = line.strip()
     if not stripped.startswith("|"):
         return []
-    cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+    parts = []
+    start = 0
+    for separator in CELL_SEPARATOR.finditer(stripped):
+        backslashes = separator.end() - separator.start() - 1
+        parts.append(stripped[start : separator.start()] + "\\" * (backslashes // 2))
+        start = separator.end()
+    parts.append(stripped[start:])
+    parts = parts[1:]  # drop the empty text before the leading pipe
+    if len(parts) > 1 and not parts[-1].strip():
+        parts = parts[:-1]  # drop the empty text after the trailing pipe
+    cells = [
+        re.sub(r"(\\+)\|", lambda match: "\\" * (len(match.group(1)) // 2) + "|", part.strip())
+        for part in parts
+    ]
     cells[0] = cells[0].strip("*`_ ")
     return cells
+
+
+def table_cell(text: str) -> str:
+    """Escape text for one markdown table cell."""
+    normalized = (text or "").replace("\n", " ").strip()
+    return re.sub(
+        r"(\\*)\|",
+        lambda match: "\\" * (2 * len(match.group(1)) + 1) + "|",
+        normalized,
+    )
 
 
 # ---------------------------------------------------------------------------

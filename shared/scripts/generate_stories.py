@@ -20,6 +20,7 @@ from backlog import (
     parse_frontmatter,
     parse_story_map,
     split_stories,
+    table_cell,
 )
 from workflow_common import (
     FAILED,
@@ -113,7 +114,8 @@ def select_epics(epics: dict[str, Epic], wanted: list[str] | None) -> list[Epic]
 
 def epic_brief(epic: Epic) -> str:
     rows = "\n".join(
-        f"| {s.id} | {s.summary} | {s.persona} | {', '.join(s.traces_to)} | {s.priority} |"
+        f"| {s.id} | {table_cell(s.summary)} | {table_cell(s.persona)} | "
+        f"{', '.join(s.traces_to)} | {table_cell(s.priority)} |"
         for s in epic.stories
     )
     return (
