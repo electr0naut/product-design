@@ -20,6 +20,7 @@ from workflow_common import (
     PROMPTS,
     ROOT,
     add_common_args,
+    attach_review,
     bundle_documents,
     compose_prompt,
     display_path,
@@ -143,6 +144,7 @@ def main() -> None:
             )
 
     prompt = compose_prompt(PROMPTS / "07-scaffold-code.md", None, context)
+    attach_review(prompt, statuses["review"] if statuses else None)
     default_out = ROOT / "07-implementation" / f"{product}-implementation-plan.md"
     output = project_path(args.out) if args.out else default_out
     if args.prompt_only:

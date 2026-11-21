@@ -12,6 +12,8 @@ frontend-check:
 	npm run lint
 	npm run typecheck
 	npm run build
+	npm run test:unit
+	npm run test:e2e
 
 format:
 	uv run ruff format shared/scripts

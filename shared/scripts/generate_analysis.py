@@ -11,6 +11,7 @@ from workflow_common import (
     PROMPTS,
     ROOT,
     add_common_args,
+    attach_review,
     bundle_documents,
     compose_prompt,
     exit_status,
@@ -60,6 +61,7 @@ def main() -> None:
             ROOT / "02-analysis" / "templates" / template_name,
             context,
         )
+        attach_review(prompt, statuses["review"] if statuses else None)
         suffix = PROMPT_SUFFIX if args.prompt_only else ".md"
         output = project_path(args.out_dir) / folder / f"{slug}-{role}-analysis{suffix}"
         outcomes.append(generate(prompt, output, args.prompt_only, args.claude_bin, args.force))

@@ -186,3 +186,37 @@ def test_editing_only_e02_keeps_e01_ready():
         )
         assert evaluate_gate(manifest, "design-to-backlog", "E01")["lanes"]["E01"]["ready"] is True
         assert evaluate_gate(manifest, "design-to-backlog", "E02")["lanes"]["E02"]["ready"] is False
+
+
+def test_generating_all_split_epics_keeps_each_prompt_epic_scoped():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        prd = split(root)
+        design = root / "05-technical-design" / "demo-technical-design.md"
+        design.parent.mkdir()
+        design.write_text("# Design\n", encoding="utf-8")
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPTS / "generate_stories.py"),
+                "--prd",
+                str(prd),
+                "--technical-design",
+                str(design),
+                "--out-dir",
+                str(root / "06-backlog" / "demo"),
+                "--prompt-only",
+                "--draft",
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        assert result.returncode == 0, result.stderr
+        output = root / "06-backlog" / "demo" / "prompts"
+        e01 = (output / "E01-accounts.prompt.md").read_text()
+        e02 = (output / "E02-billing.prompt.md").read_text()
+        assert "Pay bill" not in e01
+        assert "Create account" not in e02
+        assert "04-prd/demo/epics/E02.md" not in e01
+        assert "04-prd/demo/epics/E01.md" not in e02

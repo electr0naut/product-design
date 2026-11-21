@@ -615,6 +615,29 @@ def add_review_args(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def review_provenance(data: dict, gate_id: str, report: dict) -> dict:
+    """Describe the releasing decisions and stable per-lane policy, not identity."""
+    policies = next(g["lanes"] for g in data["gates"] if g["id"] == gate_id)
+    lanes = sorted(report["lanes"])
+    hashes = {}
+    decision_ids = {}
+    for lane in lanes:
+        policy = policies[lane]
+        stable = {key: policy[key] for key in ("roles", "artifacts", "depends_on")}
+        hashes[lane] = hashlib.sha256(
+            json.dumps(stable, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+        decision_ids[lane] = sorted(
+            decision["id"] for decision in report["lanes"][lane]["decisions"].values()
+        )
+    return {
+        "gate": gate_id,
+        "lanes": lanes,
+        "decision_ids": decision_ids,
+        "policy_sha256": hashes,
+    }
+
+
 def maybe_enforce_gate(
     args: argparse.Namespace,
     product: str,
@@ -717,7 +740,11 @@ def maybe_enforce_gate(
             raise SystemExit(
                 f"Review gate {gate_id}/{lane} blocked in {manifest}: {'; '.join(state['reasons'])}"
             )
-    return {"root": str(root), "lanes": statuses}
+    return {
+        "root": str(root),
+        "lanes": statuses,
+        "review": review_provenance(data, gate_id, {"lanes": statuses}),
+    }
 
 
 def verify_bundle(context: object, report: dict | None) -> None:

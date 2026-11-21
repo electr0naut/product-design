@@ -34,26 +34,18 @@ def headings(lines: list[str]) -> list[tuple[int, re.Match[str]]]:
     return found
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
-    parser.add_argument("--prd", required=True, help="Monolithic PRD path")
-    parser.add_argument("--out", help="Output directory. Default: <prd parent>/<product>/")
-    args = parser.parse_args()
-
-    prd = project_path(args.prd)
-    text = read_text(prd)
+def split_content(text: str) -> dict[str, str]:
+    """Return all output files after validating the complete layout."""
     lines = text.splitlines(keepends=True)
     starts = headings(lines)
     if not starts:
-        raise SystemExit(
-            f"No '### E01: Name' epic headings in {display_path(prd)}; nothing to split."
-        )
+        raise ValueError("No '### E01: Name' epic headings; nothing to split.")
     ids = [epic_id(match.group(2)) for _, match in starts]
     duplicates = sorted({eid for eid in ids if ids.count(eid) > 1})
     if duplicates:
-        raise SystemExit(f"Duplicate epic IDs in {display_path(prd)}: {', '.join(duplicates)}")
+        raise ValueError(f"Duplicate epic IDs: {', '.join(duplicates)}")
     if starts[0][0] == 0:
-        raise SystemExit("The PRD starts with an epic; a core section is required.")
+        raise ValueError("The PRD starts with an epic; a core section is required.")
 
     blocks: dict[str, list[str]] = {}
     for position, (index, match) in enumerate(starts):
@@ -62,7 +54,7 @@ def main() -> int:
         for later in range(index + 1, end):
             if H2.match(lines[later]):
                 if position + 1 < len(starts):
-                    raise SystemExit(
+                    raise ValueError(
                         "Epic sections must be contiguous; found a level-2 heading "
                         f"between {eid} and {ids[position + 1]}."
                     )
@@ -79,6 +71,26 @@ def main() -> int:
     )
     if tail:
         core += "\n" + "".join(tail).lstrip("\n")
+    return {
+        "core.md": core,
+        **{
+            f"epics/{eid}.md": "".join(block).strip() + "\n"
+            for eid, block in sorted(blocks.items())
+        },
+    }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
+    parser.add_argument("--prd", required=True, help="Monolithic PRD path")
+    parser.add_argument("--out", help="Output directory. Default: <prd parent>/<product>/")
+    args = parser.parse_args()
+
+    prd = project_path(args.prd)
+    try:
+        files = split_content(read_text(prd))
+    except ValueError as exc:
+        raise SystemExit(f"Invalid PRD {display_path(prd)}: {exc}") from exc
 
     out = project_path(args.out) if args.out else prd.parent / prd.stem.replace("-prd", "")
     if (out / "core.md").exists() or (
@@ -86,10 +98,9 @@ def main() -> int:
     ):
         raise SystemExit(f"{display_path(out)} already looks split; refusing to overwrite.")
 
-    write_text(out / "core.md", core)
-    for eid, block in sorted(blocks.items()):
-        write_text(out / "epics" / f"{eid}.md", "".join(block).strip() + "\n")
-    print(f"Split {display_path(prd)} into {display_path(out)} ({len(blocks)} epics).")
+    for path, content in files.items():
+        write_text(out / path, content)
+    print(f"Split {display_path(prd)} into {display_path(out)} ({len(files) - 1} epics).")
     return 0
 
 

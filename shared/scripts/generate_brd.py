@@ -11,6 +11,7 @@ from workflow_common import (
     PROMPTS,
     ROOT,
     add_common_args,
+    attach_review,
     bundle_documents,
     compose_prompt,
     display_path,
@@ -88,6 +89,7 @@ def main() -> None:
         ROOT / "03-brd" / "templates" / "brd-template.md",
         context,
     )
+    attach_review(prompt, statuses["review"] if statuses else None)
     if args.prompt_only:
         output = output.with_suffix(PROMPT_SUFFIX)
     exit_status([generate(prompt, output, args.prompt_only, args.claude_bin, args.force)])

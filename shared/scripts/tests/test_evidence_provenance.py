@@ -59,6 +59,61 @@ def test_generated_document_has_actual_input_and_prompt_hashes(tmp_path: Path):
     assert datetime.fromisoformat(sidecar["generated_at"]).tzinfo == UTC
     assert "reviewer" not in sidecar
     assert "approved" not in sidecar
+    assert sidecar["review_status"] == "draft"
+    assert sidecar["review"]["decision_ids"] == {}
+
+
+def test_policy_hash_tracks_lane_rules_not_unrelated_decisions(tmp_path: Path):
+    from gate_reviews import review_provenance
+
+    policy = {
+        "roles": ["product", "engineering"],
+        "artifacts": ["04-prd/demo/epics/E01.md"],
+        "depends_on": [],
+        "assumptions": ["A-001"],
+        "epic": True,
+    }
+    data = {
+        "gates": [{"id": "design-to-backlog", "lanes": {"E01": policy}}],
+        "decisions": [{"id": "D-001", "gate": "design-to-backlog", "lane": "E01"}],
+    }
+    report = {
+        "lanes": {
+            "E01": {
+                "ready": True,
+                "decisions": {"product": {"id": "D-001"}, "engineering": {"id": "D-002"}},
+            }
+        }
+    }
+    first = review_provenance(data, "design-to-backlog", report)
+    data["decisions"].append({"id": "D-999", "gate": "brd-to-prd", "lane": "legal"})
+    second = review_provenance(data, "design-to-backlog", report)
+    assert first == second
+    assert first["decision_ids"] == {"E01": ["D-001", "D-002"]}
+    assert len(first["policy_sha256"]["E01"]) == 64
+    data["gates"][0]["lanes"]["E01"]["roles"].append("legal")
+    assert (
+        review_provenance(data, "design-to-backlog", report)["policy_sha256"]
+        != first["policy_sha256"]
+    )
+
+
+def test_generated_document_records_gated_decisions(tmp_path: Path):
+    from workflow_common import attach_review
+
+    prompt, *_ = prompt_for(tmp_path)
+    review = {
+        "gate": "brd-to-prd",
+        "lanes": ["product"],
+        "decision_ids": {"product": ["D-001"]},
+        "policy_sha256": {"product": "a" * 64},
+    }
+    attach_review(prompt, review)
+    output = tmp_path / "prd.md"
+    assert generate(prompt, output, False, fake_cli(tmp_path)) == "wrote"
+    sidecar = json.loads(output.with_suffix(".provenance.json").read_text())
+    assert sidecar["review_status"] == "gated"
+    assert sidecar["review"] == review
 
 
 def test_source_hash_matches_crlf_bytes_not_normalized_text(tmp_path: Path):

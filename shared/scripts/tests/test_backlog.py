@@ -5,6 +5,7 @@ Run with: python -m unittest discover shared/scripts/tests
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -417,6 +418,13 @@ class ScriptTests(unittest.TestCase):
                 "E02-billing/US-003-pay-an-invoice-by-card-caf-test.md",
             ],
         )
+        for epic in ("E01-accounts", "E02-billing"):
+            sidecar = self.backlog / epic / "epic.provenance.json"
+            receipt = json.loads(sidecar.read_text(encoding="utf-8"))
+            assert receipt["review_status"] == "draft"
+            assert receipt["review"]["decision_ids"] == {}
+            assert receipt["outputs"]
+            assert all(len(item["sha256"]) == 64 for item in receipt["outputs"])
         us3 = Story.load(self.backlog / "E02-billing" / "US-003-pay-an-invoice-by-card-caf-test.md")
         self.assertIn("café", us3.title)
 

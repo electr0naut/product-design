@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "product": "portal-smoke",
+  "gates": [{
+    "id": "design-to-backlog",
+    "lanes": {
+      "E01": {"roles": ["product"], "artifacts": ["README.md"], "depends_on": [], "assumptions": []},
+      "E02": {"roles": ["engineering"], "artifacts": ["README.md"], "depends_on": [], "assumptions": []}
+    }
+  }],
+  "decisions": [],
+  "feedback_events": [],
+  "changes": [],
+  "change_events": [],
+  "assumptions": [],
+  "questions": [],
+  "question_answers": []
+}

@@ -51,6 +51,13 @@ class AssembledPrompt(str):
         return result
 
 
+def attach_review(prompt: AssembledPrompt, review: dict | None) -> AssembledPrompt:
+    """Attach a gate receipt without calling it approval or changing prompt bytes."""
+    prompt.provenance["review_status"] = "gated" if review else "draft"
+    prompt.provenance["review"] = review or {"decision_ids": {}, "policy_sha256": {}}
+    return prompt
+
+
 def project_path(value: str) -> Path:
     path = Path(value)
     if not path.is_absolute():
@@ -260,6 +267,7 @@ def generate(
     prompt_only: bool,
     claude_bin: str,
     force: bool = False,
+    content_override: str | None = None,
 ) -> str:
     """Write the prompt (prompt-only) or the generated document to `output`.
 
@@ -286,12 +294,18 @@ def generate(
         )
         return SKIPPED
 
-    text = run_claude(prompt, claude_bin, output.with_suffix(PROMPT_SUFFIX), force)
+    text = (
+        content_override
+        if content_override is not None
+        else run_claude(prompt, claude_bin, output.with_suffix(PROMPT_SUFFIX), force)
+    )
     if text is None:
         return FALLBACK
 
     content = text.rstrip() + "\n"
     provenance = dict(getattr(prompt, "provenance", {}))
+    provenance.setdefault("review_status", "draft")
+    provenance.setdefault("review", {"decision_ids": {}, "policy_sha256": {}})
     provenance.update(
         {
             "document_sha256": sha256(content.encode("utf-8")),

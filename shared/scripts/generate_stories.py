@@ -9,6 +9,8 @@ context, and writes one file per story to
 from __future__ import annotations
 
 import argparse
+import datetime as dt
+import json
 import sys
 from pathlib import Path
 
@@ -33,6 +35,7 @@ from workflow_common import (
     SKIPPED,
     WROTE,
     add_common_args,
+    attach_review,
     bundle_documents,
     compose_prompt,
     display_path,
@@ -43,6 +46,7 @@ from workflow_common import (
     read_text,
     reject_symlink,
     run_claude,
+    sha256,
     slug_from_path,
     slugify,
     write_text,
@@ -107,9 +111,14 @@ def main() -> None:
     for sid in story_map.unassigned:
         print(f"Warning: {sid} is not under an epic heading in the PRD; it will not be generated.")
 
-    context = bundle_documents("Approved Inputs", [*selected_files, design])
-    verify_bundle(context, statuses)
-    outcomes = [expand_epic(epic, context, out_dir, args) for epic in epics]
+    outcomes = []
+    for epic in epics:
+        epic_sources = (
+            [core, epic_files[epic.id], design] if prd.is_dir() else [*selected_files, design]
+        )
+        context = bundle_documents("Approved Inputs", epic_sources)
+        verify_bundle(context, statuses)
+        outcomes.append(expand_epic(epic, context, out_dir, args, statuses))
 
     if WROTE in outcomes and not args.prompt_only:
         print(
@@ -148,7 +157,9 @@ def epic_brief(epic: Epic) -> str:
     )
 
 
-def expand_epic(epic: Epic, context: str, out_dir: Path, args: argparse.Namespace) -> str:
+def expand_epic(
+    epic: Epic, context: str, out_dir: Path, args: argparse.Namespace, statuses: dict | None = None
+) -> str:
     if not epic.stories:
         print(f"Skipped {epic.id}: it has no stories in the PRD story map.")
         return SKIPPED
@@ -169,6 +180,22 @@ def expand_epic(epic: Epic, context: str, out_dir: Path, args: argparse.Namespac
         context + epic_brief(epic),
         template_intro=TEMPLATE_INTRO,
     )
+    if statuses:
+        review = statuses["review"]
+        selected = [
+            lane
+            for lane in review["lanes"]
+            if lane == epic.id or not statuses["lanes"][lane]["epic"]
+        ]
+        review = {
+            **review,
+            "lanes": selected,
+            "decision_ids": {lane: review["decision_ids"][lane] for lane in selected},
+            "policy_sha256": {lane: review["policy_sha256"][lane] for lane in selected},
+        }
+    else:
+        review = None
+    attach_review(prompt, review)
     if args.prompt_only:
         return generate(prompt, prompt_path, True, args.claude_bin, args.force)
 
@@ -179,10 +206,12 @@ def expand_epic(epic: Epic, context: str, out_dir: Path, args: argparse.Namespac
         response = run_claude(prompt, args.claude_bin, prompt_path, args.force)
         if response is None:
             return FALLBACK
-    return write_stories(epic, epic_dir, out_dir, response, args.force)
+    return write_stories(epic, epic_dir, out_dir, response, args.force, prompt)
 
 
-def write_stories(epic: Epic, epic_dir: Path, out_dir: Path, response: str, force: bool) -> str:
+def write_stories(
+    epic: Epic, epic_dir: Path, out_dir: Path, response: str, force: bool, prompt: str | None = None
+) -> str:
     try:
         chunks = split_stories(response)
     except ValueError as exc:
@@ -225,6 +254,15 @@ def write_stories(epic: Epic, epic_dir: Path, out_dir: Path, response: str, forc
         reject_symlink(target, "story output")
         planned.append((sid, content, existing, target))
 
+    sidecar = epic_dir / "epic.provenance.json"
+    reject_symlink(sidecar, "epic provenance sidecar")
+    if sidecar.exists() and not force and any(not existing for _, _, existing, _ in planned):
+        print(
+            f"Error: {display_path(sidecar)} exists; use --force to regenerate the epic.",
+            file=sys.stderr,
+        )
+        return FAILED
+
     written = skipped = 0
     for sid, content, existing, target in planned:
         if existing and not force:
@@ -243,6 +281,21 @@ def write_stories(epic: Epic, epic_dir: Path, out_dir: Path, response: str, forc
         f"{epic.id}: wrote {plural(written, 'story', 'stories')} "
         f"to {display_path(epic_dir)}, skipped {skipped}."
     )
+    if written:
+        provenance = dict(getattr(prompt, "provenance", {}))
+        provenance.setdefault("review_status", "draft")
+        provenance.setdefault("review", {"decision_ids": {}, "policy_sha256": {}})
+        provenance.update(
+            {
+                "outputs": [
+                    {"path": display_path(path), "sha256": sha256(path.read_bytes())}
+                    for path in sorted(epic_dir.glob("US-*.md"))
+                ],
+                "model": None,
+                "generated_at": dt.datetime.now(dt.UTC).isoformat(),
+            }
+        )
+        write_text(sidecar, json.dumps(provenance, indent=2, sort_keys=True))
     return WROTE if written else SKIPPED
 
 
