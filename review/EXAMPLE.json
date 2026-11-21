@@ -1,81 +1,105 @@
 {
-  "schema_version": 1,
-  "product": "EXAMPLE",
+  "assumptions": [
+    {
+      "checked_at": "2026-01-10",
+      "id": "A-001",
+      "review_by": "2026-04-10",
+      "source": "EXAMPLE: data inventory v1",
+      "statement": "EXAMPLE: accounts hold no special-category personal data."
+    },
+    {
+      "checked_at": "2026-01-10",
+      "id": "A-002",
+      "review_by": "2026-07-10",
+      "source": "EXAMPLE: tax guidance citation",
+      "statement": "EXAMPLE: invoices are retained for the statutory period."
+    }
+  ],
+  "change_events": [],
+  "changes": [
+    {
+      "affected": [
+        {
+          "gate": "design-to-backlog",
+          "lane": "E02"
+        }
+      ],
+      "effective_at": "2026-03-01",
+      "id": "CHG-001",
+      "raised_at": "2026-01-16T09:00:00Z",
+      "source": "EXAMPLE: regulator notice or vendor decision reference"
+    }
+  ],
+  "decisions": [
+    {
+      "artifact_sha256": {
+        "04-prd/EXAMPLE-prd.md": "0000000000000000000000000000000000000000000000000000000000000000",
+        "05-technical-design/architecture/EXAMPLE-technical-design.md": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "decision": "request_changes",
+      "evidence": "review-thread-or-ticket-reference",
+      "feedback": [
+        {
+          "id": "F-001",
+          "status": "open",
+          "text": "EXAMPLE: state the retention period and its legal source."
+        }
+      ],
+      "gate": "design-to-backlog",
+      "id": "D-001",
+      "lane": "E01",
+      "recorded_at": "2026-01-15T10:00:00Z",
+      "reviewer": "Named human reviewer",
+      "role": "product"
+    }
+  ],
+  "feedback_events": [],
   "gates": [
     {
       "id": "design-to-backlog",
       "lanes": {
         "E01": {
-          "roles": ["product", "engineering"],
           "artifacts": [
             "04-prd/EXAMPLE-prd.md",
             "05-technical-design/architecture/EXAMPLE-technical-design.md"
           ],
+          "assumptions": [
+            "A-001"
+          ],
           "depends_on": [],
-          "assumptions": ["A-001"],
-          "epic": true
+          "epic": true,
+          "roles": [
+            "product",
+            "engineering"
+          ]
         },
         "E02": {
-          "roles": ["product", "engineering", "legal"],
           "artifacts": [
             "04-prd/EXAMPLE-prd.md",
             "05-technical-design/architecture/EXAMPLE-technical-design.md",
             "05-technical-design/architecture/EXAMPLE-billing.md"
           ],
-          "depends_on": [{ "gate": "design-to-backlog", "lane": "E01" }],
-          "assumptions": ["A-002"],
-          "epic": true
+          "assumptions": [
+            "A-002"
+          ],
+          "depends_on": [
+            {
+              "gate": "design-to-backlog",
+              "lane": "E01"
+            }
+          ],
+          "epic": true,
+          "roles": [
+            "product",
+            "engineering",
+            "legal"
+          ]
         }
       }
     }
   ],
-  "decisions": [
-    {
-      "id": "D-001",
-      "gate": "design-to-backlog",
-      "lane": "E01",
-      "role": "product",
-      "reviewer": "Named human reviewer",
-      "decision": "request_changes",
-      "recorded_at": "2026-01-15T10:00:00Z",
-      "artifact_sha256": {
-        "04-prd/EXAMPLE-prd.md": "0000000000000000000000000000000000000000000000000000000000000000",
-        "05-technical-design/architecture/EXAMPLE-technical-design.md": "0000000000000000000000000000000000000000000000000000000000000000"
-      },
-      "evidence": "review-thread-or-ticket-reference",
-      "feedback": [
-        {
-          "id": "F-001",
-          "text": "EXAMPLE: state the retention period and its legal source.",
-          "status": "open"
-        }
-      ]
-    }
-  ],
-  "changes": [
-    {
-      "id": "CHG-001",
-      "source": "EXAMPLE: regulator notice or vendor decision reference",
-      "raised_at": "2026-01-16T09:00:00Z",
-      "effective_at": "2026-03-01",
-      "status": "open",
-      "affected": [{ "gate": "design-to-backlog", "lane": "E02" }]
-    }
-  ],
-  "assumptions": [
-    {
-      "id": "A-001",
-      "statement": "EXAMPLE: accounts hold no special-category personal data.",
-      "source": "EXAMPLE: data inventory v1",
-      "checked_at": "2026-01-10",
-      "review_by": "2026-04-10"
-    },
-    {
-      "id": "A-002",
-      "statement": "EXAMPLE: invoices are retained for the statutory period.",
-      "source": "EXAMPLE: tax guidance citation",
-      "checked_at": "2026-01-10",
-      "review_by": "2026-07-10"
-    }
-  ]
+  "product": "EXAMPLE",
+  "question_answers": [],
+  "questions": [],
+  "schema_version": 2
 }
