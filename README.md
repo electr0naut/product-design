@@ -101,6 +101,20 @@ python shared/scripts/scaffold_code.py \
   --technical-design 05-technical-design/architecture/my-product-technical-design.md
 ```
 
+Split the PRD once epics exist, so an approval or edit of E02 does not stale
+E01:
+
+```bash
+python shared/scripts/split_prd.py --prd 04-prd/my-product-prd.md
+# 04-prd/my-product/{core.md,epics/E01.md,epics/E02.md}
+python shared/scripts/generate_stories.py \
+  --prd 04-prd/my-product --epic E01 \
+  --technical-design 05-technical-design/architecture/my-product-technical-design.md
+```
+
+The split files become the reviewed artifacts; the monolithic file is a draft
+kept for regeneration.
+
 Use `--prompt-only` on any generation command to write the assembled prompt
 without calling Claude:
 
@@ -145,11 +159,12 @@ The current schema is v2; a v1 manifest is refused with a pointer to
 - `assumptions` carry a source and `review_by` date; expired ones block the
   lanes that reference them.
 - `changes` record a source (for example a regulation, vendor decision or
-  priority shift), affected gate/lane scopes and a status. An open change blocks
-  its scopes; a resolved change requires a newer approval from every required
-  role in those scopes. Only declared scopes are invalidated. Separately scoped
-  artifacts are required for true partial invalidation: if two lanes review the
-  same document, editing it makes both stale.
+  priority shift) and affected gate/lane scopes; `change_events` resolve or
+  reopen them. An open change blocks its scopes; a resolved change requires a
+  newer approval from every required role in those scopes. Only declared scopes
+  are invalidated. Split a shared PRD with `split_prd.py` for true per-epic
+  invalidation; the technical design is still shared, so editing it stales every
+  lane that reviews it.
 
 Check readiness before generating the next phase:
 
@@ -289,6 +304,18 @@ when:
 It warns about stories without acceptance criteria or tasks, XL or missing
 estimates, Must stories that depend on lower-priority ones, and stories that are
 out of sync with the PRD story map. Add `--strict` to fail on warnings too.
+
+On success it writes `backlog.lock.json` with the BRD, PRD (or each split PRD
+file) and story hashes. `scaffold_code.py` refuses to build an implementation
+plan unless the lock matches the working tree and the
+`backlog-to-implementation` review gate is ready; `--draft` bypasses the gate but
+never the lock. A failed validation never writes a lock.
+
+For reviewers, `review_pack.py --manifest review/<product>.json --role legal`
+writes a Markdown pack listing the pending decision, artifact hashes, stale
+roles, open questions, changes and assumptions. `check_gate.py --all --json
+--today YYYY-MM-DD` reports every product, gate and lane, including stale
+approvals in gates you were not checking.
 
 ## Repository Roles
 

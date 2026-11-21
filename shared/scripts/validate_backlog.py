@@ -12,6 +12,10 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import hashlib
+import json
+import sys
+from pathlib import Path
 
 from backlog import (
     Check,
@@ -19,7 +23,8 @@ from backlog import (
     check_backlog,
     load_stories,
     parse_requirements,
-    parse_story_map,
+    parse_story_map_path,
+    prd_sources,
     table_cell,
 )
 from workflow_common import (
@@ -39,12 +44,13 @@ def main() -> None:
     parser.add_argument("--prd", required=True, help="Path to the approved PRD.")
     parser.add_argument("--backlog", help="Backlog directory. Default: 06-backlog/<product>/.")
     parser.add_argument("--report", help="Report path. Default: <backlog>/traceability.md.")
+    parser.add_argument("--lock", help="Lock path. Default: <backlog>/backlog.lock.json.")
     parser.add_argument("--strict", action="store_true", help="Fail on warnings too.")
     args = parser.parse_args()
 
     brd = project_path(args.brd)
     prd = project_path(args.prd)
-    slug = slug_from_path(prd)
+    slug = prd.name if prd.is_dir() else slug_from_path(prd)
     backlog_dir = project_path(args.backlog) if args.backlog else ROOT / "06-backlog" / slug
     if not backlog_dir.is_dir():
         raise SystemExit(
@@ -52,15 +58,20 @@ def main() -> None:
             "shared/scripts/generate_stories.py."
         )
     report_path = project_path(args.report) if args.report else backlog_dir / "traceability.md"
+    lock_path = project_path(args.lock) if args.lock else backlog_dir / "backlog.lock.json"
 
     requirements = parse_requirements(read_text(brd))
     if not requirements:
         raise SystemExit(f"No BR-xxx or NFR-xxx requirement rows found in {display_path(brd)}.")
-    story_map = parse_story_map(read_text(prd))
+    try:
+        prd_files = prd_sources(prd)
+        story_map = parse_story_map_path(prd)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
     stories = load_stories(backlog_dir)
     check = check_backlog(requirements, story_map, stories, backlog_dir)
 
-    sources = [display_path(p) for p in (brd, prd, backlog_dir)]
+    sources = [display_path(p) for p in (brd, *prd_files, backlog_dir)]
     write_text(report_path, render_report(slug, sources, requirements, story_map, check))
 
     print(
@@ -74,7 +85,42 @@ def main() -> None:
     print(f"Report: {display_path(report_path)}")
 
     if check.errors or (args.strict and check.warnings):
+        print("Lock not updated: the backlog did not pass.", file=sys.stderr)
         raise SystemExit(1)
+    write_lock(lock_path, slug, brd, prd_files, check.stories)
+    print(f"Lock: {display_path(lock_path)}")
+
+
+def path_key(path: Path) -> str:
+    """Repository-relative when possible, absolute otherwise (tests, external inputs)."""
+    try:
+        return path.resolve().relative_to(ROOT).as_posix()
+    except ValueError:
+        return str(path.resolve())
+
+
+def write_lock(lock_path: Path, slug: str, brd: Path, prd_files: list[Path], stories: dict) -> None:
+    """Record the exact validated backlog so the implementation phase can bind to it."""
+    entries = {
+        path_key(Path(story.path)): hashlib.sha256(Path(story.path).read_bytes()).hexdigest()
+        for story in stories.values()
+        if getattr(story, "path", None)
+    }
+    payload = {
+        "schema_version": 1,
+        "product": slug,
+        "validated_at": dt.datetime.now(dt.UTC)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z"),
+        "brd": path_key(brd),
+        "brd_sha256": hashlib.sha256(brd.read_bytes()).hexdigest(),
+        "prd_files": {
+            path_key(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in prd_files
+        },
+        "stories": entries,
+    }
+    write_text(lock_path, json.dumps(payload, indent=2, sort_keys=True))
 
 
 def render_report(

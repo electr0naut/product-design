@@ -413,9 +413,15 @@ def change_state(data: dict, change_id: str) -> tuple[str, dict | None]:
     return ("open" if event["action"] == "reopen" else "resolved"), event
 
 
-def evaluate_gate(manifest: Path, gate_id: str, lane: str | None = None) -> dict:
+def evaluate_gate(
+    manifest: Path,
+    gate_id: str,
+    lane: str | None = None,
+    today: dt.date | None = None,
+) -> dict:
     """Return review readiness for a gate and optionally one swimlane."""
     data = validate(load_manifest(manifest), manifest)
+    today = today or dt.date.today()
     root = manifest.parent.parent
     gates = {gate["id"]: gate["lanes"] for gate in data["gates"]}
     if gate_id not in gates:
@@ -440,7 +446,7 @@ def evaluate_gate(manifest: Path, gate_id: str, lane: str | None = None) -> dict
         reasons: list[str] = []
         for assumption_id in policy["assumptions"]:
             assumption = next(a for a in data["assumptions"] if a["id"] == assumption_id)
-            if dt.date.fromisoformat(assumption["review_by"]) < dt.date.today():
+            if dt.date.fromisoformat(assumption["review_by"]) < today:
                 reasons.append(f"expired assumption: {assumption_id}")
         affected = [
             change
@@ -462,6 +468,7 @@ def evaluate_gate(manifest: Path, gate_id: str, lane: str | None = None) -> dict
                 role_decision["recorded_at"]
             ) <= parsed_timestamp(answer["answered_at"]):
                 reasons.append(f"question needs reapproval: {question['id']}")
+        stale_roles: list[str] = []
         for role in policy["roles"]:
             decisions = [
                 d
@@ -476,6 +483,7 @@ def evaluate_gate(manifest: Path, gate_id: str, lane: str | None = None) -> dict
                 reasons.append(f"not approved: {role}")
             elif decision["artifact_sha256"] != expected:
                 reasons.append(f"stale approval: {role}")
+                stale_roles.append(role)
             if any(
                 feedback_state(data, comment["id"]) == "open"
                 for d in decisions
@@ -531,6 +539,7 @@ def evaluate_gate(manifest: Path, gate_id: str, lane: str | None = None) -> dict
                 if d["gate"] == gid and d["lane"] == lane_id
                 for comment in d["feedback"]
             ],
+            "stale_roles": stale_roles,
         }
         active.remove(key)
         return cache[key]
