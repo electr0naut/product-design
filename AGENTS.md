@@ -25,6 +25,23 @@ coding model or agent that clones the repository.
 10. Report exact commands and their observed results; agent prose is not proof
    that code works.
 
+## Commit, review and inbox rules
+
+1. **Model trailer.** End every commit message with `Model: <model name>`. If
+   the model changes mid-task, discard the partial work and restart from the
+   last green commit; the next commit names the new model.
+2. **Independent review before self-merge.** CodeRabbit reviews every PR. Wait
+   for its review, then fix or answer every comment in the PR thread. Never
+   merge with an unanswered comment, never dismiss a review, and never edit
+   branch protection. If no review arrives within 30 minutes, do not merge:
+   note it in `docs/plans/STATUS.md` and move on.
+3. **Inbox.** `docs/plans/INBOX.md` holds queued requests. Read it only between
+   tasks, never mid-task. When an item is handled, move it to the "Done"
+   section of `docs/plans/STATUS.md` with the commit that handled it.
+4. **Explain merges plainly.** For every merged PR, `docs/plans/STATUS.md`
+   carries two plain-English sentences a non-developer can follow: what
+   changed, and what could break.
+
 ## Repository conventions
 
 - Python pipeline code is in `shared/scripts/`; use Python 3.11 tooling via
