@@ -18,7 +18,8 @@ from backlog import (
     files_for_story,
     normalize_epic_id,
     parse_frontmatter,
-    parse_story_map,
+    parse_story_map_path,
+    prd_sources,
     split_stories,
     table_cell,
 )
@@ -74,11 +75,14 @@ def main() -> None:
 
     prd = project_path(args.prd)
     design = project_path(args.technical_design)
-    out_dir = (
-        project_path(args.out_dir) if args.out_dir else ROOT / "06-backlog" / slug_from_path(prd)
-    )
+    product = prd.name if prd.is_dir() else slug_from_path(prd)
+    out_dir = project_path(args.out_dir) if args.out_dir else ROOT / "06-backlog" / product
 
-    story_map = parse_story_map(read_text(prd))
+    try:
+        prd_files = prd_sources(prd)
+        story_map = parse_story_map_path(prd)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
     if not story_map.epics:
         raise SystemExit(
             f"No epics found in {display_path(prd)}. Expected headings like "
@@ -87,11 +91,14 @@ def main() -> None:
     epics = select_epics(story_map.epics, args.epic)
     if args.response and len(epics) != 1:
         raise SystemExit("--response needs exactly one --epic.")
+    core = prd_files[0]
+    epic_files = {path.stem: path for path in prd_files[1:] if path.stem.startswith("E")}
+    selected_files = [core] + [epic_files[e.id] for e in epics if e.id in epic_files]
     statuses = maybe_enforce_gate(
         args,
-        slug_from_path(prd),
+        product,
         "design-to-backlog",
-        [prd, design],
+        [*selected_files, design],
         [epic.id for epic in epics] if args.epic else None,
         output_product=slug_from_path(out_dir),
         search_from=out_dir,
@@ -100,7 +107,7 @@ def main() -> None:
     for sid in story_map.unassigned:
         print(f"Warning: {sid} is not under an epic heading in the PRD; it will not be generated.")
 
-    context = bundle_documents("Approved Inputs", [prd, design])
+    context = bundle_documents("Approved Inputs", [*selected_files, design])
     verify_bundle(context, statuses)
     outcomes = [expand_epic(epic, context, out_dir, args) for epic in epics]
 

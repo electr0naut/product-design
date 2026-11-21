@@ -173,6 +173,26 @@ def parse_story_map(prd_text: str) -> StoryMap:
     return story_map
 
 
+def prd_sources(prd: Path) -> list[Path]:
+    """Files that make up a PRD: one document, or a split core plus epics."""
+    if not prd.is_dir():
+        return [prd]
+    core = prd / "core.md"
+    epics = sorted((prd / "epics").glob("*.md")) if (prd / "epics").is_dir() else []
+    if not core.is_file() or not epics:
+        raise ValueError(
+            f"{prd} is not a split PRD (expected core.md and epics/E01.md). "
+            "Use shared/scripts/split_prd.py on the monolithic PRD."
+        )
+    return [core, *epics]
+
+
+def parse_story_map_path(prd: Path) -> StoryMap:
+    """Parse a monolithic PRD or a split PRD directory."""
+    texts = [read_text(path) for path in prd_sources(prd)]
+    return parse_story_map("\n\n".join(texts))
+
+
 def _story_row(cells: list[str], header: list[str] | None, epic: str) -> StoryRef:
     def column(names: tuple[str, ...], default: int) -> str:
         index = default
