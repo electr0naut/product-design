@@ -25,7 +25,7 @@ The generic product-design scaffold is the scope; FIX is only a later test run. 
 
 ## Handover (2026-11-21)
 
-**State.** `main` = `4f358b2`; CI green on that head (`check` plus the three CodeQL analyses); no open PRs; working tree clean; stash list empty. Steps 1a–1d, the working rules, security triage (a), the nanoid audit (b) and the root-safety test fix (c) are merged. The handover prompt lives in `docs/prompts/handover.md`. The other worktrees are clean: `/srv/lab/product-design` holds the WIP branch, and `/srv/lab/product-design-status` is detached at the same `main` commit after being reset from a stale tree (`7149daf`).
+**State.** `main` was `4f358b2` when this handover was written; PR #23 merges the handover itself, so read the true head with `git log -1 origin/main`. CI was green on that head (`check` plus the three CodeQL analyses); no open PRs; working tree clean; stash list empty. Steps 1a–1d, the working rules, security triage (a), the nanoid audit (b) and the root-safety test fix (c) are merged. The handover prompt lives in `docs/prompts/handover.md`. The other worktrees are clean: `/srv/lab/product-design` holds the WIP branch, and `/srv/lab/product-design-status` is detached at the same `main` commit after being reset from a stale tree (`7149daf`).
 
 **Next step.** Mutation testing with mutmut on changed lines only, in `shared/scripts/gate_reviews.py` and `shared/scripts/backlog.py`: advisory, change tests only, report the score before and after, and explain every surviving mutant. It is unblocked now that 1b–1d are merged. Do not change production behaviour to kill mutants without asking the owner.
 
@@ -68,6 +68,9 @@ The generic product-design scaffold is the scope; FIX is only a later test run. 
 
 - Item (c): the write-failure test no longer depends on `chmod` (PR #22). It injects a failing `workflow_common.write_text` instead, so it still asserts the same guarantee — no document, no sidecar — when the suite runs as root, where directory permissions are ignored. `make check` green: 148 tests plus 6 subtests.
   In plain English: one test passed only because a normal user cannot write into a read-only folder, so it failed for the wrong reason as root. It now forces the write to fail directly and checks the same safety property on any account.
+
+- Session handover (PR #23): `docs/prompts/handover.md` holds the reusable prompt, and the `## Handover` section at the top of this file records the current state, next step, gaps, gotchas, and that nothing is uncommitted or stashed. Direct pushes to `main` are blocked by the repository ruleset, so this went through a PR.
+  In plain English: a fresh session that only has the repo can now read the current state, the next job and the traps without needing this conversation. The risk is that the handover goes stale — it names `main` at `4f358b2`, so update that SHA whenever the handover is rewritten.
 
 ## Open
 
