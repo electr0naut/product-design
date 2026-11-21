@@ -1,4 +1,4 @@
-"""Read-only, lane-scoped stakeholder gate evaluation."""
+"""Read-only, lane-scoped stakeholder gate evaluation (manifest schema v2)."""
 
 from __future__ import annotations
 
@@ -12,7 +12,10 @@ from pathlib import Path
 
 from workflow_common import ROOT, project_path, read_text, reject_symlink
 
+SCHEMA_VERSION = 2
 SKEW = dt.timedelta(minutes=5)
+DECISIONS = ("approve", "request_changes", "not_applicable", "cannot_determine")
+EVIDENCE_REF = re.compile(r"^(https?://\S+|[A-Za-z][A-Za-z0-9]*-\d+|\S+#\d+)$")
 
 
 def unique_pairs(pairs: list[tuple[str, object]]) -> dict:
@@ -96,20 +99,54 @@ def day(value: object) -> dt.date:
         raise ValueError(f"invalid date: {value!r}") from exc
 
 
+def evidence_warning(evidence: str) -> str | None:
+    """Free-text evidence is allowed but flagged, never silently trusted."""
+    if EVIDENCE_REF.fullmatch(evidence):
+        return None
+    return f"evidence is free text, not a URL or ticket reference: {evidence!r}"
+
+
+def check_order(
+    records: list[dict],
+    key_fields: tuple[str, ...],
+    label: str,
+    stamp_field: str = "at",
+) -> None:
+    latest_seen: dict[tuple, dt.datetime] = {}
+    for record in records:
+        key = tuple(record[field] for field in key_fields)
+        at = parsed_timestamp(record[stamp_field])
+        if key in latest_seen and at < latest_seen[key]:
+            raise ValueError(f"{label} out of time order for {key}: {record['id']}")
+        latest_seen[key] = at
+
+
 def validate(data: object, manifest: Path) -> dict:
-    """Reject ambiguous or partial review records before computing any status."""
+    """Reject ambiguous, stale or partial review records before computing status."""
     data = fields(
-        data, {"schema_version", "product", "gates", "decisions", "changes", "assumptions"}
+        data,
+        {
+            "schema_version",
+            "product",
+            "gates",
+            "decisions",
+            "feedback_events",
+            "changes",
+            "change_events",
+            "assumptions",
+            "questions",
+            "question_answers",
+        },
     )
     schema = data["schema_version"]
-    if (
-        isinstance(schema, bool)
-        or not isinstance(schema, int)
-        or schema != 1
-        or manifest.parent.name != "review"
-        or data["product"] != manifest.stem
-    ):
-        raise ValueError("expected schema_version 1 and review/<product>.json")
+    if isinstance(schema, bool) or not isinstance(schema, int) or schema != SCHEMA_VERSION:
+        raise ValueError(
+            f"expected schema_version {SCHEMA_VERSION}; "
+            "run shared/scripts/migrate_manifest.py for older manifests"
+        )
+    if manifest.parent.name != "review" or data["product"] != manifest.stem:
+        raise ValueError("expected review/<product>.json matching the product field")
+
     gates: dict[str, dict] = {}
     for entry in items(data["gates"], "gates"):
         gate = fields(entry, {"id", "lanes"})
@@ -198,8 +235,9 @@ def validate(data: object, manifest: Path) -> dict:
                 raise ValueError(f"unknown or repeated assumption at {gid}/{lane_id}")
 
     decision_ids: set[str] = set()
-    feedback_ids: set[str] = set()
-    for entry in items(data["decisions"], "decisions"):
+    feedback_ids: dict[str, tuple[str, str]] = {}
+    decisions: list[dict] = items(data["decisions"], "decisions")
+    for entry in decisions:
         decision = fields(
             entry,
             {
@@ -214,6 +252,7 @@ def validate(data: object, manifest: Path) -> dict:
                 "evidence",
                 "feedback",
             },
+            {"source_commit", "recorded_by", "attestation"},
         )
         did = nonempty(decision["id"], "decision id")
         if did in decision_ids:
@@ -225,12 +264,14 @@ def validate(data: object, manifest: Path) -> dict:
         nonempty(decision["reviewer"], "reviewer")
         nonempty(decision["evidence"], "review evidence")
         parsed_timestamp(decision["recorded_at"])
-        if decision["decision"] not in (
-            "approve",
-            "request_changes",
-            "not_applicable",
-            "cannot_determine",
+        if "source_commit" in decision and not isinstance(decision["source_commit"], str):
+            raise ValueError(f"source_commit must be a string: {did}")
+        if "attestation" in decision and decision["attestation"] not in (
+            "typed-name, unverified",
+            "verified",
         ):
+            raise ValueError(f"unknown attestation: {decision['attestation']}")
+        if decision["decision"] not in DECISIONS:
             raise ValueError(f"unknown decision: {decision['decision']}")
         digests = decision["artifact_sha256"]
         if not isinstance(digests, dict) or set(digests) != set(gates[gid][lane_id]["artifacts"]):
@@ -241,41 +282,125 @@ def validate(data: object, manifest: Path) -> dict:
         ):
             raise ValueError(f"invalid artifact hash at {gid}/{lane_id}")
         for entry in items(decision["feedback"], "feedback"):
-            comment = fields(entry, {"id", "text", "status"}, {"resolution"})
+            comment = fields(entry, {"id", "text"})
             fid = nonempty(comment["id"], "feedback id")
             if fid in feedback_ids:
                 raise ValueError(f"duplicate feedback id: {fid}")
-            feedback_ids.add(fid)
+            feedback_ids[fid] = (gid, lane_id)
             nonempty(comment["text"], "feedback text")
-            if comment["status"] not in ("open", "resolved"):
-                raise ValueError(f"unknown feedback status: {fid}")
-            if comment["status"] == "resolved":
-                nonempty(comment.get("resolution"), "feedback resolution")
+    check_order(decisions, ("gate", "lane", "role"), "decision", "recorded_at")
+
+    event_ids: set[str] = set()
+    feedback_events: list[dict] = items(data["feedback_events"], "feedback_events")
+    for entry in feedback_events:
+        event = fields(entry, {"id", "feedback_id", "action", "text", "at", "by", "evidence"})
+        eid = nonempty(event["id"], "feedback event id")
+        if eid in event_ids:
+            raise ValueError(f"duplicate feedback event: {eid}")
+        event_ids.add(eid)
+        if event["feedback_id"] not in feedback_ids:
+            raise ValueError(f"unknown feedback id in event: {event['feedback_id']}")
+        if event["action"] not in ("resolve", "reopen"):
+            raise ValueError(f"unknown feedback action: {event['action']}")
+        nonempty(event["text"], "feedback event text")
+        nonempty(event["by"], "feedback event author")
+        nonempty(event["evidence"], "feedback event evidence")
+        parsed_timestamp(event["at"])
+    check_order(feedback_events, ("feedback_id",), "feedback event")
 
     change_ids: set[str] = set()
-    for entry in items(data["changes"], "changes"):
-        change = fields(
-            entry,
-            {"id", "source", "raised_at", "effective_at", "status", "affected"},
-            {"resolved_at"},
-        )
+    changes: list[dict] = items(data["changes"], "changes")
+    for entry in changes:
+        change = fields(entry, {"id", "source", "raised_at", "effective_at", "affected"})
         cid = nonempty(change["id"], "change id")
         if cid in change_ids:
             raise ValueError(f"duplicate change: {cid}")
         change_ids.add(cid)
         nonempty(change["source"], "change source")
         day(change["effective_at"])
-        raised = parsed_timestamp(change["raised_at"])
-        if change["status"] not in ("open", "resolved"):
-            raise ValueError(f"unknown change status: {cid}")
-        if change["status"] == "resolved" and (
-            "resolved_at" not in change or parsed_timestamp(change["resolved_at"]) < raised
-        ):
-            raise ValueError(f"resolved change requires resolved_at after raised_at: {cid}")
+        parsed_timestamp(change["raised_at"])
         affected = items(change["affected"], "affected scopes")
         if not affected or len({scope(ref) for ref in affected}) != len(affected):
             raise ValueError(f"change needs distinct affected scopes: {cid}")
+
+    change_events: list[dict] = items(data["change_events"], "change_events")
+    for entry in change_events:
+        event = fields(entry, {"id", "change_id", "action", "text", "at", "by", "evidence"})
+        eid = nonempty(event["id"], "change event id")
+        if eid in event_ids:
+            raise ValueError(f"duplicate event id: {eid}")
+        event_ids.add(eid)
+        if event["change_id"] not in change_ids:
+            raise ValueError(f"unknown change id in event: {event['change_id']}")
+        if event["action"] not in ("resolve", "reopen"):
+            raise ValueError(f"unknown change action: {event['action']}")
+        nonempty(event["text"], "change event text")
+        nonempty(event["by"], "change event author")
+        nonempty(event["evidence"], "change event evidence")
+        parsed_timestamp(event["at"])
+    check_order(change_events, ("change_id",), "change event")
+
+    questions: list[dict] = items(data["questions"], "questions")
+    question_ids: set[str] = set()
+    for entry in questions:
+        question = fields(entry, {"id", "gate", "lane", "role", "text", "source", "raised_at"})
+        qid = nonempty(question["id"], "question id")
+        if qid in question_ids:
+            raise ValueError(f"duplicate question: {qid}")
+        question_ids.add(qid)
+        gid, lane_id = scope({"gate": question["gate"], "lane": question["lane"]})
+        if question["role"] not in gates[gid][lane_id]["roles"]:
+            raise ValueError(f"unknown question role at {gid}/{lane_id}: {question['role']}")
+        nonempty(question["text"], "question text")
+        source = fields(question["source"], {"artifact", "heading"})
+        artifact = nonempty(source["artifact"], "question source artifact")
+        if artifact not in gates[gid][lane_id]["artifacts"]:
+            raise ValueError(f"question source is not a lane artifact: {artifact}")
+        nonempty(source["heading"], "question source heading")
+        parsed_timestamp(question["raised_at"])
+
+    answers: list[dict] = items(data["question_answers"], "question_answers")
+    for entry in answers:
+        answer = fields(
+            entry,
+            {"id", "question_id", "text", "answered_by", "answered_at", "ai_assisted", "evidence"},
+            {"model", "excerpt_sha256"},
+        )
+        aid = nonempty(answer["id"], "answer id")
+        if aid in event_ids:
+            raise ValueError(f"duplicate answer id: {aid}")
+        event_ids.add(aid)
+        if answer["question_id"] not in question_ids:
+            raise ValueError(f"unknown question id in answer: {answer['question_id']}")
+        nonempty(answer["text"], "answer text")
+        nonempty(answer["answered_by"], "answer author")
+        parsed_timestamp(answer["answered_at"])
+        nonempty(answer["evidence"], "answer evidence")
+        if not isinstance(answer["ai_assisted"], bool):
+            raise ValueError(f"ai_assisted must be a boolean: {aid}")
+        if "excerpt_sha256" in answer:
+            digests = items(answer["excerpt_sha256"], "excerpt hashes")
+            if any(not isinstance(d, str) or not re.fullmatch(r"[0-9a-f]{64}", d) for d in digests):
+                raise ValueError(f"invalid excerpt hash: {aid}")
+    check_order(answers, ("question_id",), "question answer", "answered_at")
     return data
+
+
+def latest(records: list[dict], **match: str) -> dict | None:
+    found = [record for record in records if all(record.get(k) == v for k, v in match.items())]
+    return found[-1] if found else None
+
+
+def feedback_state(data: dict, feedback_id: str) -> str:
+    event = latest(data["feedback_events"], feedback_id=feedback_id)
+    return "open" if event is None or event["action"] == "reopen" else "resolved"
+
+
+def change_state(data: dict, change_id: str) -> tuple[str, dict | None]:
+    event = latest(data["change_events"], change_id=change_id)
+    if event is None:
+        return "open", None
+    return ("open" if event["action"] == "reopen" else "resolved"), event
 
 
 def evaluate_gate(manifest: Path, gate_id: str, lane: str | None = None) -> dict:
@@ -302,19 +427,31 @@ def evaluate_gate(manifest: Path, gate_id: str, lane: str | None = None) -> dict
         active.add(key)
         policy = gates[gid][lane_id]
         expected = {path: artifact_hash(root, path) for path in policy["artifacts"]}
-        reasons = []
+        reasons: list[str] = []
         for assumption_id in policy["assumptions"]:
             assumption = next(a for a in data["assumptions"] if a["id"] == assumption_id)
             if dt.date.fromisoformat(assumption["review_by"]) < dt.date.today():
                 reasons.append(f"expired assumption: {assumption_id}")
-        changes = [
+        affected = [
             change
             for change in data["changes"]
             if {"gate": gid, "lane": lane_id} in change["affected"]
         ]
-        for change in changes:
-            if change["status"] == "open":
+        for change in affected:
+            state, _ = change_state(data, change["id"])
+            if state == "open":
                 reasons.append(f"open change: {change['id']}")
+        lane_questions = [q for q in data["questions"] if q["gate"] == gid and q["lane"] == lane_id]
+        for question in lane_questions:
+            answer = latest(data["question_answers"], question_id=question["id"])
+            if answer is None:
+                reasons.append(f"unanswered question: {question['id']}")
+                continue
+            role_decision = latest(data["decisions"], gate=gid, lane=lane_id, role=question["role"])
+            if role_decision is None or parsed_timestamp(
+                role_decision["recorded_at"]
+            ) <= parsed_timestamp(answer["answered_at"]):
+                reasons.append(f"question needs reapproval: {question['id']}")
         for role in policy["roles"]:
             decisions = [
                 d
@@ -324,31 +461,32 @@ def evaluate_gate(manifest: Path, gate_id: str, lane: str | None = None) -> dict
             if not decisions:
                 reasons.append(f"missing approval: {role}")
                 continue
-            latest = decisions[-1]
-            if latest["decision"] != "approve":
+            decision = decisions[-1]
+            if decision["decision"] != "approve":
                 reasons.append(f"not approved: {role}")
-            elif latest["artifact_sha256"] != expected:
+            elif decision["artifact_sha256"] != expected:
                 reasons.append(f"stale approval: {role}")
-            if any(item["status"] != "resolved" for d in decisions for item in d["feedback"]):
+            if any(
+                feedback_state(data, comment["id"]) == "open"
+                for d in decisions
+                for comment in d["feedback"]
+            ):
                 reasons.append(f"unresolved feedback: {role}")
-            for change in changes:
-                if change["status"] == "resolved" and parsed_timestamp(
-                    latest["recorded_at"]
-                ) <= parsed_timestamp(change["resolved_at"]):
+            for change in affected:
+                state, resolved = change_state(data, change["id"])
+                if (
+                    state == "resolved"
+                    and resolved is not None
+                    and parsed_timestamp(decision["recorded_at"])
+                    <= parsed_timestamp(resolved["at"])
+                ):
                     reasons.append(f"reapproval required after change: {change['id']} ({role})")
         for dependency in policy["depends_on"]:
             upstream = status(dependency["gate"], dependency["lane"])
             if not upstream["ready"]:
                 reasons.append(f"blocked dependency: {dependency['gate']}/{dependency['lane']}")
         latest_by_role = {
-            role: next(
-                (
-                    d
-                    for d in reversed(data["decisions"])
-                    if d["gate"] == gid and d["lane"] == lane_id and d["role"] == role
-                ),
-                None,
-            )
+            role: latest(data["decisions"], gate=gid, lane=lane_id, role=role)
             for role in policy["roles"]
         }
         cache[key] = {
@@ -359,28 +497,96 @@ def evaluate_gate(manifest: Path, gate_id: str, lane: str | None = None) -> dict
             "artifact_sha256": expected,
             "epic": bool(policy.get("epic", False)),
             "assumptions": policy["assumptions"],
+            "questions": [q["id"] for q in lane_questions],
+            "changes": [c["id"] for c in affected],
             "decisions": {
                 role: {
+                    "id": d["id"],
                     "decision": d["decision"],
                     "reviewer": d["reviewer"],
                     "recorded_at": d["recorded_at"],
                     "evidence": d["evidence"],
+                    "source_commit": d.get("source_commit", ""),
                 }
                 for role, d in latest_by_role.items()
                 if d
             },
             "feedback": [
-                item
+                {
+                    "id": comment["id"],
+                    "text": comment["text"],
+                    "status": feedback_state(data, comment["id"]),
+                }
                 for d in data["decisions"]
                 if d["gate"] == gid and d["lane"] == lane_id
-                for item in d["feedback"]
+                for comment in d["feedback"]
             ],
         }
         active.remove(key)
         return cache[key]
 
     statuses = {lane_id: status(gate_id, lane_id) for lane_id in selected}
-    return {"gate": gate_id, "ready": all(s["ready"] for s in statuses.values()), "lanes": statuses}
+    return {
+        "gate": gate_id,
+        "ready": all(s["ready"] for s in statuses.values()),
+        "lanes": statuses,
+    }
+
+
+def portal_view(manifest: Path, role: str) -> dict:
+    """Per-role read model: what is pending, what blocks it, what to answer."""
+    data = validate(load_manifest(manifest), manifest)
+    pending, blocked, context = [], [], []
+    for gate in data["gates"]:
+        report = evaluate_gate(manifest, gate["id"])
+        for lane_id, state in report["lanes"].items():
+            if role not in state["required_roles"]:
+                context.append(
+                    {
+                        "gate": gate["id"],
+                        "lane": lane_id,
+                        "ready": state["ready"],
+                        "reasons": state["reasons"],
+                    }
+                )
+                continue
+            decision = state["decisions"].get(role)
+            entry = {
+                "gate": gate["id"],
+                "lane": lane_id,
+                "ready": state["ready"],
+                "reasons": state["reasons"],
+                "artifacts": [
+                    {"path": path, "sha256": state["artifact_sha256"][path]}
+                    for path in state["artifacts"]
+                ],
+                "decision": decision,
+                "other_roles": {
+                    name: value for name, value in state["decisions"].items() if name != role
+                },
+                "questions": state["questions"],
+            }
+            if state["ready"]:
+                context.append(entry)
+            elif decision is None or decision["decision"] != "approve":
+                pending.append(entry)
+            else:
+                blocked.append(entry)
+    questions = [
+        q
+        for q in data["questions"]
+        if q["role"] == role and latest(data["question_answers"], question_id=q["id"]) is None
+    ]
+    return {
+        "schema_version": 1,
+        "product": data["product"],
+        "role": role,
+        "generated_at": dt.datetime.now(dt.UTC).isoformat(),
+        "pending_for_role": pending,
+        "blocked_on_others": blocked,
+        "context": context,
+        "questions_for_role": questions,
+    }
 
 
 def add_review_args(parser: argparse.ArgumentParser) -> None:
@@ -404,7 +610,7 @@ def maybe_enforce_gate(
 ) -> dict | None:
     """Block advancement if configured review scopes or sources are unapproved.
 
-    Returns the per-lane status, or None when generation is draft-only.
+    Returns the per-lane status and manifest root, or None when draft-only.
     """
     if args.draft:
         print("DRAFT ONLY: review gate bypassed explicitly; not approved.", file=sys.stderr)
@@ -433,7 +639,10 @@ def maybe_enforce_gate(
         if manifest is None:
             print("DRAFT ONLY: no review manifest configured; not approved.", file=sys.stderr)
             return None
-    data = validate(load_manifest(manifest), manifest)
+    try:
+        data = validate(load_manifest(manifest), manifest)
+    except ValueError as exc:
+        raise SystemExit(f"Invalid review manifest {manifest}: {exc}") from exc
     expected_product = output_product or product
     if data["product"] != expected_product:
         raise SystemExit(

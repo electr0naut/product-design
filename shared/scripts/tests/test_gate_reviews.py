@@ -16,6 +16,25 @@ SCRIPTS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS))
 
 
+def normalize(doc: dict) -> dict:
+    """Fill schema-v2 collections so fixtures stay focused on their subject."""
+    doc["schema_version"] = 2
+    for key in ("feedback_events", "change_events", "questions", "question_answers"):
+        doc.setdefault(key, [])
+    for change in doc.get("changes", []):
+        change.pop("status", None)
+        change.pop("resolved_at", None)
+    for decision in doc.get("decisions", []):
+        for comment in decision.get("feedback", []):
+            comment.pop("status", None)
+            comment.pop("resolution", None)
+    return doc
+
+
+def write_manifest(path: Path, doc: dict) -> None:
+    path.write_text(json.dumps(normalize(doc)), encoding="utf-8")
+
+
 def manifest_fixture(root: Path) -> tuple[Path, dict]:
     (root / "review").mkdir()
     (root / "review" / "accounts.md").write_text("Accounts v1\n", encoding="utf-8")
@@ -74,7 +93,7 @@ def check(root: Path, doc: dict, gate: str = "design-to-backlog", lane: str | No
     from gate_reviews import evaluate_gate
 
     path = root / "review" / "demo.json"
-    path.write_text(json.dumps(doc), encoding="utf-8")
+    write_manifest(path, doc)
     return evaluate_gate(path, gate, lane)
 
 
@@ -98,11 +117,21 @@ def test_newer_negative_decision_and_unresolved_feedback_override_approval():
         _, doc = manifest_fixture(root)
         decide(root, doc, "E01", "product")
         engineer = decide(root, doc, "E01", "engineering")
-        engineer["feedback"] = [{"id": "F-001", "text": "Confirm retention", "status": "open"}]
+        engineer["feedback"] = [{"id": "F-001", "text": "Confirm retention"}]
         result = check(root, doc, lane="E01")
         assert result["ready"] is False
         assert "unresolved feedback: engineering" in result["lanes"]["E01"]["reasons"]
-        engineer["feedback"][0].update(status="resolved", resolution="Documented in BR-001")
+        doc["feedback_events"].append(
+            {
+                "id": "FE-001",
+                "feedback_id": "F-001",
+                "action": "resolve",
+                "text": "Documented in BR-001",
+                "at": "2026-11-21T12:10:00Z",
+                "by": "engineering",
+                "evidence": "ticket-002",
+            }
+        )
         assert check(root, doc, lane="E01")["ready"] is True
         decide(root, doc, "E01", "engineering", decision="request_changes")
         result = check(root, doc, lane="E01")
@@ -116,13 +145,23 @@ def test_new_approval_cannot_hide_an_older_unresolved_comment():
         _, doc = manifest_fixture(root)
         decide(root, doc, "E01", "product")
         first = decide(root, doc, "E01", "engineering", decision="request_changes")
-        first["feedback"].append({"id": "F-001", "text": "Fix this", "status": "open"})
+        first["feedback"].append({"id": "F-001", "text": "Fix this"})
         decide(root, doc, "E01", "engineering")
         assert (
             "unresolved feedback: engineering"
             in check(root, doc, lane="E01")["lanes"]["E01"]["reasons"]
         )
-        first["feedback"][0].update(status="resolved", resolution="Fixed in the reviewed artifact")
+        doc["feedback_events"].append(
+            {
+                "id": "FE-001",
+                "feedback_id": "F-001",
+                "action": "resolve",
+                "text": "Fixed in the reviewed artifact",
+                "at": "2026-11-21T12:10:00Z",
+                "by": "engineering",
+                "evidence": "ticket-002",
+            }
+        )
         assert check(root, doc, lane="E01")["ready"] is True
 
 
@@ -153,7 +192,6 @@ def test_change_requires_resolution_and_new_approval_only_in_affected_lane():
             "source": "regulator-notice-001",
             "raised_at": "2026-11-21T12:30:00Z",
             "effective_at": "2026-12-01",
-            "status": "open",
             "affected": [{"gate": "design-to-backlog", "lane": "E02"}],
         }
         doc["changes"].append(change)
@@ -161,7 +199,17 @@ def test_change_requires_resolution_and_new_approval_only_in_affected_lane():
         assert result["lanes"]["E01"]["ready"] is True
         assert result["lanes"]["E02"]["ready"] is False
         assert "open change: CHG-001" in result["lanes"]["E02"]["reasons"]
-        change.update(status="resolved", resolved_at="2026-11-21T12:45:00Z")
+        doc["change_events"].append(
+            {
+                "id": "CE-001",
+                "change_id": "CHG-001",
+                "action": "resolve",
+                "text": "Scoped and documented",
+                "at": "2026-11-21T12:45:00Z",
+                "by": "legal",
+                "evidence": "legal-memo-002",
+            }
+        )
         result = check(root, doc, lane="E02")
         assert (
             "reapproval required after change: CHG-001 (product)"
@@ -265,7 +313,7 @@ def test_cli_exposes_pending_roles_and_scoped_artifacts_for_future_portal():
         root = Path(name)
         manifest, doc = manifest_fixture(root)
         decide(root, doc, "E01", "product")
-        manifest.write_text(json.dumps(doc), encoding="utf-8")
+        write_manifest(manifest, doc)
         command = [
             sys.executable,
             str(SCRIPTS / "check_gate.py"),
@@ -284,7 +332,7 @@ def test_cli_exposes_pending_roles_and_scoped_artifacts_for_future_portal():
         assert result["lanes"]["E01"]["artifacts"] == ["review/accounts.md"]
         assert result["lanes"]["E01"]["decisions"]["product"]["decision"] == "approve"
         decide(root, doc, "E01", "engineering")
-        manifest.write_text(json.dumps(doc), encoding="utf-8")
+        write_manifest(manifest, doc)
         ready = subprocess.run(command, text=True, capture_output=True, check=False)
         assert ready.returncode == 0
         assert json.loads(ready.stdout)["ready"] is True
@@ -310,7 +358,7 @@ def test_prd_generation_refuses_blocked_gate_and_requires_its_real_source():
                 },
             }
         ]
-        manifest.write_text(json.dumps(doc), encoding="utf-8")
+        write_manifest(manifest, doc)
         output = root / "04-prd" / "demo-prd.prompt.md"
         command = [
             sys.executable,
@@ -327,7 +375,7 @@ def test_prd_generation_refuses_blocked_gate_and_requires_its_real_source():
         assert blocked.returncode != 0
         assert not output.exists()
         doc["gates"][0]["lanes"]["all"]["artifacts"] = ["review/accounts.md"]
-        manifest.write_text(json.dumps(doc), encoding="utf-8")
+        write_manifest(manifest, doc)
         not_the_source = subprocess.run(command, text=True, capture_output=True, check=False)
         assert not_the_source.returncode != 0
         assert not output.exists()
@@ -348,7 +396,7 @@ def test_prd_generation_refuses_blocked_gate_and_requires_its_real_source():
                 "feedback": [],
             }
         )
-        manifest.write_text(json.dumps(doc), encoding="utf-8")
+        write_manifest(manifest, doc)
         allowed = subprocess.run(command, text=True, capture_output=True, check=False)
         assert allowed.returncode == 0, allowed.stderr
         assert output.exists()
@@ -386,7 +434,7 @@ def test_backlog_expands_only_approved_epic_and_draft_override_is_explicit():
                     design.read_bytes()
                 ).hexdigest(),
             }
-        manifest.write_text(json.dumps(doc), encoding="utf-8")
+        write_manifest(manifest, doc)
         out = root / "06-backlog" / "demo"
         command = [
             sys.executable,
@@ -473,7 +521,7 @@ def test_other_generation_phases_require_configured_reviews(
                 },
             }
         ]
-        manifest.write_text(json.dumps(doc), encoding="utf-8")
+        write_manifest(manifest, doc)
         out = root / "result.md"
         flag = {
             "ideation-to-analysis": "--idea",
@@ -522,7 +570,7 @@ def test_other_generation_phases_require_configured_reviews(
             "feedback": [],
         }
         doc["decisions"] = [approved]
-        manifest.write_text(json.dumps(doc), encoding="utf-8")
+        write_manifest(manifest, doc)
         result = subprocess.run(command, text=True, capture_output=True, check=False)
         assert result.returncode == 0, result.stderr
         assert out.exists()
@@ -568,7 +616,7 @@ def test_partial_brd_cannot_claim_gate_release_even_if_subset_was_approved():
                 "feedback": [],
             }
         ]
-        manifest.write_text(json.dumps(doc), encoding="utf-8")
+        write_manifest(manifest, doc)
         output = root / "03-brd" / "demo-brd.prompt.md"
         command = [
             sys.executable,
@@ -655,7 +703,7 @@ def test_whole_gate_check_includes_non_epic_cross_cutting_lane():
             decision["artifact_sha256"] = {
                 p: hashlib.sha256((root / p).read_bytes()).hexdigest() for p in shared
             }
-        manifest.write_text(json.dumps(doc), encoding="utf-8")
+        write_manifest(manifest, doc)
         out = root / "06-backlog" / "demo"
         base = [
             sys.executable,
@@ -696,7 +744,7 @@ def test_renamed_input_copy_cannot_bypass_the_products_gate():
             "depends_on": [],
             "assumptions": [],
         }
-        manifest.write_text(json.dumps(doc), encoding="utf-8")
+        write_manifest(manifest, doc)
         command = [
             sys.executable,
             str(SCRIPTS / "generate_technical_design.py"),
@@ -718,7 +766,7 @@ def test_explicit_manifest_must_name_the_product_being_generated():
         (root / "03-brd").mkdir()
         brd = root / "03-brd" / "other-brd.md"
         brd.write_text("# BRD\n", encoding="utf-8")
-        manifest.write_text(json.dumps(doc), encoding="utf-8")
+        write_manifest(manifest, doc)
         command = [
             sys.executable,
             str(SCRIPTS / "generate_prd.py"),
@@ -737,7 +785,7 @@ def test_unknown_gate_and_lane_report_actionable_errors():
     with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
         root = Path(name)
         manifest, doc = manifest_fixture(root)
-        manifest.write_text(json.dumps(doc), encoding="utf-8")
+        write_manifest(manifest, doc)
         from gate_reviews import evaluate_gate
 
         with pytest.raises(ValueError, match="unknown gate"):
@@ -807,7 +855,7 @@ def test_sources_split_across_lanes_bundle_without_false_staleness():
             decision["artifact_sha256"] = {
                 p: hashlib.sha256((root / p).read_bytes()).hexdigest() for p in artifacts
             }
-        manifest.write_text(json.dumps(doc), encoding="utf-8")
+        write_manifest(manifest, doc)
         out = root / "06-backlog" / "demo"
         command = [
             sys.executable,
@@ -863,11 +911,11 @@ def test_output_product_manifest_is_enforced_over_the_input_products():
                 "feedback": [],
             }
         ]
-        manifest.write_text(json.dumps(doc), encoding="utf-8")
+        write_manifest(manifest, doc)
         other = dict(doc)
         other["product"] = "other"
         other["decisions"] = []
-        (root / "review" / "other.json").write_text(json.dumps(other), encoding="utf-8")
+        write_manifest(root / "review" / "other.json", other)
         command = [
             sys.executable,
             str(SCRIPTS / "generate_prd.py"),

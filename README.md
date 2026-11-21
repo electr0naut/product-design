@@ -116,6 +116,8 @@ Reviews are configured per product in `review/<product>.json`, where
 `<product>` is the slug used by the phase documents. The manifest is plain JSON:
 it is the contract a future role-based portal can read and write through an
 audited service, and the checker refuses ambiguous or partial records.
+The current schema is v2; a v1 manifest is refused with a pointer to
+`shared/scripts/migrate_manifest.py`.
 
 - `gates[].id` names a transition such as `design-to-backlog`.
 - `gates[].lanes` splits a gate into swimlanes (usually epics, or an analysis
@@ -126,13 +128,20 @@ audited service, and the checker refuses ambiguous or partial records.
   cross-cutting (for example `security`) and are always checked, including
   runs that use `--epic`.
 - `decisions` record `approve`, `request_changes`, `not_applicable` or
-  `cannot_determine`, plus reviewer, role, time, evidence reference and the
-  SHA-256 of every reviewed artifact. Only `approve` with matching hashes and no
-  unresolved feedback releases a lane. The latest decision wins; an older
-  approval cannot hide a later objection.
-- `feedback` entries stay `open` until resolved with a written resolution.
-  Resolutions update the record in place; Git history keeps the original
-  objection.
+  `cannot_determine`, plus reviewer, role, time, evidence reference, the
+  SHA-256 of every reviewed artifact and, optionally, the `source_commit` the
+  reviewer saw. Only `approve` with matching hashes and no unresolved feedback
+  releases a lane. The latest decision wins; an older approval cannot hide a
+  later objection. Decisions must be in time order per role.
+- `feedback` entries on a decision are immutable. `feedback_events` record
+  `resolve` or `reopen` with a written reason, author, time and evidence; the
+  latest event decides the status. Changes follow the same event model through
+  `change_events`.
+- `questions` record open questions with `Q-001` IDs, a gate/lane, the role that
+  must answer, the source artifact and heading, and a raise time.
+  `question_answers` are append-only. An unanswered question blocks its lane;
+  an answer still requires a newer decision from that role, because an answer
+  is evidence, not approval.
 - `assumptions` carry a source and `review_by` date; expired ones block the
   lanes that reference them.
 - `changes` record a source (for example a regulation, vendor decision or
@@ -171,6 +180,19 @@ reviewed artifacts, including when a reviewed input is copied or renamed, and a
 partial BRD input cannot claim gate release. Use `--draft` for exploratory
 output; it is labelled only on stderr and is never reported as approved. With
 no manifest at all, generation stays draft-only and says so.
+
+Record a decision from a review packet — the packet is untrusted, so the
+recorder re-hashes the artifacts and assigns IDs:
+
+```bash
+python shared/scripts/record_decision.py \
+  --manifest review/my-product.json \
+  --packet review-inbox/acme-E02-legal.json \
+  --evidence slack:C123/456
+```
+
+The recorder refuses a stale approval outright; a stale change request needs
+`--accept-stale`. `--verify` performs every check without writing.
 
 Approvals bind document hashes, not identity. Recording and validating a
 decision is a local, auditable trail; it is not SSO, access control or a formal
