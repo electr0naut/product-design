@@ -6,8 +6,12 @@ Draft generation is not expert approval. A stakeholder's decision can apply to o
 ## Scope
 - Versioned JSON review manifest per product. Explicit gates, lanes, artefacts, required roles, dependencies, feedback, decisions, assumptions and change records. Review data is external to generated Markdown; it is a future portal's read/write contract, not an authentication system.
 - Read-only CLI returns human and JSON status; exit 0 only when requested gate/lane(s) are ready. Missing/malformed data fails closed. The last recorded decision for a role controls it, never a previous approval. Each approval binds the exact byte hashes of its lane artefacts. Unresolved feedback, open changes and out-of-date decisions block. `not_applicable` and `cannot_determine` are not approval; adjust policy explicitly for an exception.
+- Manifests are parsed with duplicate-key rejection, so a repeated `decision`, role or lane key cannot silently overwrite an earlier value. Dependency cycles anywhere in the manifest fail validation, not only cycles reachable from the selected lane.
+- Decision and change timestamps must be timezone-aware and not in the future (five-minute clock skew allowed). Assumption expiry uses the current UTC date.
+- Whole-gate checks include cross-cutting lanes such as `security`; a run scoped with `--epic` checks only the lanes named by those epics.
 - A lane depends on upstream gate/lane scopes; a blocked or stale prerequisite blocks descendants, not unrelated lanes. Shared documents hashed by multiple lanes make all those lanes stale when edited. Selective invalidation requires distinct scoped review artefacts; never claim otherwise.
-- Generator CLI discovers `review/<product>.json` when present and checks its outgoing gate before generation. `--review-manifest` selects a manifest explicitly; `--draft` permits exploratory generation only and labels it as such. Whole-document generation needs every configured lane ready; story generation can check selected epic IDs separately. No review file means legacy draft-only behavior, not approved status.
+- Generator CLI discovers `review/<product>.json` for the input product and for the output product, so renaming an input copy or writing to another product's canonical path cannot bypass its manifest. `--review-manifest` selects a manifest explicitly and must name the product being generated; `--draft` permits exploratory generation only and labels it on stderr. Whole-document generation needs every configured lane ready, including cross-cutting lanes; story generation can check selected epic IDs separately. Every generator input must appear in the union of the selected lanes' artefacts, and the bundled bytes are re-hashed before prompting. No review file means legacy draft-only behavior, not approved status.
+- Feedback status is updated in place on its decision record. Git history preserves the original objection; the JSON is the current state, not an append-only ledger.
 - Portal boundary: the manifest and status JSON identify reviewer roles, pending feedback, artefact paths, scope and status. A portal must authenticate actors, limit access to role-relevant exports, preserve decision history, and write through an audited service. Local JSON edits do not prove identity or meet formal signature rules.
 
 ## Non-goals
@@ -24,6 +28,10 @@ Draft generation is not expert approval. A stakeholder's decision can apply to o
 
 ## Acceptance criteria
 - [ ] Two independent lanes can have different status at the same gate; a blocked dependency affects only its descendants.
+- [ ] A whole-gate run evaluates non-epic cross-cutting lanes; an `--epic` run evaluates only its lane.
+- [ ] Duplicate JSON keys, cycles anywhere in the graph, future timestamps and unknown gate/lane names fail with actionable errors rather than silently passing.
+- [ ] Renaming a reviewed input or writing through a different output product cannot bypass its manifest.
+- [ ] An input changed between the gate check and prompt assembly is refused.
 - [ ] Altering a reviewed artefact, replacing an approval with a request for changes, or leaving feedback unresolved blocks the scope.
 - [ ] Open and resolved changes invalidate only declared scopes and descendants until newer approval; stale assumptions block linked scopes.
 - [ ] Missing/wrong-role decisions, malformed paths/hash or dependency cycles fail closed with actionable errors.

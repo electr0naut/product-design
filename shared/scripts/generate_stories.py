@@ -22,7 +22,7 @@ from backlog import (
     split_stories,
     table_cell,
 )
-from gate_reviews import add_review_args, maybe_enforce_gate
+from gate_reviews import add_review_args, maybe_enforce_gate, verify_bundle
 from workflow_common import (
     FAILED,
     FALLBACK,
@@ -87,13 +87,20 @@ def main() -> None:
     epics = select_epics(story_map.epics, args.epic)
     if args.response and len(epics) != 1:
         raise SystemExit("--response needs exactly one --epic.")
-    maybe_enforce_gate(
-        args, slug_from_path(prd), "design-to-backlog", [prd, design], [epic.id for epic in epics]
+    statuses = maybe_enforce_gate(
+        args,
+        slug_from_path(prd),
+        "design-to-backlog",
+        [prd, design],
+        [epic.id for epic in epics] if args.epic else None,
+        output_product=slug_from_path(out_dir),
+        search_from=out_dir,
     )
     for sid in story_map.unassigned:
         print(f"Warning: {sid} is not under an epic heading in the PRD; it will not be generated.")
 
     context = bundle_documents("Approved Inputs", [prd, design])
+    verify_bundle(context, statuses)
     outcomes = [expand_epic(epic, context, out_dir, args) for epic in epics]
 
     if WROTE in outcomes and not args.prompt_only:

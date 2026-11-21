@@ -582,3 +582,186 @@ def test_partial_brd_cannot_claim_gate_release_even_if_subset_was_approved():
         draft = subprocess.run([*command, "--draft"], capture_output=True, text=True, check=False)
         assert draft.returncode == 0, draft.stderr
         assert "DRAFT ONLY" in draft.stderr
+
+
+def test_duplicate_json_keys_are_rejected():
+    from gate_reviews import load_manifest
+
+    raw = (
+        '{"schema_version": 1, "product": "demo", "product": "demo", "gates": ['
+        '{"id": "g", "lanes": {"E01": {"roles": ["a"], "artifacts": ["x.md"],'
+        ' "depends_on": [], "assumptions": []}}}],'
+        ' "decisions": [], "changes": [], "assumptions": []}'
+    )
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        manifest = Path(name) / "review" / "demo.json"
+        manifest.parent.mkdir()
+        manifest.write_text(raw, encoding="utf-8")
+        with pytest.raises(ValueError, match="duplicate"):
+            load_manifest(manifest)
+
+
+def test_duplicate_keys_inside_one_record_are_rejected():
+    from gate_reviews import load_manifest
+
+    raw = (
+        '{"schema_version": 1, "product": "demo", "gates": [{"id": "g", "lanes": '
+        '{"E01": {"roles": ["a"], "roles": ["b"], "artifacts": ["x.md"], "depends_on": [],'
+        ' "assumptions": []}}}], "decisions": [], "changes": [], "assumptions": []}'
+    )
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        manifest = Path(name) / "review" / "demo.json"
+        manifest.parent.mkdir()
+        manifest.write_text(raw, encoding="utf-8")
+        with pytest.raises(ValueError, match="duplicate"):
+            load_manifest(manifest)
+
+
+def test_whole_gate_check_includes_non_epic_cross_cutting_lane():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        manifest, doc = manifest_fixture(root)
+        (root / "04-prd").mkdir()
+        (root / "05-technical-design").mkdir()
+        prd = root / "04-prd" / "demo-prd.md"
+        prd.write_text(
+            "### E01: Accounts\n| ID | Story | Persona | Traces to | Priority |\n"
+            "|----|-------|---------|-----------|----------|\n"
+            "| US-001 | Create account | User | BR-001 | Must |\n",
+            encoding="utf-8",
+        )
+        design = root / "05-technical-design" / "demo-technical-design.md"
+        design.write_text("# Design\n", encoding="utf-8")
+        shared = ["04-prd/demo-prd.md", "05-technical-design/demo-technical-design.md"]
+        doc["gates"][0]["lanes"].pop("E02")
+        doc["gates"][0]["lanes"]["E01"]["artifacts"] = shared
+        doc["gates"][0]["lanes"]["security"] = {
+            "roles": ["security"],
+            "artifacts": shared,
+            "depends_on": [],
+            "assumptions": [],
+        }
+        for role in ("product", "engineering"):
+            decide(root, doc, "E01", role)
+        for decision in doc["decisions"]:
+            decision["artifact_sha256"] = {
+                p: hashlib.sha256((root / p).read_bytes()).hexdigest() for p in shared
+            }
+        manifest.write_text(json.dumps(doc), encoding="utf-8")
+        out = root / "06-backlog" / "demo"
+        base = [
+            sys.executable,
+            str(SCRIPTS / "generate_stories.py"),
+            "--prd",
+            str(prd),
+            "--technical-design",
+            str(design),
+            "--out-dir",
+            str(out),
+            "--prompt-only",
+            "--review-manifest",
+            str(manifest),
+        ]
+        whole = subprocess.run(base, capture_output=True, text=True, check=False)
+        assert whole.returncode != 0
+        assert "security" in whole.stdout + whole.stderr
+        scoped = subprocess.run(
+            [*base, "--epic", "E01"], capture_output=True, text=True, check=False
+        )
+        assert scoped.returncode == 0, scoped.stderr
+        assert (out / "prompts" / "E01-accounts.prompt.md").exists()
+
+
+def test_renamed_input_copy_cannot_bypass_the_products_gate():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        manifest, doc = manifest_fixture(root)
+        (root / "04-prd").mkdir()
+        original = root / "04-prd" / "demo-prd.md"
+        original.write_text("# PRD\n", encoding="utf-8")
+        copy = root / "04-prd" / "demo-copy-prd.md"
+        copy.write_text("# PRD\n", encoding="utf-8")
+        doc["gates"][0]["lanes"]["all"] = {
+            "roles": ["product"],
+            "artifacts": ["04-prd/demo-prd.md"],
+            "depends_on": [],
+            "assumptions": [],
+        }
+        manifest.write_text(json.dumps(doc), encoding="utf-8")
+        command = [
+            sys.executable,
+            str(SCRIPTS / "generate_technical_design.py"),
+            "--prd",
+            str(copy),
+            "--out",
+            str(root / "05-technical-design" / "demo-technical-design.md"),
+            "--prompt-only",
+        ]
+        blocked = subprocess.run(command, capture_output=True, text=True, check=False)
+        assert blocked.returncode != 0
+        assert not (root / "05-technical-design" / "demo-technical-design.prompt.md").exists()
+
+
+def test_explicit_manifest_must_name_the_product_being_generated():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        manifest, doc = manifest_fixture(root)
+        (root / "03-brd").mkdir()
+        brd = root / "03-brd" / "other-brd.md"
+        brd.write_text("# BRD\n", encoding="utf-8")
+        manifest.write_text(json.dumps(doc), encoding="utf-8")
+        command = [
+            sys.executable,
+            str(SCRIPTS / "generate_prd.py"),
+            "--brd",
+            str(brd),
+            "--prompt-only",
+            "--review-manifest",
+            str(manifest),
+        ]
+        result = subprocess.run(command, capture_output=True, text=True, check=False)
+        assert result.returncode != 0
+        assert "product" in (result.stdout + result.stderr).lower()
+
+
+def test_unknown_gate_and_lane_report_actionable_errors():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        manifest, doc = manifest_fixture(root)
+        manifest.write_text(json.dumps(doc), encoding="utf-8")
+        from gate_reviews import evaluate_gate
+
+        with pytest.raises(ValueError, match="unknown gate"):
+            evaluate_gate(manifest, "no-such-gate")
+        with pytest.raises(ValueError, match="unknown lane"):
+            evaluate_gate(manifest, "design-to-backlog", "E99")
+
+
+def test_future_decision_timestamp_is_rejected():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        _, doc = manifest_fixture(root)
+        decision = decide(root, doc, "E01", "product")
+        decision["recorded_at"] = "2999-01-01T00:00:00Z"
+        with pytest.raises(ValueError, match="future"):
+            check(root, doc, lane="E01")
+
+
+def test_cycle_between_unselected_lanes_is_still_rejected():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        _, doc = manifest_fixture(root)
+        doc["gates"][0]["lanes"]["E01"]["depends_on"] = [
+            {"gate": "design-to-backlog", "lane": "E02"}
+        ]
+        doc["gates"][0]["lanes"]["E02"]["depends_on"] = [
+            {"gate": "design-to-backlog", "lane": "E01"}
+        ]
+        doc["gates"][0]["lanes"]["other"] = {
+            "roles": ["owner"],
+            "artifacts": ["review/accounts.md"],
+            "depends_on": [],
+            "assumptions": [],
+        }
+        with pytest.raises(ValueError, match="cycle"):
+            check(root, doc, lane="other")

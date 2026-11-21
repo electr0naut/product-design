@@ -16,7 +16,11 @@
         },
         "E02": {
           "roles": ["product", "engineering", "legal"],
-          "artifacts": ["05-technical-design/architecture/EXAMPLE-billing.md"],
+          "artifacts": [
+            "04-prd/EXAMPLE-prd.md",
+            "05-technical-design/architecture/EXAMPLE-technical-design.md",
+            "05-technical-design/architecture/EXAMPLE-billing.md"
+          ],
           "depends_on": [{ "gate": "design-to-backlog", "lane": "E01" }],
           "assumptions": ["A-002"]
         }

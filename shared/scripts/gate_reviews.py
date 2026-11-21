@@ -10,7 +10,26 @@ import re
 import sys
 from pathlib import Path
 
-from workflow_common import ROOT, read_text, reject_symlink
+from workflow_common import ROOT, project_path, read_text, reject_symlink
+
+SKEW = dt.timedelta(minutes=5)
+
+
+def unique_pairs(pairs: list[tuple[str, object]]) -> dict:
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate JSON key: {key}")
+        result[key] = value
+    return result
+
+
+def load_manifest(manifest: Path) -> dict:
+    """Parse a manifest, rejecting duplicate keys and malformed JSON."""
+    try:
+        return json.loads(read_text(manifest), object_pairs_hook=unique_pairs)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"invalid JSON in {manifest}: {exc}") from exc
 
 
 def artifact_hash(root: Path, name: str) -> str:
@@ -39,9 +58,11 @@ def parsed_timestamp(value: str) -> dt.datetime:
         timestamp = dt.datetime.fromisoformat(value.replace("Z", "+00:00"))
         if timestamp.tzinfo is None:
             raise ValueError("timezone required")
-        return timestamp
     except (ValueError, AttributeError) as exc:
         raise ValueError(f"invalid timestamp: {value!r}") from exc
+    if timestamp > dt.datetime.now(dt.UTC) + SKEW:
+        raise ValueError(f"timestamp is in the future: {value}")
+    return timestamp
 
 
 def fields(value: object, required: set[str], optional: set[str] | None = None) -> dict:
@@ -80,8 +101,11 @@ def validate(data: object, manifest: Path) -> dict:
     data = fields(
         data, {"schema_version", "product", "gates", "decisions", "changes", "assumptions"}
     )
+    schema = data["schema_version"]
     if (
-        data["schema_version"] != 1
+        isinstance(schema, bool)
+        or not isinstance(schema, int)
+        or schema != 1
         or manifest.parent.name != "review"
         or data["product"] != manifest.stem
     ):
@@ -131,6 +155,28 @@ def validate(data: object, manifest: Path) -> dict:
         for policy in lanes.values():
             for ref in policy["depends_on"]:
                 scope(ref)
+
+    graph = {
+        (gid, lane_id): [scope(ref) for ref in policy["depends_on"]]
+        for gid, lanes in gates.items()
+        for lane_id, policy in lanes.items()
+    }
+    visiting: set[tuple[str, str]] = set()
+    done: set[tuple[str, str]] = set()
+
+    def walk(node: tuple[str, str]) -> None:
+        if node in done:
+            return
+        if node in visiting:
+            raise ValueError(f"dependency cycle at {node[0]}/{node[1]}")
+        visiting.add(node)
+        for upstream in graph[node]:
+            walk(upstream)
+        visiting.remove(node)
+        done.add(node)
+
+    for node in graph:
+        walk(node)
 
     assumptions: set[str] = set()
     for entry in items(data["assumptions"], "assumptions"):
@@ -232,9 +278,15 @@ def validate(data: object, manifest: Path) -> dict:
 
 def evaluate_gate(manifest: Path, gate_id: str, lane: str | None = None) -> dict:
     """Return review readiness for a gate and optionally one swimlane."""
-    data = validate(json.loads(read_text(manifest)), manifest)
+    data = validate(load_manifest(manifest), manifest)
     root = manifest.parent.parent
     gates = {gate["id"]: gate["lanes"] for gate in data["gates"]}
+    if gate_id not in gates:
+        raise ValueError(f"unknown gate: {gate_id} (known: {', '.join(sorted(gates))})")
+    if lane is not None and lane not in gates[gate_id]:
+        raise ValueError(
+            f"unknown lane: {lane} in {gate_id} (known: {', '.join(sorted(gates[gate_id]))})"
+        )
     selected = [lane] if lane else list(gates[gate_id])
     cache: dict[tuple[str, str], dict] = {}
     active: set[tuple[str, str]] = set()
@@ -302,6 +354,7 @@ def evaluate_gate(manifest: Path, gate_id: str, lane: str | None = None) -> dict
             "reasons": reasons,
             "required_roles": policy["roles"],
             "artifacts": policy["artifacts"],
+            "artifact_sha256": expected,
             "assumptions": policy["assumptions"],
             "decisions": {
                 role: {
@@ -342,15 +395,48 @@ def maybe_enforce_gate(
     lanes: list[str] | None = None,
     *,
     partial: bool = False,
-) -> None:
-    """Block advancement if configured review scopes or sources are unapproved."""
-    manifest = args.review_manifest or ROOT / "review" / f"{product}.json"
+    output_product: str | None = None,
+    search_from: Path | None = None,
+) -> dict | None:
+    """Block advancement if configured review scopes or sources are unapproved.
+
+    Returns the per-lane status, or None when generation is draft-only.
+    """
     if args.draft:
         print("DRAFT ONLY: review gate bypassed explicitly; not approved.", file=sys.stderr)
-        return
-    if not manifest.exists() and args.review_manifest is None:
+        return None
+    if args.review_manifest is not None:
+        manifest = project_path(str(args.review_manifest))
+        if not manifest.exists():
+            raise SystemExit(f"Review manifest not found: {manifest}")
+    else:
+        roots = [ROOT]
+        for candidate in [sources[0] if sources else None, search_from]:
+            if candidate is not None:
+                roots.extend(candidate.resolve().parents)
+        unique_roots = list(dict.fromkeys(roots))
+
+        def find(name: str | None) -> Path | None:
+            if not name:
+                return None
+            for base in unique_roots:
+                candidate = base / "review" / f"{name}.json"
+                if candidate.is_file():
+                    return candidate
+            return None
+
+        manifest = find(product) or find(output_product)
+        if manifest is None:
+            print("DRAFT ONLY: no review manifest configured; not approved.", file=sys.stderr)
+            return None
+    data = validate(load_manifest(manifest), manifest)
+    if data["product"] != product and data["product"] != output_product:
+        raise SystemExit(
+            f"Review manifest {manifest} configures product '{data['product']}', not '{product}'."
+        )
+    if not manifest.exists():
         print("DRAFT ONLY: no review manifest configured; not approved.", file=sys.stderr)
-        return
+        return None
     if partial:
         raise SystemExit(
             f"Review gate {gate_id} needs the complete input set; "
@@ -360,8 +446,21 @@ def maybe_enforce_gate(
         report = evaluate_gate(manifest, gate_id)
         statuses = report["lanes"]
     else:
+        available = {gate["id"]: gate["lanes"] for gate in data["gates"]}
+        if gate_id not in available:
+            raise SystemExit(
+                f"Review manifest {manifest} has no gate '{gate_id}' "
+                f"(known: {', '.join(sorted(available))})."
+            )
+        unknown = sorted(set(lanes) - set(available[gate_id]))
+        if unknown:
+            raise SystemExit(
+                f"Review manifest {manifest} has no lane(s) {', '.join(unknown)} "
+                f"in gate '{gate_id}' (known: {', '.join(sorted(available[gate_id]))})."
+            )
         statuses = {lane: evaluate_gate(manifest, gate_id, lane)["lanes"][lane] for lane in lanes}
     root = manifest.parent.parent
+    covered = {artifact for state in statuses.values() for artifact in state["artifacts"]}
     for lane, state in statuses.items():
         for source in sources:
             reject_symlink(source, "reviewed input")
@@ -371,7 +470,32 @@ def maybe_enforce_gate(
                 raise SystemExit(
                     f"Review manifest does not cover input outside its product: {source}"
                 ) from exc
-            if relative not in state["artifacts"]:
-                raise SystemExit(f"Review gate {gate_id}/{lane} omits input: {relative}")
+            if relative not in covered:
+                raise SystemExit(f"Review gate {gate_id} omits input: {relative}")
         if not state["ready"]:
             raise SystemExit(f"Review gate {gate_id}/{lane} blocked: {'; '.join(state['reasons'])}")
+    return {"root": str(root), "lanes": statuses}
+
+
+def verify_bundle(context: object, report: dict | None) -> None:
+    """Refuse if an input changed between the gate check and prompt assembly."""
+    if not report:
+        return
+    root = Path(report["root"]).resolve()
+    bundled = {}
+    for item in getattr(context, "sources", []):
+        resolved = Path(item["path"]).resolve()
+        try:
+            key = resolved.relative_to(root).as_posix()
+        except ValueError:
+            key = item["path"]
+        bundled[key] = item["sha256"]
+    for lane, state in report["lanes"].items():
+        changed = [
+            path for path, digest in bundled.items() if state["artifact_sha256"].get(path) != digest
+        ]
+        if changed:
+            raise SystemExit(
+                f"Reviewed input changed during generation for {lane}: "
+                f"{', '.join(sorted(changed))}. Re-run the gate check."
+            )

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import argparse
 
-from gate_reviews import add_review_args, maybe_enforce_gate
+from gate_reviews import add_review_args, maybe_enforce_gate, verify_bundle
 from workflow_common import (
     PROMPT_SUFFIX,
     PROMPTS,
@@ -41,10 +41,16 @@ def main() -> None:
 
     idea = project_path(args.idea)
     slug = slug_from_path(idea)
-    maybe_enforce_gate(
-        args, slug, "ideation-to-analysis", [idea], [args.role] if args.role else None
+    statuses = maybe_enforce_gate(
+        args,
+        slug,
+        "ideation-to-analysis",
+        [idea],
+        [args.role] if args.role else None,
+        search_from=idea,
     )
     context = bundle_documents("Idea Canvas", [idea])
+    verify_bundle(context, statuses)
     roles = {args.role: ROLES[args.role]} if args.role else ROLES
 
     outcomes = []

@@ -128,6 +128,8 @@ audited service, and the checker refuses ambiguous or partial records.
   unresolved feedback releases a lane. The latest decision wins; an older
   approval cannot hide a later objection.
 - `feedback` entries stay `open` until resolved with a written resolution.
+  Resolutions update the record in place; Git history keeps the original
+  objection.
 - `assumptions` carry a source and `review_by` date; expired ones block the
   lanes that reference them.
 - `changes` record a source (for example a regulation, vendor decision or
@@ -155,12 +157,15 @@ python shared/scripts/check_gate.py \
 
 Exit status is `0` when every selected lane is ready, `1` when blocked and `2`
 for an invalid manifest. The generation scripts enforce the gate for their
-transition when `review/<product>.json` exists, or when `--review-manifest` is
-given. Story generation accepts `--epic E01` to expand one approved swimlane.
-They also refuse to proceed if the input being used is not listed among the
-reviewed artifacts, and a partial BRD input cannot claim gate release. Use
-`--draft` for explicitly labelled exploratory output. With no manifest at all,
-generation stays draft-only and says so; it never reports "approved".
+transition when `review/<product>.json` exists for the input or output product,
+or when `--review-manifest` is given (it must name the product being
+generated). Whole-document generation requires every lane, including
+cross-cutting lanes such as `security`; `generate_stories.py --epic E01` checks
+only that swimlane. They refuse to proceed if an input is not covered by the
+reviewed artifacts, including when a reviewed input is copied or renamed, and a
+partial BRD input cannot claim gate release. Use `--draft` for exploratory
+output; it is labelled only on stderr and is never reported as approved. With
+no manifest at all, generation stays draft-only and says so.
 
 Approvals bind document hashes, not identity. Recording and validating a
 decision is a local, auditable trail; it is not SSO, access control or a formal
@@ -169,8 +174,9 @@ needs, decide where confidential analyses may be processed, and authenticate
 reviewers. `review/EXAMPLE.json` is an inert template, not a configured review.
 
 Generated documents also get a `<document>.provenance.json` sidecar with the
-hashes of the inputs, prompt and template, the assembled prompt hash, the
-document hash and generation time. The CLI cannot confirm which model answered,
+repository-relative input paths and their hashes, the prompt and template
+hashes, the assembled prompt hash, the document hash and generation time. The
+CLI cannot confirm which model answered,
 so it records `model: null` rather than guessing. Provenance proves what was
 consumed, not that a claim is true or approved. Legal and compliance prompts
 require verifiable citations, applicability assumptions and explicit

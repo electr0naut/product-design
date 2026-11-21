@@ -156,7 +156,7 @@ def bundle_documents(title: str, paths: list[Path]) -> SourceBundle:
     for path in paths:
         text = read_text(path)
         sections.append(f"\n## Source: {display_path(path)}\n\n{text}")
-        sources.append({"path": str(path), "sha256": sha256(text.encode("utf-8"))})
+        sources.append({"path": display_path(path), "sha256": sha256(text.encode("utf-8"))})
     return SourceBundle("\n".join(sections), sources)
 
 
@@ -290,11 +290,11 @@ def generate(
     if text is None:
         return FALLBACK
 
-    write_text(output, text)
+    content = text.rstrip() + "\n"
     provenance = dict(getattr(prompt, "provenance", {}))
     provenance.update(
         {
-            "document_sha256": sha256(output.read_bytes()),
+            "document_sha256": sha256(content.encode("utf-8")),
             "model": None,  # `claude -p` plain text does not report the selected model.
             "generated_at": dt.datetime.now(dt.UTC).isoformat(),
         }
@@ -305,6 +305,7 @@ def generate(
     with os.fdopen(os.open(sidecar, flags, 0o666), "w", encoding="utf-8") as file:
         json.dump(provenance, file, indent=2, sort_keys=True)
         file.write("\n")
+    write_text(output, content)
     print(f"Wrote document: {display_path(output)}")
     return WROTE
 
