@@ -3,8 +3,20 @@
 The generic product-design scaffold is the scope; FIX is only a later test run. This file tracks the Step 1 implementation sequence.
 
 ## Working rules
+- CodeRabbit reviews every PR: wait for it, then fix or answer every comment in
+  the PR thread. Never merge with an unanswered comment, never dismiss a review,
+  never edit branch protection. If no review arrives within 30 minutes, do not
+  merge: note it here and move on.
+- End every commit message with `Model: <model name>`. If the model changes
+  mid-task, discard the partial work, restart from the last green commit, and
+  name the new model in the next commit.
+- Read `docs/plans/INBOX.md` only between tasks, never mid-task; move handled
+  items here under "Done" with the commit that handled them.
+- Record every merged PR here with two plain-English sentences: what changed and
+  what could break.
 - Scaffolding phase: you may merge your own PRs once make check and CI
-  are green. The owner reviews afterwards and reverts if needed.
+  are green and no review comment is left unanswered. The owner reviews
+  afterwards and reverts if needed.
 - Never write, edit or synthesise decisions, feedback events, answers or
   change events in any review/*.json manifest. Only record_decision.py,
   run by the owner, records decisions.
@@ -22,7 +34,9 @@ The generic product-design scaffold is the scope; FIX is only a later test run. 
 - Parked the uncommitted work on `feat/review-provenance-and-portal-hardening` in a named stash (31 tracked/untracked paths: provenance and PRD-generation changes, portal/CSP code, JS/Python tests and CI wiring). The feature worktree was clean at `07083fa`; none of it was merged or brought into Step 1a.
 - Moved that parked work off the VM: applied the stash on `wip/review-provenance-and-portal-hardening`, committed it as `f1fe7bb` and pushed the branch; the local stash was then dropped. The branch is WIP only — not reviewed, not merged.
 - Implemented Step 1a on `feat/derived-artifact-status`: live, read-only per-artifact projection with underlying lane/gate reasons, seven-day configurable visibility-only assumption warnings, CLI status and exit codes, and 13 focused tests. No manifest, provenance, output-path, draft-routing, promotion or gate-enforcement changes. Independent review identified and we fixed multi-scope artifact-change false approval, historical nonoverlapping approval, and malformed-manifest CLI error handling. Local `make check` passed: 133 Python tests plus 6 subtests, Ruff, Pyright, ESLint, TypeScript and Next.js build. PR #13 squash-merged as `8c6823e` after all five current-head checks (`check`, `CodeQL`, three CodeQL analyses) passed on `bb2c0f7`.
+  In plain English: the scripts can now report how far any document has got in review — draft, waiting for reviewers, blocked, needing fresh sign-off, or approved — without changing a single file. It could mislead if the report were wrong, so a document only counts as approved when every required reviewer signed off on exactly those words.
 - Implemented Step 1b on `feat/step1b-provenance-snapshot`: provenance sidecars now record a historical review snapshot (`snapshot_version`, `output_review_status` with artifact, status, evaluation date, manifest path/SHA-256, scopes and warnings) and a separate `input_gate_readiness` receipt (gate, lanes evaluated, gate completeness, decision IDs, per-lane policy hash). Readiness is never copied into approval, and the snapshot is explicitly historical. `assume_sha256` projects not-yet-written bytes with unchanged path/symlink/non-regular checks; the manifest is re-read, re-hashed and re-evaluated at snapshot time, and generation fails closed if the manifest, input artifacts or gate readiness changed during the model run. The document is written before its sidecar so a failed write cannot leave provenance describing unwritten bytes, and snapshot fields cannot overwrite the measured document hash. No draft routing, promotion or gate change. 15 focused tests; `make check` passed with 148 Python tests plus 6 subtests. PR #15 squash-merged as `1bbc2c1` after all five current-head checks passed on `641fbdd`.
+  In plain English: each generated document now carries a small receipt saying which reviews unlocked the step and what review state the new file was in. The receipt can only be wrong if the review records change while the model is writing, and in that case generation stops instead of writing a misleading receipt.
 
 ## Open
 - Nothing in progress: Steps 1a and 1b are merged and this status records them. Waiting for the owner before starting 1c.
