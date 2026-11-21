@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import argparse
 
-from gate_reviews import add_review_args, maybe_enforce_gate, verify_bundle
+from gate_reviews import add_review_args, generation_receipt, maybe_enforce_gate, verify_bundle
 from workflow_common import (
     PROMPT_SUFFIX,
     PROMPTS,
@@ -48,7 +48,19 @@ def main() -> None:
     )
     if args.prompt_only:
         output = output.with_suffix(PROMPT_SUFFIX)
-    exit_status([generate(prompt, output, args.prompt_only, args.claude_bin, args.force)])
+    snapshot = None if args.prompt_only else generation_receipt(statuses, output)
+    exit_status(
+        [
+            generate(
+                prompt,
+                output,
+                args.prompt_only,
+                args.claude_bin,
+                args.force,
+                snapshot=snapshot,
+            )
+        ]
+    )
 
 
 if __name__ == "__main__":

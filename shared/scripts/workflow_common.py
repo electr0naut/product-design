@@ -11,6 +11,7 @@ import re
 import shutil
 import subprocess
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -260,11 +261,14 @@ def generate(
     prompt_only: bool,
     claude_bin: str,
     force: bool = False,
+    snapshot: Callable[[str], dict] | None = None,
 ) -> str:
     """Write the prompt (prompt-only) or the generated document to `output`.
 
     Never overwrites an existing document unless `force` is set, because
     documents are reviewed and edited by people after generation.
+    `snapshot` maps the written bytes' SHA-256 to extra provenance fields; it
+    runs before anything is written, so a failure leaves no partial output.
     """
     reject_symlink(output, "output")
     if prompt_only:
@@ -291,21 +295,30 @@ def generate(
         return FALLBACK
 
     content = text.rstrip() + "\n"
+    document_sha256 = sha256(content.encode("utf-8"))
+    extra = snapshot(document_sha256) if snapshot is not None else {}
     provenance = dict(getattr(prompt, "provenance", {}))
+    provenance.update(extra)
     provenance.update(
         {
-            "document_sha256": sha256(content.encode("utf-8")),
+            "document_sha256": document_sha256,
             "model": None,  # `claude -p` plain text does not report the selected model.
             "generated_at": dt.datetime.now(dt.UTC).isoformat(),
         }
     )
+    write_text(output, content)
     sidecar.parent.mkdir(parents=True, exist_ok=True)
     flags = os.O_WRONLY | os.O_CREAT | (os.O_TRUNC if force else os.O_EXCL)
     flags |= getattr(os, "O_NOFOLLOW", 0)
-    with os.fdopen(os.open(sidecar, flags, 0o666), "w", encoding="utf-8") as file:
-        json.dump(provenance, file, indent=2, sort_keys=True)
-        file.write("\n")
-    write_text(output, content)
+    try:
+        with os.fdopen(os.open(sidecar, flags, 0o666), "w", encoding="utf-8") as file:
+            json.dump(provenance, file, indent=2, sort_keys=True)
+            file.write("\n")
+    except BaseException:
+        # Never leave a previous sidecar describing bytes that were replaced.
+        if force:
+            sidecar.unlink(missing_ok=True)
+        raise
     print(f"Wrote document: {display_path(output)}")
     return WROTE
 

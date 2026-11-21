@@ -254,6 +254,18 @@ consumed, not that a claim is true or approved. Legal and compliance prompts
 require verifiable citations, applicability assumptions and explicit
 uncertainty.
 
+The sidecar also carries a historical review snapshot: `output_review_status`
+holds the projected status for the written bytes, the `evaluated_at` date, the
+review manifest's path and SHA-256 when one was used, and any non-blocking
+assumption warnings; `input_gate_readiness` separately records the input gate,
+its lanes, the decision IDs and each lane's policy hash. A ready input gate is
+not output approval: a freshly generated document starts as `draft`, or as
+`in_review` once its lane is enrolled, and is reported `approved` only when the
+identical bytes already carry a complete approval. The snapshot is never
+re-read as a live certificate — use `check_gate.py --artifact` (or the portal)
+to recompute status from the manifest. A manifest or document changed after
+generation does not refresh its own sidecar.
+
 ## User Story Backlog
 
 The PRD defines the work split: epics (`### E01: Name`) and a story map table

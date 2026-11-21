@@ -8,12 +8,16 @@ import hashlib
 import json
 import re
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 from workflow_common import ROOT, project_path, read_text, reject_symlink
 
 SCHEMA_VERSION = 2
 SKEW = dt.timedelta(minutes=5)
+SNAPSHOT_SEMANTICS = (
+    "historical snapshot of the live review projection; recompute status from the manifest"
+)
 DECISIONS = ("approve", "request_changes", "not_applicable", "cannot_determine")
 EVIDENCE_REF = re.compile(r"^(https?://\S+|[A-Za-z][A-Za-z0-9]*-\d+|\S+#\d+)$")
 
@@ -33,6 +37,26 @@ def load_manifest(manifest: Path) -> dict:
         return json.loads(read_text(manifest), object_pairs_hook=unique_pairs)
     except json.JSONDecodeError as exc:
         raise ValueError(f"invalid JSON in {manifest}: {exc}") from exc
+
+
+def load_manifest_snapshot(manifest: Path) -> tuple[dict, str]:
+    """Parse a manifest and hash the exact bytes that were parsed."""
+    reject_symlink(manifest, "review manifest")
+    try:
+        raw = manifest.read_bytes()
+    except OSError as exc:
+        raise ValueError(f"unreadable manifest: {manifest}: {exc}") from exc
+    try:
+        data = json.loads(raw.decode("utf-8"), object_pairs_hook=unique_pairs)
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError(f"invalid JSON in {manifest}: {exc}") from exc
+    return data, hashlib.sha256(raw).hexdigest()
+
+
+def policy_digest(policy: dict) -> str:
+    """Stable hash of one lane's review policy."""
+    canonical = json.dumps(policy, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def artifact_hash(root: Path, name: str) -> str:
@@ -532,6 +556,7 @@ def _evaluate_gate_data(
             "required_roles": policy["roles"],
             "artifacts": policy["artifacts"],
             "artifact_sha256": expected,
+            "policy_sha256": policy_digest(policy),
             "epic": bool(policy.get("epic", False)),
             "assumptions": policy["assumptions"],
             "questions": [q["id"] for q in lane_questions],
@@ -577,19 +602,61 @@ def artifact_status(
     *,
     today: dt.date | None = None,
     warning_days: int = 7,
+    assume_sha256: str | None = None,
 ) -> dict:
-    """Project the current review state of one artifact; never write records."""
+    """Project the current review state of one artifact; never write records.
+
+    `assume_sha256` evaluates a document that is about to be written (the
+    generation snapshot) against the manifest instead of the on-disk bytes.
+    Symlink and path safety still apply.
+    """
+    if manifest is None:
+        return _project_artifact(
+            None,
+            None,
+            artifact,
+            today=today,
+            warning_days=warning_days,
+            assume_sha256=assume_sha256,
+        )
+    try:
+        data, _digest = load_manifest_snapshot(manifest)
+    except SystemExit as exc:
+        raise ValueError(f"unsafe review manifest: {manifest}") from exc
+    return _project_artifact(
+        validate(data, manifest),
+        manifest,
+        artifact,
+        today=today,
+        warning_days=warning_days,
+        assume_sha256=assume_sha256,
+    )
+
+
+def _project_artifact(
+    data: dict | None,
+    manifest: Path | None,
+    artifact: Path,
+    *,
+    today: dt.date | None,
+    warning_days: int,
+    assume_sha256: str | None = None,
+) -> dict:
+    """Project one artifact from an already validated manifest snapshot."""
     if isinstance(warning_days, bool) or not isinstance(warning_days, int) or warning_days < 0:
         raise ValueError("warning_days must be a non-negative integer")
+    if assume_sha256 is not None and not re.fullmatch(r"[0-9a-f]{64}", assume_sha256):
+        raise ValueError("assume_sha256 must be a lowercase hex SHA-256 digest")
     try:
         reject_symlink(artifact, "artifact")
     except SystemExit as exc:
         raise ValueError(f"unsafe artifact: {artifact}") from exc
-    if not artifact.is_file():
+    if artifact.exists() and not artifact.is_file():
         raise ValueError(f"missing or nonregular artifact: {artifact}")
-    if manifest is None:
+    if assume_sha256 is None and not artifact.is_file():
+        raise ValueError(f"missing or nonregular artifact: {artifact}")
+    if data is None or manifest is None:
         return {"artifact": str(artifact), "status": "draft", "scopes": [], "warnings": []}
-    data = validate(load_manifest(manifest), manifest)
     root = manifest.parent.parent
     try:
         relative = artifact.relative_to(root).as_posix()
@@ -606,7 +673,7 @@ def artifact_status(
     today = today or dt.date.today()
     scopes = []
     warnings = []
-    hash_cache: dict[str, str] = {}
+    hash_cache: dict[str, str] = {relative: assume_sha256} if assume_sha256 else {}
     gates = {gate["id"]: gate["lanes"] for gate in data["gates"]}
     for gate_id, lane_id in selected:
         state = _evaluate_gate_data(
@@ -669,6 +736,8 @@ def artifact_status(
             {"gate": gate_id, "lane": lane_id, "status": scope_status, "reasons": state["reasons"]}
         )
     for path, digest in hash_cache.items():
+        if path == relative and assume_sha256 is not None:
+            continue
         if artifact_hash(root, path) != digest:
             raise ValueError(f"artifact changed during status evaluation: {path}")
     priority = ("on_hold", "needs_reapproval", "in_review", "approved")
@@ -678,6 +747,116 @@ def artifact_status(
         "scopes": scopes,
         "warnings": warnings,
     }
+
+
+def generation_receipt(
+    report: dict | None,
+    artifact: Path,
+    *,
+    today: dt.date | None = None,
+    warning_days: int = 7,
+) -> Callable[[str], dict]:
+    """Snapshot sidecar fields for a document that is about to be written.
+
+    The returned callable takes the SHA-256 of the exact bytes to write, so the
+    sidecar and the document always describe the same content. Input-gate
+    readiness is recorded separately from output review status: a ready input
+    gate never approves the generated output.
+    """
+    day = today or dt.date.today()
+    if report is not None:
+        root = Path(report["root"])
+        try:
+            artifact.resolve().relative_to(root.resolve())
+        except ValueError as exc:
+            raise SystemExit(
+                f"Output {artifact} is outside the review manifest product root {root}. "
+                "Write inside that product, or generate with --draft."
+            ) from exc
+
+    def build(document_sha256: str) -> dict:
+        if report is None:
+            status = _project_artifact(
+                None,
+                None,
+                artifact,
+                today=day,
+                warning_days=warning_days,
+                assume_sha256=document_sha256,
+            )
+            try:
+                name = artifact.resolve().relative_to(ROOT).as_posix()
+            except ValueError:
+                name = str(artifact)
+            return {
+                "snapshot_version": 1,
+                "output_review_status": {
+                    "status": status["status"],
+                    "artifact": name,
+                    "evaluated_at": day.isoformat(),
+                    "manifest": None,
+                    "scopes": [],
+                    "warnings": [],
+                },
+                "input_gate_readiness": None,
+                "snapshot_semantics": SNAPSHOT_SEMANTICS,
+            }
+        manifest = Path(report["manifest_file"])
+        try:
+            data, digest = load_manifest_snapshot(manifest)
+        except SystemExit as exc:
+            raise ValueError(f"unsafe review manifest: {manifest}") from exc
+        if digest != report["manifest"]["sha256"]:
+            raise ValueError(f"review manifest changed during generation: {manifest}")
+        data = validate(data, manifest)
+        gate = report["gate"]
+        lanes = {}
+        for lane in report["lanes"]:
+            state = _evaluate_gate_data(data, manifest, gate, lane, today=day)["lanes"][lane]
+            if not state["ready"]:
+                raise ValueError(
+                    f"review gate {gate}/{lane} changed during generation: "
+                    f"{'; '.join(state['reasons'])}"
+                )
+            lanes[lane] = {
+                "ready": True,
+                "decision_ids": [decision["id"] for decision in state["decisions"].values()],
+                "policy_sha256": state["policy_sha256"],
+            }
+        all_lanes = {
+            name
+            for configured in data["gates"]
+            if configured["id"] == gate
+            for name in configured["lanes"]
+        }
+        status = _project_artifact(
+            data,
+            manifest,
+            artifact,
+            today=day,
+            warning_days=warning_days,
+            assume_sha256=document_sha256,
+        )
+        return {
+            "snapshot_version": 1,
+            "output_review_status": {
+                "status": status["status"],
+                "artifact": status["artifact"],
+                "evaluated_at": day.isoformat(),
+                "manifest": report["manifest"],
+                "scopes": status["scopes"],
+                "warnings": status["warnings"],
+            },
+            "input_gate_readiness": {
+                "gate": gate,
+                "lanes_evaluated": sorted(lanes),
+                "gate_complete": set(lanes) == all_lanes,
+                "lanes": lanes,
+            },
+            "snapshot_semantics": SNAPSHOT_SEMANTICS,
+        }
+
+    return build
 
 
 def portal_view(manifest: Path, role: str) -> dict:
@@ -787,7 +966,8 @@ def maybe_enforce_gate(
             print("DRAFT ONLY: no review manifest configured; not approved.", file=sys.stderr)
             return None
     try:
-        data = validate(load_manifest(manifest), manifest)
+        data, manifest_sha256 = load_manifest_snapshot(manifest)
+        data = validate(data, manifest)
     except ValueError as exc:
         raise SystemExit(f"Invalid review manifest {manifest}: {exc}") from exc
     expected_product = output_product or product
@@ -845,7 +1025,20 @@ def maybe_enforce_gate(
             raise SystemExit(
                 f"Review gate {gate_id}/{lane} blocked in {manifest}: {'; '.join(state['reasons'])}"
             )
-    return {"root": str(root), "lanes": statuses}
+    try:
+        manifest_relative = manifest.resolve().relative_to(ROOT).as_posix()
+    except ValueError:
+        try:
+            manifest_relative = manifest.relative_to(root).as_posix()
+        except ValueError:
+            manifest_relative = str(manifest)
+    return {
+        "root": str(root),
+        "lanes": statuses,
+        "gate": gate_id,
+        "manifest": {"path": manifest_relative, "sha256": manifest_sha256},
+        "manifest_file": str(manifest),
+    }
 
 
 def verify_bundle(context: object, report: dict | None) -> None:
