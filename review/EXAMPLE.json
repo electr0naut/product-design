@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "product": "EXAMPLE",
+  "gates": [
+    {
+      "id": "design-to-backlog",
+      "lanes": {
+        "E01": {
+          "roles": ["product", "engineering"],
+          "artifacts": [
+            "04-prd/EXAMPLE-prd.md",
+            "05-technical-design/architecture/EXAMPLE-technical-design.md"
+          ],
+          "depends_on": [],
+          "assumptions": ["A-001"]
+        },
+        "E02": {
+          "roles": ["product", "engineering", "legal"],
+          "artifacts": ["05-technical-design/architecture/EXAMPLE-billing.md"],
+          "depends_on": [{ "gate": "design-to-backlog", "lane": "E01" }],
+          "assumptions": ["A-002"]
+        }
+      }
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D-001",
+      "gate": "design-to-backlog",
+      "lane": "E01",
+      "role": "product",
+      "reviewer": "Named human reviewer",
+      "decision": "request_changes",
+      "recorded_at": "2026-01-15T10:00:00Z",
+      "artifact_sha256": {
+        "04-prd/EXAMPLE-prd.md": "0000000000000000000000000000000000000000000000000000000000000000",
+        "05-technical-design/architecture/EXAMPLE-technical-design.md": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "evidence": "review-thread-or-ticket-reference",
+      "feedback": [
+        {
+          "id": "F-001",
+          "text": "EXAMPLE: state the retention period and its legal source.",
+          "status": "open"
+        }
+      ]
+    }
+  ],
+  "changes": [
+    {
+      "id": "CHG-001",
+      "source": "EXAMPLE: regulator notice or vendor decision reference",
+      "raised_at": "2026-01-16T09:00:00Z",
+      "effective_at": "2026-03-01",
+      "status": "open",
+      "affected": [{ "gate": "design-to-backlog", "lane": "E02" }]
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-001",
+      "statement": "EXAMPLE: accounts hold no special-category personal data.",
+      "source": "EXAMPLE: data inventory v1",
+      "checked_at": "2026-01-10",
+      "review_by": "2026-04-10"
+    },
+    {
+      "id": "A-002",
+      "statement": "EXAMPLE: invoices are retained for the statutory period.",
+      "source": "EXAMPLE: tax guidance citation",
+      "checked_at": "2026-01-10",
+      "review_by": "2026-07-10"
+    }
+  ]
+}

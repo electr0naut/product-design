@@ -1,5 +1,11 @@
 # Phase Gate Checklist
 
+This checklist is the human conversation guide. When a product has a
+`review/<product>.json` manifest, the machine-checkable release condition is
+`shared/scripts/check_gate.py` with recorded stakeholder decisions bound to the
+reviewed revision. A ticked box, a generated document or green CI is not a
+recorded approval; silence is not approval either.
+
 ## Gate 1: Ideation → Analysis
 - [ ] Idea canvas completed with all sections
 - [ ] Initial market sizing done

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 
+from gate_reviews import add_review_args, maybe_enforce_gate
 from workflow_common import (
     PROMPT_SUFFIX,
     PROMPTS,
@@ -42,6 +43,7 @@ def main() -> None:
         help="Allow exploratory BRD generation with fewer than seven analyses.",
     )
     add_common_args(parser)
+    add_review_args(parser)
     args = parser.parse_args()
 
     idea = project_path(args.idea)
@@ -64,6 +66,7 @@ def main() -> None:
             f"No phase-02 analysis documents for '{slug}' in {display_path(analysis)}."
         )
     sources = [idea] + analyses
+    maybe_enforce_gate(args, slug, "analysis-to-brd", sources, partial=bool(missing))
     print("Sources:")
     for source in sources:
         print(f"  {display_path(source)}")

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 
+from gate_reviews import add_review_args, maybe_enforce_gate
 from workflow_common import (
     PROMPT_SUFFIX,
     PROMPTS,
@@ -24,9 +25,11 @@ def main() -> None:
     parser.add_argument("--brd", required=True, help="Path to the approved BRD.")
     parser.add_argument("--out", help="Output PRD path.")
     add_common_args(parser)
+    add_review_args(parser)
     args = parser.parse_args()
 
     brd = project_path(args.brd)
+    maybe_enforce_gate(args, slug_from_path(brd), "brd-to-prd", [brd])
     context = bundle_documents("BRD", [brd])
     prompt = compose_prompt(
         PROMPTS / "04-generate-prd.md",

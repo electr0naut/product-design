@@ -22,6 +22,7 @@ from backlog import (
     split_stories,
     table_cell,
 )
+from gate_reviews import add_review_args, maybe_enforce_gate
 from workflow_common import (
     FAILED,
     FALLBACK,
@@ -68,6 +69,7 @@ def main() -> None:
         "(use with exactly one --epic).",
     )
     add_common_args(parser)
+    add_review_args(parser)
     args = parser.parse_args()
 
     prd = project_path(args.prd)
@@ -85,6 +87,9 @@ def main() -> None:
     epics = select_epics(story_map.epics, args.epic)
     if args.response and len(epics) != 1:
         raise SystemExit("--response needs exactly one --epic.")
+    maybe_enforce_gate(
+        args, slug_from_path(prd), "design-to-backlog", [prd, design], [epic.id for epic in epics]
+    )
     for sid in story_map.unassigned:
         print(f"Warning: {sid} is not under an epic heading in the PRD; it will not be generated.")
 

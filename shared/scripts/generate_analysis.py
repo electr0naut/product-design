@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 
+from gate_reviews import add_review_args, maybe_enforce_gate
 from workflow_common import (
     PROMPT_SUFFIX,
     PROMPTS,
@@ -35,10 +36,14 @@ def main() -> None:
     parser.add_argument("--out-dir", default="02-analysis", help="Output directory.")
     parser.add_argument("--role", choices=sorted(ROLES), help="Generate one role only.")
     add_common_args(parser)
+    add_review_args(parser)
     args = parser.parse_args()
 
     idea = project_path(args.idea)
     slug = slug_from_path(idea)
+    maybe_enforce_gate(
+        args, slug, "ideation-to-analysis", [idea], [args.role] if args.role else None
+    )
     context = bundle_documents("Idea Canvas", [idea])
     roles = {args.role: ROLES[args.role]} if args.role else ROLES
 
