@@ -10,7 +10,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
 PROMPTS = ROOT / "shared" / "prompts"
 PROMPT_SUFFIX = ".prompt.md"
@@ -30,13 +29,32 @@ def project_path(value: str) -> Path:
     return path
 
 
+def reject_symlink(path: Path, kind: str) -> None:
+    """Check each lexical component; an existing descendant does not end the walk."""
+    absolute = path if path.is_absolute() else ROOT / path
+    current = Path(absolute.anchor)
+    for part in absolute.parts[1:]:
+        if part == "..":
+            raise SystemExit(f"Refusing parent traversal in {kind}: {display_path(path)}")
+        current /= part
+        # System-level aliases are common (/tmp on some Linux installations,
+        # /var on macOS); all descendants are still checked independently.
+        if current.is_symlink() and current not in (Path("/tmp"), Path("/var")):
+            raise SystemExit(f"Refusing symlinked {kind}: {display_path(current)}")
+
+
 def read_text(path: Path) -> str:
+    reject_symlink(path, "input")
     if not path.exists():
         raise SystemExit(f"Missing file: {display_path(path)}")
+    if not path.is_file():
+        raise SystemExit(f"Expected regular file: {display_path(path)}")
     return path.read_text(encoding="utf-8")
 
 
 def write_text(path: Path, content: str) -> None:
+    reject_symlink(path, "output")
+    reject_symlink(path.parent, "output parent directory")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content.rstrip() + "\n", encoding="utf-8")
 
@@ -67,14 +85,21 @@ def is_prompt_file(path: Path) -> bool:
     return path.name.endswith(PROMPT_SUFFIX)
 
 
-def markdown_files(path: Path, product: str | None = None) -> list[Path]:
-    """Return the reviewed markdown documents in `path`.
+def markdown_files(
+    path: Path, product: str | None = None, names: set[str] | None = None
+) -> list[Path]:
+    """Return reviewed, regular Markdown documents in `path`.
 
     Skips templates, hidden files and assembled `.prompt.md` files. With
-    `product`, keeps only files named `<product>.md` or `<product>-*.md`, so one
-    product's documents never end up in another product's context.
+    `product`, keeps only files named `<product>.md` or `<product>-*.md`; pass
+    `names` when a caller accepts an exact set of artefact names.
     """
+    reject_symlink(path, "input")
     if path.is_file():
+        if names is not None and path.name not in names:
+            return []
+        if is_prompt_file(path):
+            return []
         return [path]
     if not path.exists():
         raise SystemExit(f"Missing directory: {display_path(path)}")
@@ -85,8 +110,13 @@ def markdown_files(path: Path, product: str | None = None) -> list[Path]:
             continue
         if is_prompt_file(item):
             continue
+        if names is not None and item.name not in names:
+            continue
         if product and not (item.stem == product or item.stem.startswith(f"{product}-")):
             continue
+        reject_symlink(item, "discovered input")
+        if not item.is_file():
+            raise SystemExit(f"Expected regular file: {display_path(item)}")
         files.append(item)
     return files
 
@@ -134,7 +164,7 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def run_claude(prompt: str, claude_bin: str, fallback: Path) -> str | None:
+def run_claude(prompt: str, claude_bin: str, fallback: Path, force: bool = False) -> str | None:
     """Run `claude -p` on the prompt and return its output.
 
     If the CLI is not installed, write the prompt to `fallback` for manual use
@@ -142,6 +172,14 @@ def run_claude(prompt: str, claude_bin: str, fallback: Path) -> str | None:
     """
     executable = shutil.which(claude_bin)
     if executable is None:
+        reject_symlink(fallback, "fallback prompt")
+        if fallback.exists() and not force:
+            print(
+                f"Claude CLI '{claude_bin}' not found. Existing prompt preserved: "
+                f"{display_path(fallback)} (use --force to overwrite).",
+                file=sys.stderr,
+            )
+            return None
         write_text(fallback, prompt)
         print(
             f"Claude CLI '{claude_bin}' not found. Wrote prompt for manual use: "
@@ -178,7 +216,11 @@ def generate(
     Never overwrites an existing document unless `force` is set, because
     documents are reviewed and edited by people after generation.
     """
+    reject_symlink(output, "output")
     if prompt_only:
+        if output.exists() and not force:
+            print(f"Skipped {display_path(output)}: it already exists (use --force to overwrite).")
+            return SKIPPED
         write_text(output, prompt)
         print(f"Wrote prompt: {display_path(output)}")
         return WROTE
@@ -187,7 +229,7 @@ def generate(
         print(f"Skipped {display_path(output)}: it already exists (use --force to overwrite).")
         return SKIPPED
 
-    text = run_claude(prompt, claude_bin, output.with_suffix(PROMPT_SUFFIX))
+    text = run_claude(prompt, claude_bin, output.with_suffix(PROMPT_SUFFIX), force)
     if text is None:
         return FALLBACK
 

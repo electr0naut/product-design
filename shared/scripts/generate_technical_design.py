@@ -34,10 +34,7 @@ def main() -> None:
         context,
     )
     default_out = (
-        ROOT
-        / "05-technical-design"
-        / "architecture"
-        / f"{slug_from_path(prd)}-technical-design.md"
+        ROOT / "05-technical-design" / "architecture" / f"{slug_from_path(prd)}-technical-design.md"
     )
     output = project_path(args.out) if args.out else default_out
     if args.prompt_only:

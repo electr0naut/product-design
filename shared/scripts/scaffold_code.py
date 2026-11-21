@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate implementation scaffold instructions from technical design."""
+"""Generate a Markdown implementation plan from a technical design."""
 
 from __future__ import annotations
 
@@ -24,9 +24,9 @@ def main() -> None:
     parser.add_argument(
         "--technical-design",
         required=True,
-        help="Path to the approved technical design.",
+        help="Path to the reviewed technical design.",
     )
-    parser.add_argument("--out", help="Output implementation scaffold path.")
+    parser.add_argument("--out", help="Output implementation-plan path.")
     add_common_args(parser)
     args = parser.parse_args()
 
@@ -34,9 +34,7 @@ def main() -> None:
     context = bundle_documents("Technical Design", [technical_design])
     prompt = compose_prompt(PROMPTS / "07-scaffold-code.md", None, context)
     default_out = (
-        ROOT
-        / "07-implementation"
-        / f"{slug_from_path(technical_design)}-implementation-plan.md"
+        ROOT / "07-implementation" / f"{slug_from_path(technical_design)}-implementation-plan.md"
     )
     output = project_path(args.out) if args.out else default_out
     if args.prompt_only:

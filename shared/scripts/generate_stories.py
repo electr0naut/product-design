@@ -12,7 +12,15 @@ import argparse
 import sys
 from pathlib import Path
 
-from backlog import Epic, files_for_story, normalize_epic_id, parse_frontmatter, parse_story_map, split_stories
+from backlog import (
+    Epic,
+    StoryRef,
+    files_for_story,
+    normalize_epic_id,
+    parse_frontmatter,
+    parse_story_map,
+    split_stories,
+)
 from workflow_common import (
     FAILED,
     FALLBACK,
@@ -26,22 +34,23 @@ from workflow_common import (
     compose_prompt,
     display_path,
     exit_status,
+    generate,
     plural,
     project_path,
     read_text,
+    reject_symlink,
     run_claude,
     slug_from_path,
     slugify,
     write_text,
 )
 
-
 STORY_TEMPLATE = ROOT / "06-backlog" / "templates" / "story-template.md"
 TEMPLATE_INTRO = "Write each story in exactly this template structure, frontmatter included:"
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     parser.add_argument("--prd", required=True, help="Path to the approved PRD.")
     parser.add_argument(
         "--technical-design", required=True, help="Path to the approved technical design."
@@ -62,7 +71,9 @@ def main() -> None:
 
     prd = project_path(args.prd)
     design = project_path(args.technical_design)
-    out_dir = project_path(args.out_dir) if args.out_dir else ROOT / "06-backlog" / slug_from_path(prd)
+    out_dir = (
+        project_path(args.out_dir) if args.out_dir else ROOT / "06-backlog" / slug_from_path(prd)
+    )
 
     story_map = parse_story_map(read_text(prd))
     if not story_map.epics:
@@ -137,75 +148,120 @@ def expand_epic(epic: Epic, context: str, out_dir: Path, args: argparse.Namespac
         template_intro=TEMPLATE_INTRO,
     )
     if args.prompt_only:
-        write_text(prompt_path, prompt)
-        print(f"Wrote prompt: {display_path(prompt_path)}")
-        return WROTE
+        return generate(prompt, prompt_path, True, args.claude_bin, args.force)
 
     if args.response:
         response = read_text(project_path(args.response))
     else:
         print(f"Generating {epic.id} ({len(epic.stories)} stories)...")
-        response = run_claude(prompt, args.claude_bin, prompt_path)
+        response = run_claude(prompt, args.claude_bin, prompt_path, args.force)
         if response is None:
             return FALLBACK
     return write_stories(epic, epic_dir, out_dir, response, args.force)
 
 
 def write_stories(epic: Epic, epic_dir: Path, out_dir: Path, response: str, force: bool) -> str:
-    chunks = split_stories(response)
+    try:
+        chunks = split_stories(response)
+    except ValueError as exc:
+        print(f"Error: rejected response for {epic.id}: {exc}", file=sys.stderr)
+        return FAILED
     if not chunks:
         saved = out_dir / "prompts" / f"{epic_dir.name}.response.md"
-        write_text(saved, response)
+        reject_symlink(saved, "saved response")
+        if saved.exists() and not force:
+            detail = f"Existing response at {display_path(saved)} was preserved"
+            next_step = (
+                "Fix the input and re-import (or use --force to replace the saved response)."
+            )
+        else:
+            write_text(saved, response)
+            detail = f"Saved the response to {display_path(saved)}"
+            next_step = (
+                f"Fix it and re-import with --epic {epic.id} --response {display_path(saved)}"
+            )
         print(
             f"Error: found no stories in the response for {epic.id} "
             "(expected '<!-- story: US-001 -->' markers). "
-            f"Saved the response to {display_path(saved)}; fix it and re-import with "
-            f"--epic {epic.id} --response {display_path(saved)}",
+            f"{detail}; {next_step}",
             file=sys.stderr,
         )
         return FAILED
 
     expected = {s.id: s for s in epic.stories}
-    seen: set[str] = set()
-    written = skipped = 0
+    if not validate_story_response(epic, chunks, expected):
+        return FAILED
+
+    planned = []
     for sid, content in chunks:
-        if not sid or sid in seen:
-            print(f"Warning: skipped a duplicate or unreadable story marker ({sid or 'no ID'}).")
-            continue
-        seen.add(sid)
-        if sid not in expected:
-            print(f"Warning: {sid} is not in {epic.id} in the PRD story map; writing it anyway.")
-
         meta, _ = parse_frontmatter(content)
-        if not meta:
-            print(f"Warning: {sid} has no frontmatter; validate_backlog.py will flag it.")
-        elif str(meta.get("id", "")).upper() not in {"", sid}:
-            print(f"Warning: {sid} has id '{meta.get('id')}' in its frontmatter.")
-
         existing = files_for_story(out_dir, sid)
+        title_value = meta.get("title")
+        title = title_value if isinstance(title_value, str) else ""
+        name = slugify(title or expected[sid].summary, "story")[:60].strip("-")
+        target = epic_dir / f"{sid}-{name}.md"
+        reject_symlink(target, "story output")
+        planned.append((sid, content, existing, target))
+
+    written = skipped = 0
+    for sid, content, existing, target in planned:
         if existing and not force:
-            print(f"Skipped {sid}: {display_path(existing[0])} already exists (use --force to overwrite).")
+            print(
+                f"Skipped {sid}: {display_path(existing[0])} already exists (use --force to overwrite)."
+            )
             skipped += 1
             continue
         for path in existing:
+            reject_symlink(path, "story deletion")
             path.unlink()
-
-        title = meta.get("title") if isinstance(meta.get("title"), str) else ""
-        if not title and sid in expected:
-            title = expected[sid].summary
-        name = slugify(title or "", "story")[:60].strip("-")
-        target = epic_dir / f"{sid}-{name}.md"
         write_text(target, content)
         written += 1
 
-    for sid in expected:
-        if sid not in seen:
-            print(f"Warning: the response has no story for {sid}; re-run with --epic {epic.id}.")
     print(
         f"{epic.id}: wrote {plural(written, 'story', 'stories')} "
         f"to {display_path(epic_dir)}, skipped {skipped}."
     )
     return WROTE if written else SKIPPED
+
+
+def validate_story_response(
+    epic: Epic, chunks: list[tuple[str, str]], expected: dict[str, StoryRef]
+) -> bool:
+    """Reject incomplete or contradictory imports before changing story files."""
+    marker_ids = [sid for sid, _ in chunks]
+    marker_set = set(marker_ids)
+    errors: list[str] = []
+
+    duplicates = sorted({sid for sid in marker_ids if marker_ids.count(sid) > 1})
+    if duplicates:
+        errors.append(f"duplicate story marker IDs: {', '.join(duplicates)}")
+
+    unknown = sorted(marker_set - expected.keys())
+    if unknown:
+        errors.append(f"story IDs not in {epic.id}: {', '.join(unknown)}")
+
+    missing = sorted(expected.keys() - marker_set)
+    if missing:
+        errors.append(f"missing story IDs for {epic.id}: {', '.join(missing)}")
+
+    for sid, content in chunks:
+        meta, _ = parse_frontmatter(content)
+        if not meta:
+            errors.append(f"{sid}: missing frontmatter")
+            continue
+        if meta.get("id") != sid:
+            errors.append(f"{sid}: frontmatter id is {meta.get('id')!r}")
+        if meta.get("epic") != epic.id:
+            errors.append(f"{sid}: frontmatter epic is {meta.get('epic')!r}, expected {epic.id}")
+
+    if not errors:
+        return True
+    print(
+        f"Error: rejected response for {epic.id}; no story files were changed:\n"
+        + "\n".join(f"- {error}" for error in errors),
+        file=sys.stderr,
+    )
+    return False
 
 
 if __name__ == "__main__":

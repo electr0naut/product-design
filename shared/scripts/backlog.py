@@ -12,8 +12,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from workflow_common import is_prompt_file
-
+from workflow_common import is_prompt_file, read_text, reject_symlink
 
 REQUIREMENT_REF = re.compile(r"\b(BR|NFR)-(\d+)\b", re.IGNORECASE)
 STORY_REF = re.compile(r"\bUS-(\d+)\b", re.IGNORECASE)
@@ -22,7 +21,10 @@ EPIC_HEADING = re.compile(
     re.IGNORECASE,
 )
 HEADING = re.compile(r"^(#{1,6})\s")
-STORY_MARKER = re.compile(r"^[ \t]*<!--\s*story:\s*(US-\d+)\s*-->[ \t]*$", re.IGNORECASE | re.MULTILINE)
+STORY_MARKER = re.compile(
+    r"^[ \t]*<!--\s*story:\s*(US-\d+)\s*-->[ \t]*$", re.IGNORECASE | re.MULTILINE
+)
+STORY_MARKER_LIKE = re.compile(r"<!--\s*story\s*:", re.IGNORECASE)
 GIVEN_WHEN_THEN = re.compile(r"\bgiven\b.*\bwhen\b.*\bthen\b", re.IGNORECASE)
 
 PRIORITY_RANK = {"must": 0, "should": 1, "could": 2, "won't": 3, "wont": 3}
@@ -42,11 +44,6 @@ def story_id(number: str) -> str:
 
 def epic_id(number: str) -> str:
     return f"E{int(number):02d}"
-
-
-def normalize_story_id(value: str) -> str:
-    match = STORY_REF.search(value or "")
-    return story_id(match.group(1)) if match else ""
 
 
 def normalize_epic_id(value: str) -> str:
@@ -187,8 +184,11 @@ def _story_row(cells: list[str], header: list[str] | None, epic: str) -> StoryRe
 
     traces_cell = column(("trace", "requirement", "br"), 3)
     traces = requirement_refs(traces_cell) or requirement_refs(" ".join(cells[1:]))
+    match = STORY_REF.fullmatch(cells[0])
+    if match is None:
+        raise ValueError(f"Invalid story ID cell: {cells[0]!r}")
     return StoryRef(
-        id=story_id(STORY_REF.fullmatch(cells[0]).group(1)),
+        id=story_id(match.group(1)),
         epic=epic,
         summary=column(("story", "summary", "title"), 1),
         persona=column(("persona", "user"), 2),
@@ -199,7 +199,9 @@ def _story_row(cells: list[str], header: list[str] | None, epic: str) -> StoryRe
 
 def _non_goal_refs(prd_text: str) -> list[str]:
     """Requirement IDs the PRD lists under Non-Goals (out of scope on purpose)."""
-    match = re.search(r"Non-Goals\b(.*?)(?=^#|\Z)", prd_text, re.IGNORECASE | re.DOTALL | re.MULTILINE)
+    match = re.search(
+        r"Non-Goals\b(.*?)(?=^#|\Z)", prd_text, re.IGNORECASE | re.DOTALL | re.MULTILINE
+    )
     return requirement_refs(match.group(1)) if match else []
 
 
@@ -233,9 +235,11 @@ def parse_frontmatter(text: str) -> tuple[dict[str, object], str]:
             continue
         item = re.match(r"^\s*-\s+(.*)$", raw)
         if item and key is not None:
-            if not isinstance(meta.get(key), list):
-                meta[key] = []
-            meta[key].append(_scalar(item.group(1)))
+            items = meta.get(key)
+            if not isinstance(items, list):
+                items = []
+                meta[key] = items
+            items.append(_scalar(item.group(1)))
             continue
         pair = re.match(r"^([A-Za-z_][\w-]*)\s*:\s*(.*)$", raw)
         if not pair:
@@ -264,8 +268,8 @@ class Story:
     body: str
 
     @classmethod
-    def load(cls, path: Path) -> "Story":
-        meta, body = parse_frontmatter(path.read_text(encoding="utf-8"))
+    def load(cls, path: Path) -> Story:
+        meta, body = parse_frontmatter(read_text(path))
         return cls(path, meta, body)
 
     def text(self, key: str) -> str:
@@ -274,7 +278,8 @@ class Story:
 
     @property
     def id(self) -> str:
-        return normalize_story_id(self.text("id"))
+        value = self.text("id")
+        return value if re.fullmatch(r"US-\d{3}", value) else ""
 
     @property
     def title(self) -> str:
@@ -282,7 +287,8 @@ class Story:
 
     @property
     def epic(self) -> str:
-        return normalize_epic_id(self.text("epic"))
+        value = self.text("epic")
+        return value if re.fullmatch(r"E\d{2}", value) else ""
 
     @property
     def traces_to(self) -> list[str]:
@@ -329,9 +335,13 @@ def is_story_file(path: Path, backlog_dir: Path) -> bool:
 
 
 def story_files(backlog_dir: Path) -> list[Path]:
+    reject_symlink(backlog_dir, "backlog directory")
     if not backlog_dir.exists():
         return []
-    return sorted(p for p in backlog_dir.rglob("*.md") if is_story_file(p, backlog_dir))
+    files = sorted(p for p in backlog_dir.rglob("*.md") if is_story_file(p, backlog_dir))
+    for path in files:
+        reject_symlink(path, "story file")
+    return files
 
 
 def files_for_story(backlog_dir: Path, sid: str) -> list[Path]:
@@ -354,10 +364,12 @@ def split_stories(response: str) -> list[tuple[str, str]]:
     around a story are removed.
     """
     markers = list(STORY_MARKER.finditer(response))
+    if len(markers) != len(STORY_MARKER_LIKE.findall(response)):
+        raise ValueError("Malformed story marker; expected <!-- story: US-001 --> on its own line.")
     chunks = []
     for index, marker in enumerate(markers):
         end = markers[index + 1].start() if index + 1 < len(markers) else len(response)
-        chunks.append((normalize_story_id(marker.group(1)), _strip_fences(response[marker.end() : end])))
+        chunks.append((marker.group(1), _strip_fences(response[marker.end() : end])))
     return chunks
 
 
@@ -401,10 +413,17 @@ def check_backlog(
     # Story files: identity and required fields.
     for story in stories:
         if not story.meta:
-            check.errors.append(f"{where(story)}: no frontmatter (expected the story template's --- block).")
+            check.errors.append(
+                f"{where(story)}: no frontmatter (expected the story template's --- block)."
+            )
             continue
         if not story.id:
             check.errors.append(f"{where(story)}: missing or invalid `id`.")
+            continue
+        if not re.fullmatch(rf"{re.escape(story.id)}(?:-[^/]+)?\.md", story.path.name):
+            check.errors.append(
+                f"{where(story)}: filename does not match canonical frontmatter id {story.id}."
+            )
             continue
         if story.id in check.stories:
             check.errors.append(
@@ -414,8 +433,12 @@ def check_backlog(
         check.stories[story.id] = story
 
     for sid, story in check.stories.items():
+        if not story.epic:
+            check.errors.append(f"{sid}: missing or invalid `epic` (expected E01).")
         if not story.traces_to:
-            check.errors.append(f"{sid}: `traces_to` is empty; every story must trace to a BRD requirement.")
+            check.errors.append(
+                f"{sid}: `traces_to` is empty; every story must trace to a BRD requirement."
+            )
         for req in story.traces_to:
             if req not in requirements:
                 check.errors.append(f"{sid}: traces to {req}, which is not in the BRD.")
@@ -423,14 +446,18 @@ def check_backlog(
             if dep == sid:
                 check.errors.append(f"{sid}: depends on itself.")
             elif dep not in check.stories and dep not in story_map.stories:
-                check.errors.append(f"{sid}: depends on {dep}, which is not in the backlog or the PRD story map.")
+                check.errors.append(
+                    f"{sid}: depends on {dep}, which is not in the backlog or the PRD story map."
+                )
 
         ref = story_map.stories.get(sid)
         if ref is None:
             check.warnings.append(f"{sid}: not in the PRD story map (added outside the PRD?).")
         else:
             if story.epic and ref.epic and story.epic != ref.epic:
-                check.warnings.append(f"{sid}: epic is {story.epic} but the PRD story map puts it in {ref.epic}.")
+                check.warnings.append(
+                    f"{sid}: epic is {story.epic} but the PRD story map puts it in {ref.epic}."
+                )
             dropped = [req for req in ref.traces_to if req not in story.traces_to]
             if dropped:
                 check.warnings.append(
@@ -467,7 +494,9 @@ def check_backlog(
     for req in requirements:
         check.coverage[req] = [sid for sid, s in check.stories.items() if req in s.traces_to]
         check.planned[req] = [
-            sid for sid, ref in story_map.stories.items() if req in ref.traces_to and sid not in check.stories
+            sid
+            for sid, ref in story_map.stories.items()
+            if req in ref.traces_to and sid not in check.stories
         ]
         if check.coverage[req] or req in story_map.non_goals:
             continue
@@ -485,7 +514,9 @@ def check_backlog(
 
 def _build_order(stories: dict[str, Story]) -> tuple[list[Story], list[str]]:
     """Order stories so dependencies come first; ties go by priority, epic, ID."""
-    deps = {sid: [d for d in s.depends_on if d in stories and d != sid] for sid, s in stories.items()}
+    deps = {
+        sid: [d for d in s.depends_on if d in stories and d != sid] for sid, s in stories.items()
+    }
     dependents: dict[str, list[str]] = {sid: [] for sid in stories}
     for sid, ds in deps.items():
         for dep in ds:

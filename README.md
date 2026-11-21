@@ -2,9 +2,11 @@
 
 Clone this repository once for each new product. The repo is a structured
 workspace for moving from an initial idea to team analysis, BRD, PRD, technical
-design, a traceable user-story backlog, and implementation scaffolding.
+design, a traceable user-story backlog, and an implementation plan.
 
-Each phase builds on the approved documents from earlier phases:
+Each phase builds on the reviewed documents from earlier phases. The scripts
+support iterative draft-to-draft exploration; approval is a human workflow gate,
+not a status check enforced by the CLI.
 
 ```text
 01-ideation/          -> idea canvas
@@ -13,7 +15,7 @@ Each phase builds on the approved documents from earlier phases:
 04-prd/               -> product requirements and the epic/story map
 05-technical-design/  -> architecture, APIs, data models, integrations
 06-backlog/           -> one file per user story, plus a traceability report
-07-implementation/    -> implementation scaffold and generated code
+07-implementation/    -> implementation plan
 ```
 
 ## Workflow
@@ -22,23 +24,35 @@ Each phase builds on the approved documents from earlier phases:
 2. Edit the idea canvas until it reflects the product you want to explore.
 3. Generate phase-02 analyses from the idea canvas.
 4. Review and edit the generated analysis documents.
-5. Generate the BRD from the idea canvas plus approved analyses.
+5. Generate the BRD from the idea canvas plus reviewed analyses.
 6. Review and edit the BRD.
-7. Generate the PRD, including its epic and story map, from the approved BRD.
+7. Generate the PRD, including its epic and story map, from the reviewed BRD.
 8. Review and edit the PRD.
-9. Generate the technical design from the approved PRD.
+9. Generate the technical design from the reviewed PRD.
 10. Review and edit the technical design.
-11. Generate user stories, one epic at a time, from the approved PRD and
+11. Generate user stories, one epic at a time, from the reviewed PRD and
     technical design.
 12. Review and edit the stories, then check traceability and fix any errors.
-13. Generate the implementation scaffold from the approved technical design.
+13. Generate the implementation plan from the reviewed technical design.
 
 The scripts use the files in `shared/prompts/` and the templates in each phase
 folder. By default they call `claude -p`. If the Claude CLI is not installed,
 they write a `.prompt.md` file that can be pasted into another model.
 
-Generated documents are meant to be reviewed and edited, so the scripts never
-overwrite an existing document. Pass `--force` to regenerate one.
+Generated documents and `.prompt.md` prompts are meant to be reviewed and edited,
+so the scripts never overwrite an existing file without `--force`. If Claude is
+unavailable, a fallback prompt is written and the command exits 1; if that
+prompt already exists, it is preserved (use `--force` to replace it). A
+`--prompt-only` collision is skipped with exit 0 unless forced. An invalid
+story response never overwrites an existing saved `.response.md` without
+`--force` either.
+
+Output paths (including explicit `--out`, `--out-dir`, and `--report` paths) reject
+symlinked files or directory components and parent traversal (`..`). The
+system-level `/tmp` and `/var` aliases are accepted for Linux/macOS, but
+symlinks below them are not. Use real directories for external outputs; no
+write or story deletion is permitted through a symlinked product path. This is
+not a sandbox against concurrent filesystem mutation by another process.
 
 ## Commands
 
@@ -55,10 +69,12 @@ python shared/scripts/generate_analysis.py \
   --idea 01-ideation/my-product.md \
   --role legal
 
-# 3. Generate BRD from idea plus this product's analyses
+# 3. Generate BRD from idea plus all seven exact analyses for this product
 python shared/scripts/generate_brd.py \
   --idea 01-ideation/my-product.md \
   --analysis 02-analysis/
+# For exploratory work with at least one exact analysis, add --allow-partial-analysis
+# Duplicate exact analysis filenames under different directories are rejected.
 
 # 4. Generate PRD from approved BRD
 python shared/scripts/generate_prd.py \
@@ -78,7 +94,7 @@ python shared/scripts/validate_backlog.py \
   --brd 03-brd/my-product-brd.md \
   --prd 04-prd/my-product-prd.md
 
-# 7. Generate implementation scaffold from approved technical design
+# 7. Generate an implementation plan from approved technical design
 python shared/scripts/scaffold_code.py \
   --technical-design 05-technical-design/architecture/my-product-technical-design.md
 ```
@@ -135,6 +151,15 @@ Without the Claude CLI, run `generate_stories.py --prompt-only --epic E01`,
 paste the prompt into another model, save its answer, and split it into story
 files with `--epic E01 --response <saved answer>`.
 
+The response marker and each story file's frontmatter `id` must use the exact
+canonical form `US-001` (three digits), and the filename must be `US-001.md`
+or `US-001-<title>.md` with the same ID. Frontmatter `epic` must be exact
+`E01` (two digits). The importer rejects noncanonical identities before any
+story files change; the validator also treats noncanonical frontmatter as an
+error. PRD story-map parsing still accepts alternate ID spelling but produces
+canonical IDs for imports. `--force` is required to replace an existing
+`.prompt.md`, including saved epic prompts.
+
 `validate_backlog.py` checks the backlog and writes
 `06-backlog/<product>/traceability.md` with a requirement coverage matrix and a
 build order that puts dependencies first, then priority. It exits with an error
@@ -163,10 +188,37 @@ out of sync with the PRD story map. Add `--strict` to fail on warnings too.
   traceability logic; its tests run with
   `python -m unittest discover shared/scripts/tests`.
 
+## Linux and macOS Setup
+
+The committed CI gate runs on Ubuntu. A Linux/macOS checkout requires Git, GNU
+Make, Node.js 22+, npm, and `uv`; Python 3.11 is managed from `uv.lock`.
+
+```bash
+bash scripts/bootstrap.sh
+```
+
+The bootstrap script installs the locked Python environment, performs a clean npm
+install, and runs `make check`. It does not require `sudo` and never installs
+system packages.
+
+## Engineering Checks
+
+The repository includes a reproducible local quality gate for the Python pipeline and the Next.js overview:
+
+```bash
+uv sync
+npm ci
+make check
+```
+
+See `AGENTS.md` for portable coding-agent instructions and `ENGINEERING.md` for the
+full change, testing, specification and AI-review rules. Use
+`docs/specs/TEMPLATE.md` for behaviour-changing work.
+
 ## App Shell
 
-The included Next.js app is a lightweight dashboard for browsing the template
-workflow. It is not required for document generation.
+The included Next.js app is a static workflow overview. It is not required for
+document generation and does not browse or execute repository artefacts.
 
 ```bash
 npm run dev
