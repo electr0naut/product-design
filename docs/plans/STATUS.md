@@ -7,6 +7,7 @@ This branch contains a proposal, not an approved implementation. The generic pro
 - Inspected the current review manifest evaluator, provenance writer, existing gate/provenance specs, repo instructions, and spec template on the `main` baseline.
 - Isolated this documentation branch in a separate worktree; the in-progress provenance/portal code on `feat/review-provenance-and-portal-hardening` is untouched and uncommitted.
 - Proposed Step 1's behavioural contract in `docs/specs/015-derived-review-states.md` and an execution sequence in `docs/plans/step1-derived-review-states.md`; no Step 1 code was changed.
+- Reviewed the proposal against product-scoped gate discovery: a draft suffix must not change the product slug or bypass another product's manifest. Added multi-lane status aggregation and a regression criterion for this path.
 
 ## Open
 - Review step-1 policy choices with the owner before coding.
