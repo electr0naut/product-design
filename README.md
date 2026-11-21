@@ -122,6 +122,9 @@ audited service, and the checker refuses ambiguous or partial records.
   domain). Each lane has its own `roles`, `artifacts`, `depends_on` and
   `assumptions`. A blocked lane blocks only its descendants; unrelated lanes
   keep advancing.
+- `lanes[].epic: true` marks a swimlane as epic-scoped. Lanes without it are
+  cross-cutting (for example `security`) and are always checked, including
+  runs that use `--epic`.
 - `decisions` record `approve`, `request_changes`, `not_applicable` or
   `cannot_determine`, plus reviewer, role, time, evidence reference and the
   SHA-256 of every reviewed artifact. Only `approve` with matching hashes and no
@@ -157,11 +160,13 @@ python shared/scripts/check_gate.py \
 
 Exit status is `0` when every selected lane is ready, `1` when blocked and `2`
 for an invalid manifest. The generation scripts enforce the gate for their
-transition when `review/<product>.json` exists for the input or output product,
-or when `--review-manifest` is given (it must name the product being
-generated). Whole-document generation requires every lane, including
-cross-cutting lanes such as `security`; `generate_stories.py --epic E01` checks
-only that swimlane. They refuse to proceed if an input is not covered by the
+transition when `review/<product>.json` exists for the output product (falling
+back to the input product), or when `--review-manifest` is given (it must name
+the product being generated). An output product with its own manifest must pass
+that manifest, even if the input product is approved. Whole-document generation
+requires every lane, including cross-cutting lanes such as `security`;
+`generate_stories.py --epic E01` checks that swimlane plus cross-cutting lanes.
+They refuse to proceed if an input is not covered by the
 reviewed artifacts, including when a reviewed input is copied or renamed, and a
 partial BRD input cannot claim gate release. Use `--draft` for exploratory
 output; it is labelled only on stderr and is never reported as approved. With

@@ -119,7 +119,9 @@ def validate(data: object, manifest: Path) -> dict:
         gates[gid] = gate["lanes"]
         for lane_id, lane in gate["lanes"].items():
             nonempty(lane_id, "lane id")
-            policy = fields(lane, {"roles", "artifacts", "depends_on", "assumptions"})
+            policy = fields(lane, {"roles", "artifacts", "depends_on", "assumptions"}, {"epic"})
+            if "epic" in policy and not isinstance(policy["epic"], bool):
+                raise ValueError(f"{gid}/{lane_id} epic must be a boolean")
             roles = items(policy["roles"], "roles")
             artifacts = items(policy["artifacts"], "artifacts")
             if (
@@ -355,6 +357,7 @@ def evaluate_gate(manifest: Path, gate_id: str, lane: str | None = None) -> dict
             "required_roles": policy["roles"],
             "artifacts": policy["artifacts"],
             "artifact_sha256": expected,
+            "epic": bool(policy.get("epic", False)),
             "assumptions": policy["assumptions"],
             "decisions": {
                 role: {
@@ -397,6 +400,7 @@ def maybe_enforce_gate(
     partial: bool = False,
     output_product: str | None = None,
     search_from: Path | None = None,
+    include_cross_cutting: bool = False,
 ) -> dict | None:
     """Block advancement if configured review scopes or sources are unapproved.
 
@@ -425,25 +429,27 @@ def maybe_enforce_gate(
                     return candidate
             return None
 
-        manifest = find(product) or find(output_product)
+        manifest = find(output_product) or find(product)
         if manifest is None:
             print("DRAFT ONLY: no review manifest configured; not approved.", file=sys.stderr)
             return None
     data = validate(load_manifest(manifest), manifest)
-    if data["product"] != product and data["product"] != output_product:
+    expected_product = output_product or product
+    if data["product"] != expected_product:
         raise SystemExit(
-            f"Review manifest {manifest} configures product '{data['product']}', not '{product}'."
+            f"Review manifest {manifest} configures product '{data['product']}', "
+            f"not '{expected_product}'."
         )
-    if not manifest.exists():
-        print("DRAFT ONLY: no review manifest configured; not approved.", file=sys.stderr)
-        return None
     if partial:
         raise SystemExit(
             f"Review gate {gate_id} needs the complete input set; "
             "partial inputs are exploratory only (use --draft)."
         )
     if not lanes:
-        report = evaluate_gate(manifest, gate_id)
+        try:
+            report = evaluate_gate(manifest, gate_id)
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from exc
         statuses = report["lanes"]
     else:
         available = {gate["id"]: gate["lanes"] for gate in data["gates"]}
@@ -458,7 +464,14 @@ def maybe_enforce_gate(
                 f"Review manifest {manifest} has no lane(s) {', '.join(unknown)} "
                 f"in gate '{gate_id}' (known: {', '.join(sorted(available[gate_id]))})."
             )
-        statuses = {lane: evaluate_gate(manifest, gate_id, lane)["lanes"][lane] for lane in lanes}
+        selected = set(lanes)
+        if include_cross_cutting:
+            selected |= {
+                name for name, policy in available[gate_id].items() if not policy.get("epic", False)
+            }
+        statuses = {
+            lane: evaluate_gate(manifest, gate_id, lane)["lanes"][lane] for lane in sorted(selected)
+        }
     root = manifest.parent.parent
     covered = {artifact for state in statuses.values() for artifact in state["artifacts"]}
     for lane, state in statuses.items():
@@ -473,7 +486,9 @@ def maybe_enforce_gate(
             if relative not in covered:
                 raise SystemExit(f"Review gate {gate_id} omits input: {relative}")
         if not state["ready"]:
-            raise SystemExit(f"Review gate {gate_id}/{lane} blocked: {'; '.join(state['reasons'])}")
+            raise SystemExit(
+                f"Review gate {gate_id}/{lane} blocked in {manifest}: {'; '.join(state['reasons'])}"
+            )
     return {"root": str(root), "lanes": statuses}
 
 
@@ -484,7 +499,8 @@ def verify_bundle(context: object, report: dict | None) -> None:
     root = Path(report["root"]).resolve()
     bundled = {}
     for item in getattr(context, "sources", []):
-        resolved = Path(item["path"]).resolve()
+        raw = Path(item["path"])
+        resolved = (raw if raw.is_absolute() else ROOT / raw).resolve()
         try:
             key = resolved.relative_to(root).as_posix()
         except ValueError:
@@ -492,7 +508,9 @@ def verify_bundle(context: object, report: dict | None) -> None:
         bundled[key] = item["sha256"]
     for lane, state in report["lanes"].items():
         changed = [
-            path for path, digest in bundled.items() if state["artifact_sha256"].get(path) != digest
+            path
+            for path, digest in bundled.items()
+            if path in state["artifact_sha256"] and state["artifact_sha256"][path] != digest
         ]
         if changed:
             raise SystemExit(

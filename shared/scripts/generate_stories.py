@@ -95,6 +95,7 @@ def main() -> None:
         [epic.id for epic in epics] if args.epic else None,
         output_product=slug_from_path(out_dir),
         search_from=out_dir,
+        include_cross_cutting=bool(args.epic),
     )
     for sid in story_map.unassigned:
         print(f"Warning: {sid} is not under an epic heading in the PRD; it will not be generated.")

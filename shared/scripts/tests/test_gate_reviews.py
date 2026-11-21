@@ -32,12 +32,14 @@ def manifest_fixture(root: Path) -> tuple[Path, dict]:
                         "artifacts": ["review/accounts.md"],
                         "depends_on": [],
                         "assumptions": [],
+                        "epic": True,
                     },
                     "E02": {
                         "roles": ["product", "legal"],
                         "artifacts": ["review/billing.md"],
                         "depends_on": [{"gate": "design-to-backlog", "lane": "E01"}],
                         "assumptions": [],
+                        "epic": True,
                     },
                 },
             }
@@ -494,8 +496,14 @@ def test_other_generation_phases_require_configured_reviews(
             command += ["--out-dir", str(root / "02-analysis")]
             out = root / "02-analysis" / "legal" / "demo-legal-analysis.prompt.md"
         else:
-            command += ["--out", str(root / "result.md")]
-            out = root / "result.prompt.md"
+            target = (
+                root / "03-brd" / "demo-brd.md"
+                if phase == "analysis-to-brd"
+                else root / "05-technical-design" / "architecture" / "demo-technical-design.md"
+            )
+            target.parent.mkdir(parents=True, exist_ok=True)
+            command += ["--out", str(target)]
+            out = target.with_suffix(".prompt.md")
         assert subprocess.run(command, text=True, capture_output=True, check=False).returncode != 0
         assert not out.exists()
         approved = {
@@ -561,7 +569,7 @@ def test_partial_brd_cannot_claim_gate_release_even_if_subset_was_approved():
             }
         ]
         manifest.write_text(json.dumps(doc), encoding="utf-8")
-        output = root / "result.prompt.md"
+        output = root / "03-brd" / "demo-brd.prompt.md"
         command = [
             sys.executable,
             str(SCRIPTS / "generate_brd.py"),
@@ -570,7 +578,7 @@ def test_partial_brd_cannot_claim_gate_release_even_if_subset_was_approved():
             "--analysis",
             str(root / "02-analysis"),
             "--out",
-            str(root / "result.md"),
+            str(root / "03-brd" / "demo-brd.md"),
             "--allow-partial-analysis",
             "--prompt-only",
             "--review-manifest",
@@ -668,8 +676,9 @@ def test_whole_gate_check_includes_non_epic_cross_cutting_lane():
         scoped = subprocess.run(
             [*base, "--epic", "E01"], capture_output=True, text=True, check=False
         )
-        assert scoped.returncode == 0, scoped.stderr
-        assert (out / "prompts" / "E01-accounts.prompt.md").exists()
+        assert scoped.returncode != 0
+        assert "security" in scoped.stdout + scoped.stderr
+        assert not (out / "prompts" / "E01-accounts.prompt.md").exists()
 
 
 def test_renamed_input_copy_cannot_bypass_the_products_gate():
@@ -765,3 +774,109 @@ def test_cycle_between_unselected_lanes_is_still_rejected():
         }
         with pytest.raises(ValueError, match="cycle"):
             check(root, doc, lane="other")
+
+
+def test_sources_split_across_lanes_bundle_without_false_staleness():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        manifest, doc = manifest_fixture(root)
+        (root / "04-prd").mkdir()
+        (root / "05-technical-design").mkdir()
+        prd = root / "04-prd" / "demo-prd.md"
+        prd.write_text(
+            "### E01: Accounts\n| ID | Story | Persona | Traces to | Priority |\n"
+            "|----|-------|---------|-----------|----------|\n"
+            "| US-001 | Create account | User | BR-001 | Must |\n\n"
+            "### E02: Billing\n| ID | Story | Persona | Traces to | Priority |\n"
+            "|----|-------|---------|-----------|----------|\n"
+            "| US-002 | Pay bill | User | BR-002 | Must |\n",
+            encoding="utf-8",
+        )
+        design = root / "05-technical-design" / "demo-technical-design.md"
+        design.write_text("# Design\n", encoding="utf-8")
+        doc["gates"][0]["lanes"]["E01"]["artifacts"] = ["04-prd/demo-prd.md"]
+        doc["gates"][0]["lanes"]["E02"]["artifacts"] = [
+            "05-technical-design/demo-technical-design.md"
+        ]
+        for lane in ("E01", "E02"):
+            for role in doc["gates"][0]["lanes"][lane]["roles"]:
+                decide(root, doc, lane, role)
+        for decision in doc["decisions"]:
+            lane = decision["lane"]
+            artifacts = doc["gates"][0]["lanes"][lane]["artifacts"]
+            decision["artifact_sha256"] = {
+                p: hashlib.sha256((root / p).read_bytes()).hexdigest() for p in artifacts
+            }
+        manifest.write_text(json.dumps(doc), encoding="utf-8")
+        out = root / "06-backlog" / "demo"
+        command = [
+            sys.executable,
+            str(SCRIPTS / "generate_stories.py"),
+            "--prd",
+            str(prd),
+            "--technical-design",
+            str(design),
+            "--out-dir",
+            str(out),
+            "--prompt-only",
+            "--review-manifest",
+            str(manifest),
+        ]
+        result = subprocess.run(command, capture_output=True, text=True, check=False)
+        assert result.returncode == 0, result.stderr
+        assert (out / "prompts" / "E01-accounts.prompt.md").exists()
+
+
+def test_output_product_manifest_is_enforced_over_the_input_products():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        manifest, doc = manifest_fixture(root)
+        (root / "03-brd").mkdir()
+        brd = root / "03-brd" / "demo-brd.md"
+        brd.write_text("# BRD\n", encoding="utf-8")
+        doc["gates"] = [
+            {
+                "id": "brd-to-prd",
+                "lanes": {
+                    "all": {
+                        "roles": ["product"],
+                        "artifacts": ["03-brd/demo-brd.md"],
+                        "depends_on": [],
+                        "assumptions": [],
+                    }
+                },
+            }
+        ]
+        doc["decisions"] = [
+            {
+                "id": "D-001",
+                "gate": "brd-to-prd",
+                "lane": "all",
+                "role": "product",
+                "reviewer": "Owner",
+                "decision": "approve",
+                "recorded_at": "2026-11-21T12:00:00Z",
+                "artifact_sha256": {
+                    "03-brd/demo-brd.md": hashlib.sha256(brd.read_bytes()).hexdigest()
+                },
+                "evidence": "ticket-001",
+                "feedback": [],
+            }
+        ]
+        manifest.write_text(json.dumps(doc), encoding="utf-8")
+        other = dict(doc)
+        other["product"] = "other"
+        other["decisions"] = []
+        (root / "review" / "other.json").write_text(json.dumps(other), encoding="utf-8")
+        command = [
+            sys.executable,
+            str(SCRIPTS / "generate_prd.py"),
+            "--brd",
+            str(brd),
+            "--out",
+            str(root / "04-prd" / "other-prd.md"),
+            "--prompt-only",
+        ]
+        result = subprocess.run(command, capture_output=True, text=True, check=False)
+        assert result.returncode != 0
+        assert "other" in result.stdout + result.stderr
