@@ -2,6 +2,15 @@
 
 This branch contains a proposal, not an approved implementation. The generic product-design scaffold is the scope; FIX is only a later test run.
 
+## Working rules
+- Scaffolding phase: you may merge your own PRs once make check and CI
+  are green. The owner reviews afterwards and reverts if needed.
+- Never write, edit or synthesise decisions, feedback events, answers or
+  change events in any review/*.json manifest. Only record_decision.py,
+  run by the owner, records decisions.
+- When the scaffolding skeleton is declared complete, autonomous merging
+  ends: open PRs and wait for the owner to merge.
+
 ## Done
 - Saved the planning-session document verbatim in `docs/plans/next-phase.md` (commit `d3271b2`).
 - Inspected the current review manifest evaluator, provenance writer, existing gate/provenance specs, repo instructions, and spec template on the `main` baseline.
