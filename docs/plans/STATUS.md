@@ -23,6 +23,26 @@ The generic product-design scaffold is the scope; FIX is only a later test run. 
 - When the scaffolding skeleton is declared complete, autonomous merging
   ends: open PRs and wait for the owner to merge.
 
+## Handover (2026-11-21)
+
+**State.** `main` = `4f358b2`; CI green on that head (`check` plus the three CodeQL analyses); no open PRs; working tree clean; stash list empty. Steps 1a–1d, the working rules, security triage (a), the nanoid audit (b) and the root-safety test fix (c) are merged. The handover prompt lives in `docs/prompts/handover.md`. The other worktrees are clean: `/srv/lab/product-design` holds the WIP branch, and `/srv/lab/product-design-status` is detached at the same `main` commit after being reset from a stale tree (`7149daf`).
+
+**Next step.** Mutation testing with mutmut on changed lines only, in `shared/scripts/gate_reviews.py` and `shared/scripts/backlog.py`: advisory, change tests only, report the score before and after, and explain every surviving mutant. It is unblocked now that 1b–1d are merged. Do not change production behaviour to kill mutants without asking the owner.
+
+**Remaining known gaps.** `04-prd/templates/prd-template.md` and `05-technical-design/architecture/template.md` still link to `03-brd/approved/` and `04-prd/approved/`, which do not exist; sign-off lives in `review/<product>.json`. Story directories `06-backlog/<product>/` receive no provenance sidecars because the story importer writes none. Steps 2–4 (role-shaped output, decision constraints, Atlassian) are outside this pass.
+
+**Gotchas.**
+- CodeRabbit is not connected: PRs #1–#22 have zero reviews, zero comments and no check run from it. Rule 2 cannot be satisfied; the owner was told and directed the work to continue. Record the gap in "Done" for any PR merged without review instead of implying a review happened.
+- There is no global git identity. Pass `-c user.name='Hermes Agent' -c user.email='hermes-agent@users.noreply.github.com'` on every commit and rebase `--continue`.
+- No `gh` CLI and no PyYAML. GitHub work goes through `/home/ubay/.hermes/cache/scratch/product_design_gh_api.py` (token read from `~/.config/gh/hosts.yml`). Actions: `view <pr>`, `checks <sha>`, `watch <sha>`, `merge <pr> <sha> [title]`, `reviews <pr>`, `review-comments <pr>`, `issue-comments <pr>`, `main`, `create <branch>`. `merge` now takes the commit title from the PR; PRs #18 and #19 landed with a generic wrong subject because it used to be hardcoded.
+- `main` is also checked out in `/srv/lab/product-design-status` at the stale `64e1a7f`, so `git switch main` in the next-phase worktree fails; refresh that worktree or branch from `origin/main`.
+- Local branches for merged work still exist (`docs/*`, `feat/step1*`, `security/*`, `fix/*`). They were squash-merged, so `git branch --merged` will not list them; they are not unmerged work.
+- `make check` runs ruff, pyright, pytest, ESLint, `tsc` and a Next build; use `uv run pytest <path>` for a focused run. Last local count: 157 tests plus 6 subtests.
+- Draft contract: `--draft` writes `*.draft.md` or `<product>.draft/`, refuses a canonical `--out`, and evaluates gates against the canonical path; `promote.py` copies bytes and sidecar but never approves. `review/*.json` is written only by `record_decision.py`, run by the owner.
+- Never add a write endpoint to `/review` or weaken its loopback Host check.
+
+**Uncommitted or stashed work.** None; the stash list is empty. `wip/review-provenance-and-portal-hardening` at `f1fe7bb`, checked out in `/srv/lab/product-design`, is unmerged WIP (31 files: story provenance sidecars, split-PRD, question extraction, Vitest/Playwright, nonce CSP). It is not reviewed; do not merge it without the owner.
+
 ## Done
 - Saved the planning-session document verbatim in `docs/plans/next-phase.md` (commit `d3271b2`).
 - Inspected the current review manifest evaluator, provenance writer, existing gate/provenance specs, repo instructions, and spec template on the `main` baseline.
