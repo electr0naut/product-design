@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import hashlib
+import json
+import os
 import re
 import shutil
 import subprocess
@@ -20,6 +23,32 @@ WROTE = "wrote"
 SKIPPED = "skipped"
 FALLBACK = "fallback"
 FAILED = "failed"
+
+
+def sha256(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+class SourceBundle(str):
+    """Context text with the exact source files used to assemble it."""
+
+    sources: list[dict[str, str]]
+
+    def __new__(cls, text: str, sources: list[dict[str, str]]) -> SourceBundle:
+        result = super().__new__(cls, text)
+        result.sources = sources
+        return result
+
+
+class AssembledPrompt(str):
+    """Prompt text with a snapshot of its provenance (not model claims)."""
+
+    provenance: dict[str, object]
+
+    def __new__(cls, text: str, provenance: dict[str, object]) -> AssembledPrompt:
+        result = super().__new__(cls, text)
+        result.provenance = provenance
+        return result
 
 
 def project_path(value: str) -> Path:
@@ -49,7 +78,7 @@ def read_text(path: Path) -> str:
         raise SystemExit(f"Missing file: {display_path(path)}")
     if not path.is_file():
         raise SystemExit(f"Expected regular file: {display_path(path)}")
-    return path.read_text(encoding="utf-8")
+    return path.read_bytes().decode("utf-8")
 
 
 def write_text(path: Path, content: str) -> None:
@@ -121,11 +150,14 @@ def markdown_files(
     return files
 
 
-def bundle_documents(title: str, paths: list[Path]) -> str:
+def bundle_documents(title: str, paths: list[Path]) -> SourceBundle:
     sections = [f"# {title}"]
+    sources = []
     for path in paths:
-        sections.append(f"\n## Source: {display_path(path)}\n\n{read_text(path)}")
-    return "\n".join(sections)
+        text = read_text(path)
+        sections.append(f"\n## Source: {display_path(path)}\n\n{text}")
+        sources.append({"path": str(path), "sha256": sha256(text.encode("utf-8"))})
+    return SourceBundle("\n".join(sections), sources)
 
 
 def compose_prompt(
@@ -133,17 +165,35 @@ def compose_prompt(
     template: Path | None,
     context: str,
     template_intro: str = TEMPLATE_INTRO,
-) -> str:
+) -> AssembledPrompt:
     today = dt.date.today().isoformat()
+    instruction_text = read_text(instruction)
     parts = [
-        read_text(instruction),
+        instruction_text,
         f"\nCurrent date: {today}",
         "\nUse the source documents below as the system of record.",
     ]
-    if template is not None:
-        parts.append(f"\n{template_intro}\n\n" + read_text(template))
+    template_text = read_text(template) if template is not None else None
+    if template_text is not None:
+        parts.append(f"\n{template_intro}\n\n" + template_text)
     parts.append("\nSource documents:\n\n" + context)
-    return "\n\n---\n\n".join(parts)
+    text = "\n\n---\n\n".join(parts)
+    return AssembledPrompt(
+        text,
+        {
+            "inputs": getattr(context, "sources", []),
+            "instruction": {
+                "path": str(instruction),
+                "sha256": sha256(instruction_text.encode("utf-8")),
+            },
+            "template": (
+                {"path": str(template), "sha256": sha256(template_text.encode("utf-8"))}
+                if template is not None and template_text is not None
+                else None
+            ),
+            "assembled_prompt_sha256": sha256(text.encode("utf-8")),
+        },
+    )
 
 
 def add_common_args(parser: argparse.ArgumentParser) -> None:
@@ -225,8 +275,15 @@ def generate(
         print(f"Wrote prompt: {display_path(output)}")
         return WROTE
 
-    if output.exists() and not force:
-        print(f"Skipped {display_path(output)}: it already exists (use --force to overwrite).")
+    sidecar = output.with_suffix(".provenance.json")
+    reject_symlink(sidecar, "provenance sidecar")
+    for target in (output, sidecar):
+        if target.exists() and not target.is_file():
+            raise SystemExit(f"Expected regular file: {display_path(target)}")
+    if (output.exists() or sidecar.exists()) and not force:
+        print(
+            f"Skipped {display_path(output)}: document or provenance already exists (use --force to overwrite)."
+        )
         return SKIPPED
 
     text = run_claude(prompt, claude_bin, output.with_suffix(PROMPT_SUFFIX), force)
@@ -234,6 +291,20 @@ def generate(
         return FALLBACK
 
     write_text(output, text)
+    provenance = dict(getattr(prompt, "provenance", {}))
+    provenance.update(
+        {
+            "document_sha256": sha256(output.read_bytes()),
+            "model": None,  # `claude -p` plain text does not report the selected model.
+            "generated_at": dt.datetime.now(dt.UTC).isoformat(),
+        }
+    )
+    sidecar.parent.mkdir(parents=True, exist_ok=True)
+    flags = os.O_WRONLY | os.O_CREAT | (os.O_TRUNC if force else os.O_EXCL)
+    flags |= getattr(os, "O_NOFOLLOW", 0)
+    with os.fdopen(os.open(sidecar, flags, 0o666), "w", encoding="utf-8") as file:
+        json.dump(provenance, file, indent=2, sort_keys=True)
+        file.write("\n")
     print(f"Wrote document: {display_path(output)}")
     return WROTE
 
