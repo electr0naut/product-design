@@ -5,8 +5,10 @@ workspace for moving from an initial idea to team analysis, BRD, PRD, technical
 design, a traceable user-story backlog, and an implementation plan.
 
 Each phase builds on the reviewed documents from earlier phases. The scripts
-support iterative draft-to-draft exploration; approval is a human workflow gate,
-not a status check enforced by the CLI.
+support iterative draft-to-draft exploration. A phase gate is only released by
+recorded decisions from the required stakeholders for the exact document bytes
+they reviewed (see [Stakeholder Review Gates](#stakeholder-review-gates));
+passing CI or a generated document is never approval.
 
 ```text
 01-ideation/          -> idea canvas
@@ -107,6 +109,83 @@ python shared/scripts/generate_prd.py \
   --brd 03-brd/my-product-brd.md \
   --prompt-only
 ```
+
+## Stakeholder Review Gates
+
+Reviews are configured per product in `review/<product>.json`, where
+`<product>` is the slug used by the phase documents. The manifest is plain JSON:
+it is the contract a future role-based portal can read and write through an
+audited service, and the checker refuses ambiguous or partial records.
+
+- `gates[].id` names a transition such as `design-to-backlog`.
+- `gates[].lanes` splits a gate into swimlanes (usually epics, or an analysis
+  domain). Each lane has its own `roles`, `artifacts`, `depends_on` and
+  `assumptions`. A blocked lane blocks only its descendants; unrelated lanes
+  keep advancing.
+- `lanes[].epic: true` marks a swimlane as epic-scoped. Lanes without it are
+  cross-cutting (for example `security`) and are always checked, including
+  runs that use `--epic`.
+- `decisions` record `approve`, `request_changes`, `not_applicable` or
+  `cannot_determine`, plus reviewer, role, time, evidence reference and the
+  SHA-256 of every reviewed artifact. Only `approve` with matching hashes and no
+  unresolved feedback releases a lane. The latest decision wins; an older
+  approval cannot hide a later objection.
+- `feedback` entries stay `open` until resolved with a written resolution.
+  Resolutions update the record in place; Git history keeps the original
+  objection.
+- `assumptions` carry a source and `review_by` date; expired ones block the
+  lanes that reference them.
+- `changes` record a source (for example a regulation, vendor decision or
+  priority shift), affected gate/lane scopes and a status. An open change blocks
+  its scopes; a resolved change requires a newer approval from every required
+  role in those scopes. Only declared scopes are invalidated. Separately scoped
+  artifacts are required for true partial invalidation: if two lanes review the
+  same document, editing it makes both stale.
+
+Check readiness before generating the next phase:
+
+```bash
+python shared/scripts/check_gate.py \
+  --manifest review/my-product.json \
+  --gate design-to-backlog
+# One swimlane only:
+python shared/scripts/check_gate.py \
+  --manifest review/my-product.json \
+  --gate design-to-backlog --lane E02
+# Machine-readable output, including pending roles and feedback, for a portal:
+python shared/scripts/check_gate.py \
+  --manifest review/my-product.json \
+  --gate design-to-backlog --json
+```
+
+Exit status is `0` when every selected lane is ready, `1` when blocked and `2`
+for an invalid manifest. The generation scripts enforce the gate for their
+transition when `review/<product>.json` exists for the output product (falling
+back to the input product), or when `--review-manifest` is given (it must name
+the product being generated). An output product with its own manifest must pass
+that manifest, even if the input product is approved. Whole-document generation
+requires every lane, including cross-cutting lanes such as `security`;
+`generate_stories.py --epic E01` checks that swimlane plus cross-cutting lanes.
+They refuse to proceed if an input is not covered by the
+reviewed artifacts, including when a reviewed input is copied or renamed, and a
+partial BRD input cannot claim gate release. Use `--draft` for exploratory
+output; it is labelled only on stderr and is never reported as approved. With
+no manifest at all, generation stays draft-only and says so.
+
+Approvals bind document hashes, not identity. Recording and validating a
+decision is a local, auditable trail; it is not SSO, access control or a formal
+legal signature. Before a portal is built, export only the material each role
+needs, decide where confidential analyses may be processed, and authenticate
+reviewers. `review/EXAMPLE.json` is an inert template, not a configured review.
+
+Generated documents also get a `<document>.provenance.json` sidecar with the
+repository-relative input paths and their hashes, the prompt and template
+hashes, the assembled prompt hash, the document hash and generation time. The
+CLI cannot confirm which model answered,
+so it records `model: null` rather than guessing. Provenance proves what was
+consumed, not that a claim is true or approved. Legal and compliance prompts
+require verifiable citations, applicability assumptions and explicit
+uncertainty.
 
 ## User Story Backlog
 

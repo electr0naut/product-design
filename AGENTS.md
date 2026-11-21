@@ -15,8 +15,12 @@ coding model or agent that clones the repository.
 5. Keep stable IDs (`BR-xxx`, `NFR-xxx`, `E01`, `US-001`) intact unless the
    corresponding spec explicitly permits a migration.
 6. Do not overwrite reviewed product documents or unrelated user changes.
-7. Run `make check` before declaring the task complete.
-8. Report exact commands and their observed results; agent prose is not proof
+7. When `review/<product>.json` exists, treat it as the gate contract: do not
+   edit a reviewed artifact, mark a decision approved, resolve feedback, or
+   record a change on a stakeholder's behalf. Record only decisions you were
+   given, with the exact artifact hashes and evidence reference.
+8. Run `make check` before declaring the task complete.
+9. Report exact commands and their observed results; agent prose is not proof
    that code works.
 
 ## Repository conventions

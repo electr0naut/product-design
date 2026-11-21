@@ -1,8 +1,7 @@
 # Compliance Analysis: [Project Name]
 
 ## Date: YYYY-MM-DD
-## Analyst:
-## Status: Draft | Under Review | Approved
+## Status: Draft — pending human compliance review
 
 ---
 
@@ -36,3 +35,10 @@
 |            |          |          |              |
 
 ## 6. Risk Rating: [Low | Medium | High | Critical]
+
+## 7. Sources, Applicability & Uncertainty
+| Requirement / claim | Source (authority, title, date/version, link or precise citation) | Jurisdiction and applicability assumptions | Uncertain / unverified point and next check |
+|---------------------|--------------------------------------------------------------------|------------------------------------------|---------------------------------------------|
+|                     |                                                                    |                                          |                                             |
+
+State when no verifiable source is available. This draft and its provenance metadata do not establish compliance or human approval.

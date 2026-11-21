@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 
+from gate_reviews import add_review_args, maybe_enforce_gate, verify_bundle
 from workflow_common import (
     PROMPT_SUFFIX,
     PROMPTS,
@@ -42,6 +43,7 @@ def main() -> None:
         help="Allow exploratory BRD generation with fewer than seven analyses.",
     )
     add_common_args(parser)
+    add_review_args(parser)
     args = parser.parse_args()
 
     idea = project_path(args.idea)
@@ -64,18 +66,28 @@ def main() -> None:
             f"No phase-02 analysis documents for '{slug}' in {display_path(analysis)}."
         )
     sources = [idea] + analyses
+    default_out = ROOT / "03-brd" / f"{slug}-brd.md"
+    output = project_path(args.out) if args.out else default_out
+    statuses = maybe_enforce_gate(
+        args,
+        slug,
+        "analysis-to-brd",
+        sources,
+        partial=bool(missing),
+        output_product=slug_from_path(output),
+        search_from=output,
+    )
     print("Sources:")
     for source in sources:
         print(f"  {display_path(source)}")
 
     context = bundle_documents("BRD Inputs", sources)
+    verify_bundle(context, statuses)
     prompt = compose_prompt(
         PROMPTS / "03-generate-brd.md",
         ROOT / "03-brd" / "templates" / "brd-template.md",
         context,
     )
-    default_out = ROOT / "03-brd" / f"{slug}-brd.md"
-    output = project_path(args.out) if args.out else default_out
     if args.prompt_only:
         output = output.with_suffix(PROMPT_SUFFIX)
     exit_status([generate(prompt, output, args.prompt_only, args.claude_bin, args.force)])
