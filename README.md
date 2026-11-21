@@ -165,6 +165,19 @@ out of sync with the PRD story map. Add `--strict` to fail on warnings too.
   traceability logic; its tests run with
   `python -m unittest discover shared/scripts/tests`.
 
+## Linux and macOS Setup
+
+The committed CI gate runs on Ubuntu. A Linux/macOS checkout requires Git, GNU
+Make, Node.js 22+, npm, and `uv`; Python 3.11 is managed from `uv.lock`.
+
+```bash
+bash scripts/bootstrap.sh
+```
+
+The bootstrap script installs the locked Python environment, performs a clean npm
+install, and runs `make check`. It does not require `sudo` and never installs
+system packages.
+
 ## Engineering Checks
 
 The repository includes a reproducible local quality gate for the Python pipeline and the Next.js overview:
