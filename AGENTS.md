@@ -19,8 +19,10 @@ coding model or agent that clones the repository.
    edit a reviewed artifact, mark a decision approved, resolve feedback, or
    record a change on a stakeholder's behalf. Record only decisions you were
    given, with the exact artifact hashes and evidence reference.
-8. Run `make check` before declaring the task complete.
-9. Report exact commands and their observed results; agent prose is not proof
+8. Review pages under `/review` are unauthenticated and loopback-only. Never add
+   a write endpoint or weaken the Host check without an authentication design.
+9. Run `make check` before declaring the task complete.
+10. Report exact commands and their observed results; agent prose is not proof
    that code works.
 
 ## Repository conventions

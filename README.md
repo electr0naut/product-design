@@ -194,6 +194,21 @@ python shared/scripts/record_decision.py \
 The recorder refuses a stale approval outright; a stale change request needs
 `--accept-stale`. `--verify` performs every check without writing.
 
+### Role review pages
+
+`npm run build && npm run review` serves local pages under `/review`, one queue
+per product and role. A decision page shows the artifacts and their hashes, what
+blocks the lane, the other required roles, open questions for that role, and a
+form that builds a decision packet. The packet is downloaded or copied; it is not
+submitted. The maintainer records it with `record_decision.py`.
+
+The pages are deliberately unauthenticated, so they bind to loopback and reject
+any other `Host` header. They are a convenience for people already trusted with
+the material; they are not access control. Do not expose them through a public
+URL. The AI help button answers one open question from that question's cited
+section, marks unverified quotes, and never submits or records anything; it is
+disabled unless `REVIEW_ASSIST_ENABLED=1` and the `claude` CLI is available.
+
 Approvals bind document hashes, not identity. Recording and validating a
 decision is a local, auditable trail; it is not SSO, access control or a formal
 legal signature. Before a portal is built, export only the material each role
