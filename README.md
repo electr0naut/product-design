@@ -180,7 +180,22 @@ python shared/scripts/check_gate.py \
 python shared/scripts/check_gate.py \
   --manifest review/my-product.json \
   --gate design-to-backlog --json
+# Live status for one existing artifact, with underlying gate/lane reasons:
+python shared/scripts/check_gate.py \
+  --manifest review/my-product.json \
+  --artifact 04-prd/my-product/epics/E01.md --json
 ```
+
+`--artifact` is read-only. It reports `draft` for an unenrolled artifact,
+`in_review` for outstanding decisions, `on_hold` for active blockers,
+`needs_reapproval` after a previously complete approval goes stale, and
+`approved` only when every applicable lane is ready for the current bytes.
+Assumptions due within seven calendar days appear under `warnings` without
+changing readiness; use `--warning-days N` to change the lead time and
+`--today YYYY-MM-DD` for reproducible reports. An artifact check exits 0 only
+for `approved`, 1 for any other state, and 2 for invalid input. This is the
+status of the artifact itself, not a claim that an output was approved when
+its generating command's *input* gate passed. No decisions are written.
 
 Exit status is `0` when every selected lane is ready, `1` when blocked and `2`
 for an invalid manifest. The generation scripts enforce the gate for their

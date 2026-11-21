@@ -9,7 +9,7 @@ import json
 import sys
 from pathlib import Path
 
-from gate_reviews import evaluate_gate, load_manifest, portal_view, validate
+from gate_reviews import artifact_status, evaluate_gate, load_manifest, portal_view, validate
 from workflow_common import ROOT
 
 
@@ -50,6 +50,13 @@ def main() -> int:
     parser.add_argument("--manifest", type=Path, help="review/<product>.json")
     parser.add_argument("--gate", help="Gate ID, e.g. design-to-backlog")
     parser.add_argument("--lane", help="Optional swimlane ID; omit to check the whole gate")
+    parser.add_argument("--artifact", type=Path, help="Project the live review status of one file")
+    parser.add_argument(
+        "--warning-days",
+        type=int,
+        default=7,
+        help="Non-blocking assumption warning lead time (default: 7)",
+    )
     parser.add_argument("--role", help="Emit the per-role portal view instead of a gate check")
     parser.add_argument("--all", action="store_true", help="Report every product, gate and lane")
     parser.add_argument(
@@ -64,6 +71,30 @@ def main() -> int:
     except ValueError:
         print(f"Invalid --today date: {args.today!r}", file=sys.stderr)
         return 2
+    if args.artifact:
+        if args.gate or args.lane or args.role or args.all:
+            parser.error("--artifact cannot be combined with --gate, --lane, --role or --all")
+        try:
+            path = args.artifact if args.artifact.is_absolute() else ROOT / args.artifact
+            manifest = (
+                args.manifest
+                if args.manifest is None or args.manifest.is_absolute()
+                else Path.cwd() / args.manifest
+            )
+            report = artifact_status(manifest, path, today=today, warning_days=args.warning_days)
+        except (ValueError, TypeError, KeyError, OSError, SystemExit) as exc:
+            print(f"Invalid review artifact: {exc}", file=sys.stderr)
+            return 2
+        if args.json:
+            print(json.dumps(report, indent=2, sort_keys=True))
+        else:
+            print(f"{path}: {report['status'].upper()}")
+            for scope in report["scopes"]:
+                for reason in scope["reasons"]:
+                    print(f"  {scope['gate']}/{scope['lane']}: {reason}")
+            for warning in report["warnings"]:
+                print(f"  Warning: {warning['assumption']} review by {warning['review_by']}")
+        return 0 if report["status"] == "approved" else 1
     if args.all:
         manifest_dir = args.manifest.parent if args.manifest else ROOT / "review"
         products = all_products(manifest_dir, today)

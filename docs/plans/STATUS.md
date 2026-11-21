@@ -1,6 +1,6 @@
 # Next-phase planning status
 
-This branch contains a proposal, not an approved implementation. The generic product-design scaffold is the scope; FIX is only a later test run.
+The generic product-design scaffold is the scope; FIX is only a later test run. This file tracks the Step 1 implementation sequence.
 
 ## Working rules
 - Scaffolding phase: you may merge your own PRs once make check and CI
@@ -14,17 +14,19 @@ This branch contains a proposal, not an approved implementation. The generic pro
 ## Done
 - Saved the planning-session document verbatim in `docs/plans/next-phase.md` (commit `d3271b2`).
 - Inspected the current review manifest evaluator, provenance writer, existing gate/provenance specs, repo instructions, and spec template on the `main` baseline.
-- Isolated this documentation branch in a separate worktree; the in-progress provenance/portal code on `feat/review-provenance-and-portal-hardening` is untouched and uncommitted.
+- Isolated the planning and Step 1a branches in separate worktrees from the in-progress provenance/portal code (subsequently parked below).
 - Proposed Step 1's behavioural contract in `docs/specs/015-derived-review-states.md` and an execution sequence in `docs/plans/step1-derived-review-states.md`; no Step 1 code was changed.
 - Reviewed the proposal against product-scoped gate discovery: a draft suffix must not change the product slug or bypass another product's manifest. Added multi-lane status aggregation and a regression criterion for this path.
-- Opened draft PR #11 for the Step 1 proposal: https://github.com/electr0naut/product-design/pull/11. It is not approved or merged.
+- PR #11 for the Step 1 proposal was merged as `09f18ec` after CI passed.
 - Owner decisions were recorded verbatim in `docs/plans/step1-owner-decisions.md` (commit `f25e789`): seven-day visible-only warning; generated outputs start draft; canonical `--out` refused under `--draft`; explicit copy-only promotion; per-artifact status with lane reasons.
-- Parked all 31 tracked/untracked paths on `feat/review-provenance-and-portal-hardening` in `stash@{0}` (`park review-provenance-and-portal-hardening before Step 1 series`); that worktree is clean. No parked code was brought into this branch.
+- Parked the uncommitted work on `feat/review-provenance-and-portal-hardening` using `git stash push -u -m 'park review-provenance-and-portal-hardening before Step 1 series'`. The stash contains 31 tracked/untracked paths: provenance and PRD-generation changes, portal/CSP code, JS/Python tests and CI wiring. The feature worktree is clean at `07083fa`; nothing in that stash was committed, merged, or brought into Step 1a. Its last observed `make check` passed (127 Python tests, 12 Vitest tests, 5 browser tests), but it has not had independent review.
+- Implemented Step 1a on `feat/derived-artifact-status`: live, read-only per-artifact projection with underlying lane/gate reasons, seven-day configurable visibility-only assumption warnings, CLI status and exit codes, and 13 focused tests. No manifest, provenance, output-path, draft-routing, promotion or gate-enforcement changes. Independent review identified and we fixed multi-scope artifact-change false approval, historical nonoverlapping approval, and malformed-manifest CLI error handling. Local `make check` passed: 133 Python tests plus 6 subtests, Ruff, Pyright, ESLint, TypeScript and Next.js build.
 
 ## Open
-- Implement Step 1 as four focused, test-first PRs in owner-specified order: read-only projection, provenance snapshots, draft routing/promotion, then `CLAUDE.md` correction. Run `make check` before each PR.
+- Open and merge the focused Step 1a PR only after current-head CI is green; update this status with the merge and push it, then stop.
+- Steps 1b–1d remain deferred: provenance snapshots, draft routing/promotion, then `CLAUDE.md` correction.
 - Steps 2–4 (role-shaped output, decision constraints, Atlassian) are outside this planning pass.
-- `CLAUDE.md` still describes approvals as unenforced; update it when step 1 is implemented, not as an unrelated edit to this proposal.
+- `CLAUDE.md` still describes approvals as unenforced; its correction is deferred to Step 1d per the owner's ordered PRs.
 
 ## Questions
 - None blocking: the owner answered the Step 1 policy questions in `step1-owner-decisions.md`. Stop and ask if implementation would require weakening a gate.
