@@ -236,6 +236,7 @@ def validate(data: object, manifest: Path) -> dict:
 
     decision_ids: set[str] = set()
     feedback_ids: dict[str, tuple[str, str]] = {}
+    feedback_raised: dict[str, dt.datetime] = {}
     decisions: list[dict] = items(data["decisions"], "decisions")
     for entry in decisions:
         decision = fields(
@@ -287,6 +288,7 @@ def validate(data: object, manifest: Path) -> dict:
             if fid in feedback_ids:
                 raise ValueError(f"duplicate feedback id: {fid}")
             feedback_ids[fid] = (gid, lane_id)
+            feedback_raised[fid] = parsed_timestamp(decision["recorded_at"])
             nonempty(comment["text"], "feedback text")
     check_order(decisions, ("gate", "lane", "role"), "decision", "recorded_at")
 
@@ -305,10 +307,13 @@ def validate(data: object, manifest: Path) -> dict:
         nonempty(event["text"], "feedback event text")
         nonempty(event["by"], "feedback event author")
         nonempty(event["evidence"], "feedback event evidence")
-        parsed_timestamp(event["at"])
+        at = parsed_timestamp(event["at"])
+        if at < feedback_raised[event["feedback_id"]]:
+            raise ValueError(f"feedback event predates its comment: {event['id']}")
     check_order(feedback_events, ("feedback_id",), "feedback event")
 
     change_ids: set[str] = set()
+    change_raised: dict[str, dt.datetime] = {}
     changes: list[dict] = items(data["changes"], "changes")
     for entry in changes:
         change = fields(entry, {"id", "source", "raised_at", "effective_at", "affected"})
@@ -318,7 +323,7 @@ def validate(data: object, manifest: Path) -> dict:
         change_ids.add(cid)
         nonempty(change["source"], "change source")
         day(change["effective_at"])
-        parsed_timestamp(change["raised_at"])
+        change_raised[cid] = parsed_timestamp(change["raised_at"])
         affected = items(change["affected"], "affected scopes")
         if not affected or len({scope(ref) for ref in affected}) != len(affected):
             raise ValueError(f"change needs distinct affected scopes: {cid}")
@@ -337,7 +342,9 @@ def validate(data: object, manifest: Path) -> dict:
         nonempty(event["text"], "change event text")
         nonempty(event["by"], "change event author")
         nonempty(event["evidence"], "change event evidence")
-        parsed_timestamp(event["at"])
+        at = parsed_timestamp(event["at"])
+        if at < change_raised[event["change_id"]]:
+            raise ValueError(f"change event predates its change: {event['id']}")
     check_order(change_events, ("change_id",), "change event")
 
     questions: list[dict] = items(data["questions"], "questions")
@@ -374,7 +381,10 @@ def validate(data: object, manifest: Path) -> dict:
             raise ValueError(f"unknown question id in answer: {answer['question_id']}")
         nonempty(answer["text"], "answer text")
         nonempty(answer["answered_by"], "answer author")
-        parsed_timestamp(answer["answered_at"])
+        answered_at = parsed_timestamp(answer["answered_at"])
+        question = next(q for q in questions if q["id"] == answer["question_id"])
+        if answered_at < parsed_timestamp(question["raised_at"]):
+            raise ValueError(f"answer predates its question: {aid}")
         nonempty(answer["evidence"], "answer evidence")
         if not isinstance(answer["ai_assisted"], bool):
             raise ValueError(f"ai_assisted must be a boolean: {aid}")

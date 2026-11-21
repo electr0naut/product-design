@@ -1,5 +1,7 @@
-import { spawn } from "node:child_process";
+import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
+import path from "node:path";
 import { NextResponse } from "next/server";
 import { readManifest, readSection } from "@/lib/review";
 
@@ -36,28 +38,58 @@ function sameOrigin(request: Request): boolean {
   }
 }
 
-function askClaude(prompt: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(
-      /*turbopackIgnore: true*/ process.env.REVIEW_CLAUDE_BIN ?? "claude",
-      ["-p", "--tools", "", "--no-session-persistence", "--output-format", "text"],
-      { cwd: os.tmpdir(), stdio: ["pipe", "pipe", "pipe"] },
-    );
-    let out = "";
-    let err = "";
-    child.stdout.on("data", (chunk) => {
-      out += chunk.toString();
+async function askClaude(prompt: string): Promise<string> {
+  const workdir = await mkdtemp(path.join(os.tmpdir(), "review-assist-"));
+  try {
+    return await new Promise<string>((resolve, reject) => {
+      const child = spawn(
+        /*turbopackIgnore: true*/ process.env.REVIEW_CLAUDE_BIN ?? "claude",
+        [
+          "-p",
+          "--tools",
+          "",
+          "--strict-mcp-config",
+          "--no-session-persistence",
+          "--output-format",
+          "text",
+        ],
+        {
+          cwd: workdir,
+          stdio: ["pipe", "pipe", "pipe"] as const,
+          env: {
+            PATH: process.env.PATH ?? "/usr/bin:/bin",
+            HOME: process.env.HOME ?? "",
+            LANG: process.env.LANG ?? "C.UTF-8",
+            NODE_ENV: process.env.NODE_ENV ?? "production",
+          },
+        },
+      ) as unknown as ChildProcessWithoutNullStreams;
+      let out = "";
+      let err = "";
+      const timer = setTimeout(() => {
+        child.kill("SIGKILL");
+        reject(new Error("assist timed out"));
+      }, 60_000);
+      child.stdout.on("data", (chunk) => {
+        if (out.length < 200_000) out += chunk.toString();
+      });
+      child.stderr.on("data", (chunk) => {
+        if (err.length < 2_000) err += chunk.toString();
+      });
+      child.on("error", (error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+      child.on("close", (code) => {
+        clearTimeout(timer);
+        if (code === 0) resolve(out);
+        else reject(new Error(err.slice(0, 500) || `claude exited ${code}`));
+      });
+      child.stdin.end(prompt);
     });
-    child.stderr.on("data", (chunk) => {
-      err += chunk.toString();
-    });
-    child.on("error", reject);
-    child.on("close", (code) => {
-      if (code === 0) resolve(out);
-      else reject(new Error(err.slice(0, 500) || `claude exited ${code}`));
-    });
-    child.stdin.end(prompt);
-  });
+  } finally {
+    await rm(workdir, { recursive: true, force: true });
+  }
 }
 
 export async function POST(request: Request) {
@@ -70,7 +102,7 @@ export async function POST(request: Request) {
   if (!request.headers.get("content-type")?.includes("application/json")) {
     return NextResponse.json({ error: "expected JSON" }, { status: 415 });
   }
-  if (!process.env.REVIEW_ASSIST_ENABLED) {
+  if (process.env.REVIEW_ASSIST_ENABLED !== "1") {
     return NextResponse.json({ error: "assist is not enabled" }, { status: 503 });
   }
   if (!allowed()) {

@@ -404,3 +404,124 @@ def test_migration_is_idempotent_and_preserves_outcomes():
         assert manifest.read_bytes() == migrated
         reasons = evaluate_gate(manifest, "design-to-backlog", "E01")["lanes"]["E01"]["reasons"]
         assert "reapproval required after change: CHG-001 (product)" in reasons
+
+
+def test_migration_accepts_open_feedback_and_keeps_it_blocking():
+    from gate_reviews import evaluate_gate
+
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        manifest, doc = fixture(root)
+        digest = hashlib.sha256((root / "artifacts" / "scope.md").read_bytes()).hexdigest()
+        doc["schema_version"] = 1
+        for key in ("feedback_events", "change_events", "questions", "question_answers"):
+            doc.pop(key)
+        doc["decisions"].append(
+            {
+                "id": "D-001",
+                "gate": "design-to-backlog",
+                "lane": "E01",
+                "role": "product",
+                "reviewer": "P",
+                "decision": "approve",
+                "recorded_at": "2026-11-21T12:00:00Z",
+                "artifact_sha256": {"artifacts/scope.md": digest},
+                "evidence": "slack:C1/1",
+                "feedback": [{"id": "F-001", "text": "Still open.", "status": "open"}],
+            }
+        )
+        write(manifest, doc)
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS / "migrate_manifest.py"), "--manifest", str(manifest)],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        assert result.returncode == 0, result.stderr
+        reasons = evaluate_gate(manifest, "design-to-backlog", "E01")["lanes"]["E01"]["reasons"]
+        assert "unresolved feedback: product" in reasons
+
+
+def test_change_event_before_the_change_is_rejected():
+    from gate_reviews import evaluate_gate
+
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        manifest, doc = fixture(root)
+        doc["changes"].append(
+            {
+                "id": "CHG-001",
+                "source": "notice",
+                "raised_at": "2026-11-21T12:30:00Z",
+                "effective_at": "2026-12-01",
+                "affected": [{"gate": "design-to-backlog", "lane": "E01"}],
+            }
+        )
+        doc["change_events"].append(
+            {
+                "id": "CE-001",
+                "change_id": "CHG-001",
+                "action": "resolve",
+                "text": "Too early",
+                "at": "2026-11-21T11:00:00Z",
+                "by": "legal",
+                "evidence": "memo-1",
+            }
+        )
+        write(manifest, doc)
+        try:
+            evaluate_gate(manifest, "design-to-backlog", "E01")
+        except ValueError as exc:
+            assert "predates its change" in str(exc)
+        else:
+            raise AssertionError("a change event before the change was accepted")
+
+
+def test_answer_before_question_is_rejected():
+    from gate_reviews import evaluate_gate
+
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        manifest, doc = fixture(root)
+        doc["questions"].append(
+            {
+                "id": "Q-001",
+                "gate": "design-to-backlog",
+                "lane": "E01",
+                "role": "product",
+                "text": "Which market?",
+                "source": {"artifact": "artifacts/scope.md", "heading": "Release"},
+                "raised_at": "2026-11-21T12:30:00Z",
+            }
+        )
+        doc["question_answers"].append(
+            {
+                "id": "QA-001",
+                "question_id": "Q-001",
+                "text": "EU",
+                "answered_by": "product",
+                "answered_at": "2026-11-21T11:00:00Z",
+                "ai_assisted": False,
+                "evidence": "memo-1",
+            }
+        )
+        write(manifest, doc)
+        try:
+            evaluate_gate(manifest, "design-to-backlog", "E01")
+        except ValueError as exc:
+            assert "predates its question" in str(exc)
+        else:
+            raise AssertionError("an answer before its question was accepted")
+
+
+def test_packet_with_non_string_source_commit_is_refused():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        manifest, doc = fixture(root)
+        write(manifest, doc)
+        bad = packet(root)
+        bad["source_commit"] = 123
+        result = run(root, manifest, bad)
+        assert result.returncode == 2
+        assert "source_commit" in result.stderr
+        assert json.loads(manifest.read_text())["decisions"] == []

@@ -1,7 +1,7 @@
 import "server-only";
 
 import { execFile } from "node:child_process";
-import { readFile, readdir } from "node:fs/promises";
+import { lstat, readFile, readdir, realpath } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 
@@ -115,7 +115,7 @@ export async function getArtifact(
   gate: string,
   lane: string,
   index: number,
-): Promise<{ path: string; sha256: string; text: string }> {
+): Promise<{ path: string; sha256: string; text: string; truncated: boolean }> {
   const manifest = await readManifest(product);
   const gateEntry = manifest.gates.find((entry) => entry.id === gate);
   if (!gateEntry) throw new Error("unknown gate");
@@ -128,8 +128,17 @@ export async function getArtifact(
   const relative = artifacts[index];
   const resolved = path.resolve(/*turbopackIgnore: true*/ ROOT, relative);
   if (!resolved.startsWith(ROOT + path.sep)) throw new Error("artifact outside repository");
-  const text = await readFile(/*turbopackIgnore: true*/ resolved, "utf8");
-  return { path: relative, sha256: "", text: text.slice(0, 200_000) };
+  const info = await lstat(resolved);
+  if (info.isSymbolicLink() || !info.isFile()) throw new Error("artifact is not a regular file");
+  const actual = await realpath(resolved);
+  if (!actual.startsWith(ROOT + path.sep)) throw new Error("artifact resolves outside repository");
+  const text = await readFile(/*turbopackIgnore: true*/ actual, "utf8");
+  return {
+    path: relative,
+    sha256: "",
+    text: text.slice(0, 200_000),
+    truncated: text.length > 200_000,
+  };
 }
 
 export function questionFor(
@@ -150,12 +159,23 @@ export async function readSection(product: string, artifact: string, heading: st
   if (!allowed.has(artifact)) throw new Error("artifact is not part of any review lane");
   const resolved = path.resolve(/*turbopackIgnore: true*/ ROOT, artifact);
   if (!resolved.startsWith(ROOT + path.sep)) throw new Error("artifact outside repository");
-  const text = await readFile(/*turbopackIgnore: true*/ resolved, "utf8");
+  const info = await lstat(resolved);
+  if (info.isSymbolicLink() || !info.isFile()) throw new Error("artifact is not a regular file");
+  const actual = await realpath(resolved);
+  if (!actual.startsWith(ROOT + path.sep)) throw new Error("artifact resolves outside repository");
+  const text = await readFile(/*turbopackIgnore: true*/ actual, "utf8");
   const lines = text.split("\n");
+  const clean = (value: string) =>
+    value
+      .replace(/^#+\s*/, "")
+      .replace(/^\d+(\.\d+)*\.?\s*/, "")
+      .trim()
+      .toLowerCase();
+  const wanted = clean(heading);
   const start = lines.findIndex(
-    (line) => line.replace(/^#+\s*/, "").trim() === heading.trim() && line.startsWith("#"),
+    (line) => line.startsWith("#") && clean(line) === wanted,
   );
-  if (start === -1) return text.slice(0, 12_000);
+  if (start === -1) throw new Error("question source heading not found");
   let end = lines.length;
   for (let cursor = start + 1; cursor < lines.length; cursor += 1) {
     if (/^#{1,6}\s/.test(lines[cursor])) {

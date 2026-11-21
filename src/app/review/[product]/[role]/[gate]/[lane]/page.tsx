@@ -42,9 +42,9 @@ export default async function LaneReview({
     artifacts.map(async (artifact, index) => {
       try {
         const file = await getArtifact(product, gate, lane, index);
-        return { ...artifact, text: file.text };
+        return { ...artifact, text: file.text, truncated: file.truncated };
       } catch {
-        return { ...artifact, text: "Unavailable." };
+        return { ...artifact, text: "Unavailable.", truncated: false };
       }
     }),
   );
@@ -95,6 +95,11 @@ export default async function LaneReview({
                 </div>
                 <details className="px-4 py-3">
                   <summary className="cursor-pointer text-sm font-medium">Show content</summary>
+                  {artifact.truncated && (
+                    <p className="mt-2 text-xs text-amber-800">
+                      Preview truncated for this page; the hash covers the full file.
+                    </p>
+                  )}
                   <pre className="mt-3 max-h-96 overflow-auto whitespace-pre-wrap text-xs text-zinc-800">
                     {artifact.text}
                   </pre>

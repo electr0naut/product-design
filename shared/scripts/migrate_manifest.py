@@ -15,7 +15,7 @@ import json
 import os
 import sys
 
-from gate_reviews import SCHEMA_VERSION, fields, load_manifest
+from gate_reviews import SCHEMA_VERSION, load_manifest
 from workflow_common import display_path, project_path, reject_symlink, write_text
 
 
@@ -38,7 +38,7 @@ def main() -> int:
     if version == SCHEMA_VERSION:
         print(f"{display_path(manifest)} is already schema v{SCHEMA_VERSION}.")
         return 0
-    if version != 1:
+    if isinstance(version, bool) or version != 1:
         print(f"Refused: unsupported schema_version {version!r}", file=sys.stderr)
         return 1
 
@@ -49,7 +49,12 @@ def main() -> int:
     change_count = 0
     for decision in data.get("decisions", []):
         for comment in decision.get("feedback", []):
-            if not isinstance(comment, dict) or comment.get("status") != "resolved":
+            if not isinstance(comment, dict):
+                continue
+            resolved = comment.get("status") == "resolved"
+            comment.pop("status", None)
+            resolution = comment.pop("resolution", None)
+            if not resolved:
                 continue
             event_number += 1
             feedback_count += 1
@@ -58,14 +63,12 @@ def main() -> int:
                     "id": f"FE-{event_number:03d}",
                     "feedback_id": comment.get("id", ""),
                     "action": "resolve",
-                    "text": comment.get("resolution") or "resolved before schema v2",
+                    "text": resolution or "resolved before schema v2",
                     "at": decision.get("recorded_at"),
                     "by": "migrated-v1",
                     "evidence": "pre-v2; see git history",
                 }
             )
-            comment.pop("status", None)
-            comment.pop("resolution", None)
     for change in data.get("changes", []):
         status = change.pop("status", None)
         resolved_at = change.pop("resolved_at", None)
@@ -90,23 +93,11 @@ def main() -> int:
     data["change_events"].extend(change_events)
 
     try:
-        fields(
-            data,
-            {
-                "schema_version",
-                "product",
-                "gates",
-                "decisions",
-                "feedback_events",
-                "changes",
-                "change_events",
-                "assumptions",
-                "questions",
-                "question_answers",
-            },
-        )
+        from gate_reviews import validate
+
+        validate(data, manifest)
     except ValueError as exc:
-        print(f"Refused: {exc}", file=sys.stderr)
+        print(f"Refused: migrated manifest is invalid: {exc}", file=sys.stderr)
         return 1
 
     print(

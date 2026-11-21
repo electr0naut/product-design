@@ -80,6 +80,9 @@ def main() -> int:
     if record["schema_version"] != 1 or record["product"] != data["product"]:
         print("Invalid packet: wrong schema_version or product", file=sys.stderr)
         return 2
+    if "source_commit" in record and not isinstance(record["source_commit"], str):
+        print("Invalid packet: source_commit must be a string", file=sys.stderr)
+        return 2
     gates = {gate["id"]: gate["lanes"] for gate in data["gates"]}
     gate_id, lane_id = record["gate"], record["lane"]
     if gate_id not in gates or lane_id not in gates[gate_id]:
@@ -131,6 +134,12 @@ def main() -> int:
                 file=sys.stderr,
             )
             return 1
+    if record["decision"] == "approve" and record["feedback"]:
+        print(
+            "Warning: an approval with comments records open feedback; the lane stays blocked "
+            "until it is resolved.",
+            file=sys.stderr,
+        )
 
     previous = latest(data["decisions"], gate=gate_id, lane=lane_id, role=record["role"])
     if previous is not None and created <= parsed_timestamp(previous["recorded_at"]):
@@ -169,7 +178,7 @@ def main() -> int:
         "reviewer": record["reviewer"],
         "decision": record["decision"],
         "recorded_at": stamp,
-        "artifact_sha256": expected,
+        "artifact_sha256": hashes,
         "evidence": evidence,
         "feedback": feedback,
         "source_commit": record.get("source_commit", ""),
@@ -187,6 +196,11 @@ def main() -> int:
         return 0
 
     data["decisions"].append(decision)
+    try:
+        validate(data, manifest)
+    except ValueError as exc:
+        print(f"Refused: recording would invalidate the manifest: {exc}", file=sys.stderr)
+        return 1
     reject_symlink(manifest, "manifest")
     temporary = manifest.with_name(manifest.name + ".tmp")
     write_text(temporary, json.dumps(data, indent=2, sort_keys=True))
