@@ -55,7 +55,7 @@ not be applied); they are excluded from both scores.
 
 ## What the new tests pin
 
-34 tests were added across `test_gate_reviews.py`, `test_artifact_status.py`,
+54 tests were added across `test_gate_reviews.py`, `test_artifact_status.py`,
 `test_provenance_snapshot.py` and `test_backlog.py`:
 
 - Assumption expiry is valid through `review_by` and expires the day after;
