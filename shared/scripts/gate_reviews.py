@@ -421,6 +421,18 @@ def evaluate_gate(
 ) -> dict:
     """Return review readiness for a gate and optionally one swimlane."""
     data = validate(load_manifest(manifest), manifest)
+    return _evaluate_gate_data(data, manifest, gate_id, lane, today)
+
+
+def _evaluate_gate_data(
+    data: dict,
+    manifest: Path,
+    gate_id: str,
+    lane: str | None = None,
+    today: dt.date | None = None,
+    hash_cache: dict[str, str] | None = None,
+) -> dict:
+    """Evaluate a validated manifest snapshot (including dependency scopes)."""
     today = today or dt.date.today()
     root = manifest.parent.parent
     gates = {gate["id"]: gate["lanes"] for gate in data["gates"]}
@@ -442,7 +454,14 @@ def evaluate_gate(
             raise ValueError(f"dependency cycle at {gid}/{lane_id}")
         active.add(key)
         policy = gates[gid][lane_id]
-        expected = {path: artifact_hash(root, path) for path in policy["artifacts"]}
+        expected = {}
+        for path in policy["artifacts"]:
+            if hash_cache is not None and path in hash_cache:
+                expected[path] = hash_cache[path]
+            else:
+                expected[path] = artifact_hash(root, path)
+                if hash_cache is not None:
+                    hash_cache[path] = expected[path]
         reasons: list[str] = []
         for assumption_id in policy["assumptions"]:
             assumption = next(a for a in data["assumptions"] if a["id"] == assumption_id)
@@ -549,6 +568,115 @@ def evaluate_gate(
         "gate": gate_id,
         "ready": all(s["ready"] for s in statuses.values()),
         "lanes": statuses,
+    }
+
+
+def artifact_status(
+    manifest: Path | None,
+    artifact: Path,
+    *,
+    today: dt.date | None = None,
+    warning_days: int = 7,
+) -> dict:
+    """Project the current review state of one artifact; never write records."""
+    if isinstance(warning_days, bool) or not isinstance(warning_days, int) or warning_days < 0:
+        raise ValueError("warning_days must be a non-negative integer")
+    try:
+        reject_symlink(artifact, "artifact")
+    except SystemExit as exc:
+        raise ValueError(f"unsafe artifact: {artifact}") from exc
+    if not artifact.is_file():
+        raise ValueError(f"missing or nonregular artifact: {artifact}")
+    if manifest is None:
+        return {"artifact": str(artifact), "status": "draft", "scopes": [], "warnings": []}
+    data = validate(load_manifest(manifest), manifest)
+    root = manifest.parent.parent
+    try:
+        relative = artifact.relative_to(root).as_posix()
+    except ValueError as exc:
+        raise ValueError(f"artifact outside manifest product: {artifact}") from exc
+    selected = [
+        (gate["id"], lane_id)
+        for gate in data["gates"]
+        for lane_id, policy in gate["lanes"].items()
+        if relative in policy["artifacts"]
+    ]
+    if not selected:
+        return {"artifact": relative, "status": "draft", "scopes": [], "warnings": []}
+    today = today or dt.date.today()
+    scopes = []
+    warnings = []
+    hash_cache: dict[str, str] = {}
+    gates = {gate["id"]: gate["lanes"] for gate in data["gates"]}
+    for gate_id, lane_id in selected:
+        state = _evaluate_gate_data(
+            data, manifest, gate_id, lane_id, today=today, hash_cache=hash_cache
+        )["lanes"][lane_id]
+        policy = gates[gate_id][lane_id]
+        history: dict[str, dict] = {}
+        previously_approved = False
+        for decision in data["decisions"]:
+            if (
+                decision["gate"] == gate_id
+                and decision["lane"] == lane_id
+                and decision["role"] in policy["roles"]
+            ):
+                history[decision["role"]] = decision
+                if all(
+                    role in history
+                    and history[role]["decision"] == "approve"
+                    and history[role]["artifact_sha256"] == decision["artifact_sha256"]
+                    for role in policy["roles"]
+                ):
+                    previously_approved = True
+                    break
+        holds = (
+            "unresolved feedback:",
+            "open change:",
+            "unanswered question:",
+            "expired assumption:",
+            "blocked dependency:",
+        )
+        has_hold = any(reason.startswith(holds) for reason in state["reasons"])
+        has_hold |= any(
+            (decision := latest(data["decisions"], gate=gate_id, lane=lane_id, role=role))
+            is not None
+            and decision["decision"] == "request_changes"
+            for role in policy["roles"]
+        )
+        scope_status = (
+            "approved"
+            if state["ready"]
+            else "on_hold"
+            if has_hold
+            else "needs_reapproval"
+            if previously_approved
+            else "in_review"
+        )
+        for assumption_id in policy["assumptions"]:
+            assumption = next(a for a in data["assumptions"] if a["id"] == assumption_id)
+            due = dt.date.fromisoformat(assumption["review_by"])
+            if today <= due <= today + dt.timedelta(days=warning_days):
+                warnings.append(
+                    {
+                        "gate": gate_id,
+                        "lane": lane_id,
+                        "assumption": assumption_id,
+                        "review_by": due.isoformat(),
+                    }
+                )
+        scopes.append(
+            {"gate": gate_id, "lane": lane_id, "status": scope_status, "reasons": state["reasons"]}
+        )
+    for path, digest in hash_cache.items():
+        if artifact_hash(root, path) != digest:
+            raise ValueError(f"artifact changed during status evaluation: {path}")
+    priority = ("on_hold", "needs_reapproval", "in_review", "approved")
+    return {
+        "artifact": relative,
+        "status": next(s for s in priority if any(x["status"] == s for x in scopes)),
+        "scopes": scopes,
+        "warnings": warnings,
     }
 
 
