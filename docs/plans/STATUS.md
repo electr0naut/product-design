@@ -9,13 +9,13 @@ This branch contains a proposal, not an approved implementation. The generic pro
 - Proposed Step 1's behavioural contract in `docs/specs/015-derived-review-states.md` and an execution sequence in `docs/plans/step1-derived-review-states.md`; no Step 1 code was changed.
 - Reviewed the proposal against product-scoped gate discovery: a draft suffix must not change the product slug or bypass another product's manifest. Added multi-lane status aggregation and a regression criterion for this path.
 - Opened draft PR #11 for the Step 1 proposal: https://github.com/electr0naut/product-design/pull/11. It is not approved or merged.
+- Owner decisions were recorded verbatim in `docs/plans/step1-owner-decisions.md` (commit `f25e789`): seven-day visible-only warning; generated outputs start draft; canonical `--out` refused under `--draft`; explicit copy-only promotion; per-artifact status with lane reasons.
+- Parked all 31 tracked/untracked paths on `feat/review-provenance-and-portal-hardening` in `stash@{0}` (`park review-provenance-and-portal-hardening before Step 1 series`); that worktree is clean. No parked code was brought into this branch.
 
 ## Open
-- Review step-1 policy choices with the owner before coding.
+- Implement Step 1 as four focused, test-first PRs in owner-specified order: read-only projection, provenance snapshots, draft routing/promotion, then `CLAUDE.md` correction. Run `make check` before each PR.
 - Steps 2–4 (role-shaped output, decision constraints, Atlassian) are outside this planning pass.
 - `CLAUDE.md` still describes approvals as unenforced; update it when step 1 is implemented, not as an unrelated edit to this proposal.
 
 ## Questions
-- How many days before an assumption’s `review_by` should the warning appear, and should warning affect readiness or just visibility?
-- Should a generated artifact ever carry `approved`, or only show that its *input gate* was ready at generation time? The proposed spec distinguishes these.
-- What is the canonical draft output convention across single files, split PRDs, and story directories, including backwards compatibility for existing `--out` paths?
+- None blocking: the owner answered the Step 1 policy questions in `step1-owner-decisions.md`. Stop and ask if implementation would require weakening a gate.

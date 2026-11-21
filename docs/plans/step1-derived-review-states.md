@@ -1,6 +1,6 @@
 # Step 1 plan: derived review states (proposal only)
 
-Scope: generic product-design scaffold; no FIX product changes. This plans only Step 1 of `docs/plans/next-phase.md`. The behavioural contract is `docs/specs/015-derived-review-states.md` and remains unapproved until the owner resolves its open policy choices.
+Scope: generic product-design scaffold; no FIX product changes. This plans only Step 1 of `docs/plans/next-phase.md`. The behavioural contract is `docs/specs/015-derived-review-states.md`; owner policy choices are recorded in `docs/plans/step1-owner-decisions.md`.
 
 ## Baseline and design
 1. Keep `gate_reviews.py` as the sole authority. Today `evaluate_gate()` emits `ready`, `reasons`, decisions and hashes; `maybe_enforce_gate()` returns `None` for explicit draft or missing manifest. Do not derive status from the existing provenance sidecar or from `ready` alone: readiness refers to inputs of the next generator, not approval of its output.
@@ -15,9 +15,10 @@ Scope: generic product-design scaffold; no FIX product changes. This plans only 
 - Add failing CLI/provenance tests for draft/no-manifest, gated generation without output approval, manifest hash snapshot drift, explicit output paths, old sidecars, split PRD/story roots and no-overwrite/symlink safety.
 - Implement the pure evaluator, then sidecar snapshot and draft-path routing in separate focused commits. Run targeted tests, `make check`, independent spec review, and CI; stop rather than weakening gates on failure.
 
-## Decision points before code
-- Confirm warning lead time (proposed 7 calendar days) and whether warning should be non-blocking.
-- Confirm `.draft.md`/`<product>.draft/` naming and how a human promotes draft bytes into a canonical review path *before* approval; include backwards compatibility for explicit `--out`.
-- Confirm whether the desired five-state vocabulary applies per artifact, per lane, or both; proposed read model is per-artifact with underlying gate/lane reasons, while input-gate readiness remains separate.
+## Owner decisions and PR sequence
+- Warning starts seven calendar days before `review_by`, is configurable and visible-only. Expiry still blocks.
+- New outputs start `draft`; input-gate readiness is a separate generation receipt. State is per artifact with gate/lane reasons.
+- `.draft.md` for single files and `<product>.draft/` for split PRDs/stories. `--draft --out` refuses a canonical path. An explicit command copies bytes into canonical review paths without granting approval; an unenrolled output remains draft until its lane is configured, then enters `in_review`.
+- Four focused test-first PRs, in order: (a) pure read-only projection, (b) provenance snapshots, (c) draft routing and promotion, (d) `CLAUDE.md` fix. Run `make check` before each PR; update and push `STATUS.md` after each.
 
 No steps 2–4, portal redesign, decision-constraint prompts, or Atlassian integration are included here.
