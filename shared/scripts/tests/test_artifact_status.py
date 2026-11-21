@@ -208,14 +208,14 @@ def test_status_uses_one_manifest_snapshot_for_all_scopes(tmp_path: Path, monkey
     doc["gates"][0]["lanes"]["E02"]["artifacts"].append("review/accounts.md")
     write_manifest(manifest, doc)
     loads = 0
-    original = gate_reviews.load_manifest
+    original = gate_reviews.load_manifest_snapshot
 
     def counted(path):
         nonlocal loads
         loads += 1
         return original(path)
 
-    monkeypatch.setattr(gate_reviews, "load_manifest", counted)
+    monkeypatch.setattr(gate_reviews, "load_manifest_snapshot", counted)
     artifact_status(manifest, tmp_path / "review" / "accounts.md")
     assert loads == 1
 
