@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
-from pathlib import Path
 
 from backlog import (
     Check,
@@ -23,11 +22,19 @@ from backlog import (
     parse_story_map,
     table_cell,
 )
-from workflow_common import ROOT, display_path, plural, project_path, read_text, slug_from_path, write_text
+from workflow_common import (
+    ROOT,
+    display_path,
+    plural,
+    project_path,
+    read_text,
+    slug_from_path,
+    write_text,
+)
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     parser.add_argument("--brd", required=True, help="Path to the approved BRD.")
     parser.add_argument("--prd", required=True, help="Path to the approved PRD.")
     parser.add_argument("--backlog", help="Backlog directory. Default: 06-backlog/<product>/.")
@@ -70,7 +77,9 @@ def main() -> None:
         raise SystemExit(1)
 
 
-def render_report(slug: str, sources: list[str], requirements, story_map: StoryMap, check: Check) -> str:
+def render_report(
+    slug: str, sources: list[str], requirements, story_map: StoryMap, check: Check
+) -> str:
     today = dt.date.today().isoformat()
     br_count = sum(1 for r in requirements if r.startswith("BR-"))
     nfr_count = len(requirements) - br_count
@@ -101,7 +110,9 @@ def render_report(slug: str, sources: list[str], requirements, story_map: StoryM
         "|-------------|-------------|---------|",
     ]
     for req_id, requirement in requirements.items():
-        lines.append(f"| {req_id} | {table_cell(requirement.text)} | {_coverage(req_id, story_map, check)} |")
+        lines.append(
+            f"| {req_id} | {table_cell(requirement.text)} | {_coverage(req_id, story_map, check)} |"
+        )
     lines.append("")
 
     lines += [
@@ -122,7 +133,9 @@ def render_report(slug: str, sources: list[str], requirements, story_map: StoryM
     lines += ["## Epics"]
     for epic in story_map.epics.values():
         generated = sum(1 for s in epic.stories if s.id in check.stories)
-        lines.append(f"- {epic.id}: {epic.name} ({generated} of {len(epic.stories)} stories generated)")
+        lines.append(
+            f"- {epic.id}: {epic.name} ({generated} of {len(epic.stories)} stories generated)"
+        )
     return "\n".join(lines)
 
 
