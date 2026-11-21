@@ -1,180 +1,357 @@
 # Review Gates Hardening and Role Portal Plan
 
-**Goal:** Close the known gaps in the review-gate engine, then ship a role-based review surface that shows each stakeholder what decision is pending and lets them answer open questions — without pretending an unauthenticated web page is an approval.
+**Status:** revised after adversarial review. One decision (epic isolation) is
+still open before the last Part 1 task; everything else is specified.
+
+**Goal:** Close the known gaps in the review-gate engine, then ship a role-based
+review surface that shows each stakeholder what decision is pending and lets
+them answer open questions — without pretending an unauthenticated page is an
+approval.
 
 **Architecture decisions**
 
-1. **Python stays authoritative.** The portal renders `check_gate.py --json` output plus artifacts. Gate rules are never reimplemented in TypeScript, so status cannot drift between CLI and UI.
-2. **Feedback is a packet, not a write.** With no login there is no identity, so the page produces a review packet (decision + comments + artifact hashes) that the maintainer verifies and commits. A later SSO phase adds an audited writer.
-3. **AI assists, never decides.** The helper drafts an answer to an open question or a comment. It is labelled, server-side, rate-limited, never auto-submits, and never touches the manifest.
-4. **Local-first deployment.** No-login pages expose confidential analysis. Default to `npm run dev` / localhost. Public hosting requires a deliberate, documented decision.
+1. **Python stays authoritative.** One function, `portal_view(manifest, role)`,
+   emits the per-role read model. The UI renders it; it never computes
+   readiness, blocked-by or pending-for.
+2. **Feedback is a packet, not a write.** With no login there is no identity, so
+   the page produces a review packet that `record_decision.py` verifies and
+   records. No unauthenticated endpoint writes into `review/`.
+3. **AI assists, never decides.** The helper answers one open question from
+   question-anchored excerpts, returns verified quotes plus a draft, and is
+   recorded as `ai_assisted` when its draft is used.
+4. **Loopback only.** `next start -H 127.0.0.1`, Host-header check, no generated
+   product data under `public/`. Remote access is a later, explicit decision.
 
-**Tech stack:** Python 3.11 stdlib, Next.js 16 App Router, TypeScript, existing `make check`.
-
----
-
-## Part 1 — Fix the known limitations
-
-### Task 1.1 Make per-epic invalidation real
-
-**Problem:** every epic lane hashes the shared PRD and technical design, so one PRD edit stales every lane. Selective invalidation is currently a claim, not a property.
-
-**Approach:** derive deterministic per-epic scope documents and review those.
-
-- New `shared/scripts/epic_scope.py`: given the PRD and technical design, extract `E01`'s heading section and the design sections that reference `E01`, writing `06-backlog/<product>/scopes/E01.md`. Extraction is stable: same inputs → same bytes; a missing section is an error, not an empty file.
-- Manifest lanes point `artifacts` at their scope document, not the whole PRD. Gate-level shared concerns get their own cross-cutting lane (for example `architecture`) that hashes the PRD and design.
-- `generate_stories.py` writes scope files before the gate check and refuses if a scope file does not match its approved hash.
-- Document the remaining truth plainly: editing PRD text shared by two epics changes both scopes.
-
-**Acceptance:** editing E02's PRD section leaves E01 ready and blocks E02; editing a shared section blocks both; scope extraction is byte-identical across runs; a changed scope file is refused.
-
-### Task 1.2 Append-only feedback resolution
-
-**Problem:** resolving a comment mutates the decision that raised it, so the JSON cannot answer "who objected, and when did it clear".
-
-- Schema v2: decisions keep immutable `feedback`; resolutions live in a top-level `feedback_resolutions` list (`feedback_id`, `resolution`, `resolved_at`, `resolved_by`, `evidence`).
-- A resolution must be newer than the objection; duplicate resolutions are rejected. Status is derived from the latest resolution per feedback id.
-- `migrate_manifest.py --from 1 --to 2` moves `status: resolved` entries into the new list and refuses ambiguous input. Reader supports v1 with a deprecation warning for one release.
-
-**Acceptance:** an unresolved comment blocks even after a later approval; a resolution unblocks without editing the decision; resolution ordering is enforced; migration round-trips the fixture set.
-
-### Task 1.3 Gate the implementation phase
-
-**Problem:** `scaffold_code.py` has no gate; the backlog can be expanded into an implementation plan with no sign-off.
-
-- Add `backlog-to-implementation` enforcement: sources are the story files for the selected epics plus the technical design; lane policy reuses the epic `epic: true` split, plus cross-cutting lanes.
-- `validate_backlog.py` remains a separate traceability check; passing it is not approval.
-
-**Acceptance:** a blocked lane refuses implementation-plan generation before any write; `--draft` remains explicit and labelled.
-
-### Task 1.4 Durable draft status
-
-**Problem:** `--draft` is only a stderr message; the sidecar and output look identical to an approved run.
-
-- Provenance sidecar gains `review_status: "draft" | "gated"`, `gate`, `lanes` checked, and (when gated) the manifest digest.
-- `--draft` output paths keep the canonical name but the sidecar records draft; `check_gate`/`review_pack` surface "draft exists, unapproved".
-- Never write `review_status: "approved"` — approval lives only in decisions.
-
-**Acceptance:** sidecar distinguishes draft from gated; a gated run records the manifest hash; no code path writes an approved status.
-
-### Task 1.5 Review packs and a stale report
-
-**Problem:** reviewers must read whole documents; nobody sees stale approvals until a generator refuses.
-
-- `shared/scripts/review_pack.py --product X --role legal [--lane E02]` emits a Markdown pack: decision requested, artifacts with hashes, what changed since that role's last decision, open questions, assumptions expiring within 30 days, open changes, other roles' status.
-- `check_gate.py --all --json` reports every gate/lane/product: ready, blocked reasons, drafts present, decisions older than their artifacts. Add a CI job that publishes it as an artifact (non-blocking).
-- "What changed" uses the recorded decision's artifact hashes plus `git diff` when available; no hash history means "unknown, first review".
-
-**Acceptance:** a pack for a blocked lane lists exactly the missing roles and open questions; the all-gates report finds a stale approval that a single gate check would miss; CI uploads it.
-
-### Task 1.6 Evidence and provenance integrity
-
-- Accept `evidence` as a URL or ticket reference; warn (not fail) when it is free text, so weak evidence is visible in packs.
-- Record the model when the CLI can report it: pass `--output-format json` where supported, store `model` and `model_source`; otherwise keep `null`.
-- Sidecar records the manifest digest used, so an approval cannot be silently re-pointed at different rules.
-
-**Acceptance:** tests cover model-known and model-unknown paths; sidecar hash changes when the manifest changes.
+**Tech stack:** Python 3.11 stdlib, Next.js 16 App Router, TypeScript, vitest,
+Playwright + axe, existing `make check`.
 
 ---
 
-## Part 2 — Role-based review pages (no login)
+## Part 0 — Specs first
 
-### Task 2.1 Read model generation
+`ENGINEERING.md` requires a spec per behaviour change. Create:
 
-- `shared/scripts/build_portal_data.py --out public/review-data` writes one JSON file per product: gates, lanes, status, roles, decisions, feedback, assumptions, changes, artifact paths and hashes, plus a `generated_at` and a `schema_version`.
-- The page never reads the manifest directly. If the JSON is stale relative to the manifest, the page shows a banner with both hashes.
-- Artifacts are copied or linked read-only; never served from a path the manifest does not declare.
+- `docs/specs/009-decision-ordering-and-recording.md`
+- `docs/specs/010-append-only-feedback-and-changes.md`
+- `docs/specs/011-implementation-gate.md`
+- `docs/specs/012-open-questions.md`
+- `docs/specs/013-portal-boundary-and-assist.md`
+- amend `docs/specs/008-scoped-review-gates.md` if epic isolation changes lane
+  artifacts.
 
-**Acceptance:** deterministic JSON; stale data is detected; no undeclared artifact can appear; a Python test asserts the JSON shape the UI depends on.
+Each task below starts by writing its spec and its failing tests.
 
-### Task 2.2 Pages
+---
 
-Routes (App Router, server components):
+## Part 1 — Correctness before surface
 
-- `/review` — product list with gate progress.
-- `/review/[product]/[role]` — that role's queue: lanes awaiting their decision, lanes blocked on others, lanes ready.
-- `/review/[product]/[role]/[gate]/[lane]` — the decision page.
+### Task 1.1 Decision ordering and `record_decision.py`
 
-Each decision page shows, in this order: the decision requested (approve / request changes / not applicable / cannot determine); the exact artifacts with hashes and links; what changed since this role's last decision; open questions addressed to this role; assumptions and their review dates; other required roles and their status; a feedback box.
+**Problem:** the evaluator takes the last decision in array order. Once packets
+are recorded later than they were written, array order and time diverge.
 
-**Acceptance:** a role sees only lanes where it is required, plus read-only context; the page states in plain language that a submitted packet is not an approval; keyboard navigation and heading order pass a manual accessibility check.
+- `validate()` rejects decisions for the same gate/lane/role whose
+  `recorded_at` is not non-decreasing in file order.
+- Decisions gain `source_commit` (the commit reviewed, supplied by the caller)
+  and `recorded_by`.
+- New `record_decision.py --packet <file> --evidence <channel-ref>`:
+  re-hashes artifacts, rejects stale *approvals*, allows `--accept-stale` only
+  for non-approval decisions, assigns decision and feedback IDs itself, stamps
+  `attestation: "typed-name, unverified"`, refuses a packet whose `created_at`
+  predates that role's latest decision, and appends atomically.
+- Packet schema: product, gate, lane, role, decision, reviewer, artifact hashes,
+  feedback text, created_at, source_commit. No IDs from the client.
 
-### Task 2.3 Feedback and decision packets
+**Acceptance:** a packet recorded out of order is refused; a stale approve is
+refused without any write; a stale request_changes needs `--accept-stale`; IDs
+are server-assigned and unique; the manifest file is replaced atomically.
 
-- The form records decision, comments per artifact section, and cited open-question IDs. It validates client-side and produces a packet:
+### Task 1.2 Append-only feedback and changes (schema v2)
 
-```json
-{
-  "schema_version": 1,
-  "product": "acme",
-  "gate": "design-to-backlog",
-  "lane": "E02",
-  "role": "legal",
-  "decision": "request_changes",
-  "reviewer": "<typed name>",
-  "artifact_sha256": { "...": "..." },
-  "feedback": [{ "id": "F-003", "text": "..." }],
-  "created_at": "..."
-}
-```
+**Problem:** resolving feedback mutates the objection; `changes[].status` has
+the same problem; v1 has no resolution provenance.
 
-- Copy/download only in this phase. The page also prints the exact command a maintainer runs to validate and record it (`record_decision.py --packet ... --verify`), which re-checks hashes and refuses packets whose artifacts changed.
-- No unauthenticated endpoint writes into `review/`.
+- Decisions keep immutable `feedback`. New top-level `feedback_events`:
+  `{id, feedback_id, action: resolve|reopen, text, at, by, evidence}`.
+  Status is derived from the latest event per feedback id.
+- Changes become `change_events` with the same resolve/reopen model; the change
+  record keeps its source, scopes and raised_at.
+- `migrate_manifest.py`: v1 resolved comments become a `resolve` event with
+  `at = decision.recorded_at`, `by = "migrated-v1"`,
+  `evidence = "pre-v2; see git history"`; prints counts; idempotent.
+- No dual reader: a v1 manifest fails with "run migrate_manifest.py".
+- `EXAMPLE.json` migrated and asserted to produce identical gate results.
 
-**Acceptance:** a packet built from a page is accepted only if hashes still match; a stale packet is rejected with the changed files named; the page cannot produce an "approve" packet for a role it is not showing.
+**Acceptance:** an objection resolved then reopened blocks again; migration is
+idempotent and preserves outcomes; a v1 file is refused with the migration hint;
+event ordering is validated.
 
-### Task 2.4 AI help for open questions
+### Task 1.3 Open questions as data
 
-- `POST /api/assist` (server-side route): input is the lane id, role, the specific open question, and short artifact excerpts selected by the server from declared artifacts only. No arbitrary file paths, no whole-document upload from the client.
-- Documents are wrapped as untrusted data with explicit delimiters; instructions inside documents are ignored. Output is a draft answer plus the sources it used; if the model cannot ground an answer it says so.
-- Guardrails: env-gated (`REVIEW_ASSIST_API_KEY`), per-session rate limit, token cap, no logging of content, 60-second timeout, and a visible "AI draft — review before submitting" label. The draft lands in the feedback box; it never submits.
-- If the key is absent the feature is hidden, not degraded silently.
+**Problem:** the portal is built around answering open questions, but they are
+free text with no IDs, owner, or blocking semantics.
 
-**Acceptance:** route rejects missing/oversized input and undeclared artifacts; a prompt-injection fixture does not change system behaviour; no key means no UI; the AI draft is never auto-submitted; unit tests mock the provider.
+- Manifest gains `questions`: `{id: Q-001, gate, lane, role, text, source:
+  {artifact, heading}, raised_at}` and append-only `question_answers`
+  (`text`, `answered_by`, `answered_at`, `ai_assisted`, `evidence`).
+- Unanswered questions block their lane. An answer alone does not unblock: the
+  source document must be edited, which makes prior approvals stale and forces
+  reapproval — the answer is evidence, not approval.
+- `extract_questions.py` proposes questions from PRD `## Open Questions` and
+  story `## Open Questions` sections, with stable IDs; the maintainer accepts
+  them into the manifest.
+- Portal shows questions for the role and anchors the source section.
 
-### Task 2.5 Deployment and confidentiality boundary
+**Acceptance:** unanswered blocks; answered-without-reapproval still blocks;
+answer ordering and duplicate answers are rejected; extraction is deterministic
+and never writes to the manifest.
 
-- Default `npm run dev` on localhost. A build-time flag `REVIEW_PORTAL_PUBLIC=1` enables public hosting and requires an explicit banner: "unauthenticated, contains confidential material".
-- Document that a no-login portal is a convenience surface for people already trusted with the material; it is not access control.
-- CSP, no inline script from model output, Markdown rendered without raw HTML, no secrets in client bundles.
+### Task 1.4 Durable draft status and policy provenance
 
-**Acceptance:** production build succeeds with and without the flag; a CSP header test; the public banner is present only when enabled.
+**Problem:** `--draft` is a stderr label; story output has no sidecar at all;
+the manifest digest changes on every decision and proves nothing.
+
+- Every generated output gets a sidecar, including one file per epic for
+  `generate_stories`.
+- Sidecar records `review_status: "draft" | "gated"`, gate and lane IDs, the
+  decision IDs that released each lane, and a `policy_sha256` per lane
+  (roles + artifacts + depends_on only).
+- No path writes `review_status: "approved"`; approval lives only in decisions.
+
+**Acceptance:** an epic draft has a sidecar marked draft; a gated run lists its
+decision IDs; adding an unrelated decision leaves `policy_sha256` unchanged;
+removing a required role changes it.
+
+### Task 1.5 Implementation gate via a backlog lock
+
+**Problem:** `scaffold_code.py` reads only the technical design; gating story
+files it never consumes would be theatre.
+
+- `validate_backlog.py` writes `06-backlog/<product>/backlog.lock.json` (sorted
+  story path to SHA-256) only when validation passes.
+- `scaffold_code.py` bundles design + lock + listed stories, calls
+  `maybe_enforce_gate` and `verify_bundle`, and gains `--draft`.
+- Manifest snapshot: lane artifacts are the lock file; the lock lists stories.
+
+**Acceptance:** editing a story after approval blocks implementation-plan
+generation before any write; `--draft` succeeds and is labelled; a failed
+`validate_backlog` leaves no lock.
+
+### Task 1.6 Epic isolation (decision required)
+
+**Problem:** epic lanes hash the shared PRD and design, so one PRD edit stales
+every epic, and `--epic E01` still bundles the whole PRD — including unapproved
+E02 edits.
+
+**Option (a) — physically split epics (recommended if the PRD template may
+change).** `04-prd/<product>/core.md` holds overview, personas, NFRs, data, UX,
+release; `04-prd/<product>/epics/E01.md` holds the epic goal, story table and
+open questions. Epic lanes hash their own file; a cross-cutting `architecture`
+lane hashes core and design; `generate_stories --epic E01` bundles core + E01 +
+design only. The story-map parser reads epic files instead of PRD headings.
+Migration: a one-off splitter for existing PRDs, with a golden fixture.
+
+**Option (b) — section selectors.** Lane artifacts may be
+`{path, section: "E01"}`; hashes are keyed `path#E01`; the gate hashes sections
+in memory, the prompt is assembled from exactly those bytes, and `verify_bundle`
+compares them. No files are written, but the PRD stays monolithic and legal
+still reviews shared sections.
+
+**Option (c) — accept the limitation.** Keep shared hashing, delete this task,
+and state in README/spec 008 that a shared PRD makes every epic stale and that
+`--epic` still consumes the whole document. This is honest and cheap; it gives
+up the "decision only affects part of the rest of the project" property.
+
+**Acceptance (a or b):** with a cross-cutting lane approved, editing E02's
+content leaves `generate_stories --epic E01` passing, and the E01 prompt
+contains no E02 bytes; editing shared content blocks both epics. Pipeline order
+stays check-then-write (never write scope files before the gate).
+
+### Task 1.7 Review packs and the stale report
+
+- `review_pack.py --product X --role legal [--lane E02]`: decision requested,
+  artifacts + hashes + commit, what changed since this role's last decision
+  (`git diff <source_commit>`; otherwise changed/unchanged only), open
+  questions for the role, assumptions expiring, open changes, other roles.
+- `check_gate.py --all --json --today YYYY-MM-DD` reports every product, gate
+  and lane, including drafts, stale approvals, and lanes stale in another gate
+  than the one being checked. `--today` is required for reproducible CI.
+- CI uploads the report as an artifact (informative only).
+
+**Acceptance:** a pack lists exactly the missing roles and questions; the
+all-gates report finds a stale lane in gate B while checking gate A; the report
+is deterministic for a fixed date.
+
+### Task 1.8 Evidence quality
+
+- Evidence accepts a URL or a configured ticket pattern (config, not code);
+  free text is accepted with a warning surfaced in packs and the portal.
+- No model capture in this increment (see cut list).
+
+**Acceptance:** a configured pattern validates; free text warns but records.
+
+---
+
+## Part 2 — Role-based review pages
+
+### Task 2.1 `portal_view` and the golden contract
+
+- `portal_view(manifest, role)` returns: product, role, generated_at,
+  `pending_for_role` (lanes requiring this role with status and reasons),
+  `blocked_by_roles`, `questions_for_role`, artifact metadata (path, hash,
+  source_commit, link token), assumptions, changes, and the draft/stale summary.
+- No readiness logic in TypeScript. A grep/lint rule forbids status computation
+  under `src/`.
+- A golden JSON fixture is produced by Python tests and imported by a TypeScript
+  shape test; both fail if the shape drifts.
+
+**Acceptance:** fixture round-trip; a missing field fails typecheck; a role only
+receives lanes where it is required plus read-only context.
+
+### Task 2.2 JavaScript test harness
+
+- Add vitest for route handlers and pure modules, Playwright + axe for smoke and
+  accessibility, wired into `make check` and CI.
+- Replace "manual accessibility check" with: axe reports zero serious/critical
+  violations on the three routes; a keyboard-only Playwright run completes a
+  packet.
+
+**Acceptance:** the new tests run in `make check` and fail on a deliberate
+regression.
+
+### Task 2.3 Serving model
+
+- No generated data under `public/`. Server components call Python
+  (`execFile` with a fixed argument list, no shell) through a `server-only`
+  module; results are request-time, so there is no stale banner.
+- `next start -H 127.0.0.1`; `proxy.ts` rejects any `Host` other than
+  `127.0.0.1:<port>` or `localhost:<port>`; the server refuses a non-loopback
+  bind unless `REVIEW_PORTAL_TRUSTED_PROXY=1`.
+- Product and role segments must match `^[a-z0-9-]+$` and exist in the listing;
+  `EXAMPLE` is excluded from routing.
+
+**Acceptance:** `Host: evil.example` returns 403; `public/` contains no product
+data (CI grep); a path-traversal segment 404s.
+
+### Task 2.4 Pages
+
+- `/review` — products and gate progress.
+- `/review/[product]/[role]` — that role's queue: awaiting me, blocked on
+  others, ready (from `portal_view`).
+- `/review/[product]/[role]/[gate]/[lane]` — decision requested, artifacts with
+  hashes and links, what changed, questions for the role, assumptions, other
+  roles, feedback box.
+
+**Acceptance:** a role sees only its lanes; copy states that a packet is not an
+approval; keyboard flow works end to end.
+
+### Task 2.5 Packets and recording
+
+- Form produces the packet from Task 1.1, with artifact hashes and
+  `source_commit`; copy/download plus the exact `record_decision.py` command.
+- `record_decision.py --verify` re-hashes and names changed files; stale
+  approvals refused; non-approvals accepted with `--accept-stale` only.
+- The page cannot be the security boundary; `record_decision` enforces role,
+  staleness and ID assignment.
+
+**Acceptance:** a packet from the page is recorded only when hashes match; a
+tampered packet naming another role is refused; an edit after packet creation is
+reported by file name.
+
+### Task 2.6 AI help for one question
+
+- `POST /api/assist`: input is product, gate, lane, question ID, role, and a
+  choice of length. The server loads only that question's anchored section (max
+  N KB) from declared artifacts. No client paths, no whole-document upload.
+- Runs the local Claude CLI with tools disabled in an empty temporary working
+  directory (same data path and login as generation — no second provider key).
+  Documents are delimited and labelled untrusted; delimiter collisions are
+  escaped.
+- Output: relevant quotes (each verified by exact substring match; unverified
+  quotes removed and flagged), a draft answer separated into "grounded" and
+  "needs your knowledge", and a list of missing information.
+- Guardrails: per-process token bucket plus a daily budget, `Content-Type:
+  application/json`, a custom header and same-origin `Origin` check, 60s
+  timeout, no content logging, feature hidden when the CLI is unavailable.
+- If the draft is used, the packet records `ai_assisted: true`, the model, and
+  the excerpt hashes.
+
+**Acceptance:** quoted evidence not present in the excerpt is removed; oversized
+input is rejected; a cross-site POST without the header is rejected; the feature
+is absent without the CLI; a fixture document containing instructions cannot
+alter the server's file access (tools disabled, fixed cwd); the draft never
+submits.
+
+### Task 2.7 Rendering safety
+
+- react-markdown without raw HTML; remote images stripped; `javascript:` links
+  rejected; links resolve through an artifact index, never a path parameter.
+- CSP with a per-request nonce: `default-src 'self'; script-src 'self'
+  'nonce-…'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none';
+  form-action 'self'`.
+
+**Acceptance:** a fixture with `<script>`, `onerror=`, a `javascript:` link and a
+remote image renders inert and makes no external request (Playwright).
 
 ---
 
 ## Part 3 — SSO and audited decisions (later)
 
-Not in this increment, but the contract is reserved:
+Reserved, not built now:
 
-- OIDC (Google Workspace) login; role claims mapped to manifest roles; per-lane authorization.
-- `POST /api/decisions` writes through an audited service: authenticated actor, server-computed artifact hashes, append-only event log, idempotency key.
-- Reviewer identity stored as issuer + subject, not a typed name; decisions signed with a server key; optional e-signature integration for gates that need one.
-- Portal writes and Git commits share one schema version so history remains reconstructable.
+- OIDC (Google Workspace) with role claims mapped to manifest roles and
+  per-lane authorization.
+- `POST /api/decisions` through an audited service: authenticated actor,
+  server-computed hashes, append-only events, idempotency keys.
+- Identity as issuer + subject, not a typed name; server-signed decisions;
+  optional e-signature for gates that need one.
 
 ---
 
-## Sequencing
+## Sequence
 
-1. 1.2, 1.4, 1.6 (schema and status integrity) — no UI depends on them, but they change the data contract.
-2. 1.1 (scope documents) — makes swimlane invalidation real; changes lane artifacts.
-3. 1.3, 1.5 — enforcement completeness and reviewer ergonomics.
-4. 2.1 → 2.2 → 2.3 → 2.4 → 2.5.
-5. Part 3 when reviewers are external or a gate needs a signature.
+1. Specs (Part 0).
+2. 1.1 ordering and `record_decision.py`.
+3. 1.2 append-only events and migration.
+4. 1.3 questions.
+5. 1.4 sidecar/draft status.
+6. 1.5 implementation gate.
+7. 2.1 `portal_view` + fixture.
+8. 2.2 test harness.
+9. 2.3 serving model, 2.7 rendering safety.
+10. 2.4 pages, 2.5 packets.
+11. 2.6 assist.
+12. 1.7 packs and report.
+13. 1.6 epic isolation, once the option is chosen.
+
+The portal does not depend on epic isolation; running 1.6 last stops the hardest
+document-format question from blocking the surface.
+
+## Cut from this increment
+
+- `REVIEW_PORTAL_PUBLIC` and any public hosting story.
+- A dual v1/v2 manifest reader.
+- Model capture from `--output-format json`.
+- Per-epic implementation plans.
+- CI upload of the stale report (keep the command; upload later).
 
 ## Risks
 
-- **Scope extraction drift:** heading edits silently change scope membership. Mitigate with golden fixtures and a warning when an epic heading disappears.
-- **Two sources of truth:** if the UI ever computes status, it will disagree with the CLI. Keep the JSON contract and a shape test.
-- **AI over-trust:** a fluent draft answer can look like advice. Label, cite, never submit, never write.
-- **Confidentiality:** an unauthenticated page reproduces legal, risk and finance analysis. Localhost by default; public only by explicit decision.
-- **Feedback mutation:** this plan removes it, but existing manifests may already contain edited history. Migration keeps what exists and warns.
-
-## Open decisions (defaults proposed)
-
-1. **Where the portal runs:** localhost only (default) or a private hosted URL. Affects confidentiality and whether API routes are acceptable.
-2. **AI provider and data handling:** which provider may see legal/compliance excerpts. Default: same provider already used for generation, excerpts only, key server-side.
-3. **Who verifies packets:** the maintainer commits decisions after hash verification (default), or a second reviewer is introduced when one exists.
+- **Document split (1.6a) is a contract change.** Mitigate with a splitter, a
+  golden fixture, and the rule that section extraction never loses bytes.
+- **Question extraction proposes wrong owners.** It proposes; a human accepts.
+- **AI over-trust.** Verified quotes, grounded/ungrounded split, `ai_assisted`
+  recorded, never auto-submitted.
+- **Confidentiality.** Loopback only, no `public/` data, no remote images, no
+  telemetry. Sharing requires network-level access, documented later.
+- **Two sources of truth.** One Python `portal_view`; TypeScript shape test; grep
+  guard against status logic in `src/`.
 
 ## Verification
 
-Every task ships with failing tests first and `make check` green. Part 1 is complete when the gate tests cover per-epic isolation, feedback resolution history, implementation gating, sidecar draft status, pack contents and the all-gates report. Part 2 is complete when a role page can be rendered from generated data, a packet round-trips through `record_decision.py`, the AI route is gated and tested, and the build passes with and without the public flag.
+Every task: failing test first, then `make check` green. Part 1 is complete when
+tests cover decision ordering, event migration idempotence, question blocking,
+draft sidecars for epics, lock-file gating, packs and the all-gates report.
+Part 2 is complete when `portal_view` has a frozen contract, the JS harness runs
+in CI, the server refuses foreign hosts, rendering is inert, packets are
+verified, and assist is quote-grounded, rate-limited and recorded.
