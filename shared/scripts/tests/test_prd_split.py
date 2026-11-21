@@ -18,11 +18,6 @@ PRD = """# Demo PRD
 ## Overview
 Shared context that every epic reads.
 
-## Release Plan
-| Phase | Date |
-|-------|------|
-| MVP   |      |
-
 ### E01: Accounts
 | ID | Story | Persona | Traces to | Priority |
 |----|-------|---------|-----------|----------|
@@ -32,6 +27,14 @@ Shared context that every epic reads.
 | ID | Story | Persona | Traces to | Priority |
 |----|-------|---------|-----------|----------|
 | US-002 | Pay bill | User | BR-002 | Must |
+
+## Release Plan
+| Phase | Date |
+|-------|------|
+| MVP   |      |
+
+## Open Questions
+- Which market?
 """
 
 
@@ -106,8 +109,12 @@ def test_splitter_preserves_epic_blocks_and_refuses_re_split():
     with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
         root = Path(name)
         prd = split(root)
-        assert (prd / "core.md").read_text().startswith("# Demo PRD")
-        assert "| MVP   |" in (prd / "core.md").read_text()
+        core = (prd / "core.md").read_text()
+        assert core.startswith("# Demo PRD")
+        assert "| MVP   |" in core
+        assert "## Open Questions" in core
+        assert "Which market?" in core
+        assert "E02: Billing" not in core
         epic = (prd / "epics" / "E01.md").read_text()
         assert "### E01: Accounts" in epic and "US-001" in epic
         again = subprocess.run(
@@ -124,7 +131,7 @@ def test_splitter_preserves_epic_blocks_and_refuses_re_split():
             check=False,
         )
         assert again.returncode != 0
-        assert "already contains epics" in again.stderr
+        assert "already looks split" in again.stderr
 
 
 def test_epic_generation_uses_only_its_own_file():

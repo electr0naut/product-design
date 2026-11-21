@@ -233,3 +233,49 @@ def test_unapproved_backlog_blocks_but_draft_is_explicit():
         assert draft.returncode == 0, draft.stderr
         assert "DRAFT ONLY" in draft.stderr
         assert (root / "07-implementation" / "plan.prompt.md").exists()
+
+
+def test_failed_validation_removes_the_previous_lock_and_scaffold_refuses():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        brd, prd, design = fixture(root)
+        assert validate(root, brd, prd).returncode == 0
+        lock = root / "06-backlog" / "demo" / "backlog.lock.json"
+        assert lock.exists()
+        (root / "06-backlog" / "demo" / "US-003-orphan.md").write_text(
+            STORY.format(sid="US-003", title="Orphan", epic="E01", requirement="BR-999"),
+            encoding="utf-8",
+        )
+        failed = validate(root, brd, prd)
+        assert failed.returncode != 0
+        assert not lock.exists()
+        result = scaffold(root, design, manifest(root, design, approved=False))
+        assert result.returncode != 0
+        assert "validate_backlog" in result.stderr
+
+
+def test_revalidation_without_changes_keeps_the_lock_bytes_and_approval():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        brd, prd, design = fixture(root)
+        assert validate(root, brd, prd).returncode == 0
+        lock = root / "06-backlog" / "demo" / "backlog.lock.json"
+        before = lock.read_bytes()
+        assert validate(root, brd, prd).returncode == 0
+        assert lock.read_bytes() == before
+        result = scaffold(root, design, manifest(root, design, approved=True))
+        assert result.returncode == 0, result.stderr
+
+
+def test_story_added_after_the_lock_is_refused():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        brd, prd, design = fixture(root)
+        assert validate(root, brd, prd).returncode == 0
+        (root / "06-backlog" / "demo" / "US-003-extra.md").write_text(
+            STORY.format(sid="US-003", title="Extra", epic="E01", requirement="BR-001"),
+            encoding="utf-8",
+        )
+        result = scaffold(root, design, manifest(root, design, approved=False))
+        assert result.returncode != 0
+        assert "does not cover the current story files" in result.stderr

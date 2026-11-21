@@ -85,7 +85,10 @@ def main() -> None:
     print(f"Report: {display_path(report_path)}")
 
     if check.errors or (args.strict and check.warnings):
-        print("Lock not updated: the backlog did not pass.", file=sys.stderr)
+        if lock_path.exists():
+            lock_path.unlink()
+            print("Removed the stale backlog lock.", file=sys.stderr)
+        print("Lock not written: the backlog did not pass.", file=sys.stderr)
         raise SystemExit(1)
     write_lock(lock_path, slug, brd, prd_files, check.stories)
     print(f"Lock: {display_path(lock_path)}")
@@ -109,10 +112,6 @@ def write_lock(lock_path: Path, slug: str, brd: Path, prd_files: list[Path], sto
     payload = {
         "schema_version": 1,
         "product": slug,
-        "validated_at": dt.datetime.now(dt.UTC)
-        .replace(microsecond=0)
-        .isoformat()
-        .replace("+00:00", "Z"),
         "brd": path_key(brd),
         "brd_sha256": hashlib.sha256(brd.read_bytes()).hexdigest(),
         "prd_files": {
@@ -120,7 +119,10 @@ def write_lock(lock_path: Path, slug: str, brd: Path, prd_files: list[Path], sto
         },
         "stories": entries,
     }
-    write_text(lock_path, json.dumps(payload, indent=2, sort_keys=True))
+    content = json.dumps(payload, indent=2, sort_keys=True)
+    if lock_path.is_file() and read_text(lock_path).rstrip() == content:
+        return
+    write_text(lock_path, content)
 
 
 def render_report(

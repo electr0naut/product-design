@@ -13,7 +13,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from backlog import parse_frontmatter
+from backlog import parse_frontmatter, story_files
 from gate_reviews import add_review_args, maybe_enforce_gate, verify_bundle
 from workflow_common import (
     PROMPT_SUFFIX,
@@ -32,12 +32,18 @@ from workflow_common import (
 )
 
 
-def load_lock(lock_path: Path, product: str) -> tuple[dict, list[Path]]:
+def load_lock(lock_path: Path, product: str, backlog_dir: Path) -> tuple[dict, list[Path], dict]:
     """Refuse an absent, foreign or stale lock before anything is generated."""
+    if not lock_path.is_file():
+        raise SystemExit(
+            f"No backlog lock at {display_path(lock_path)}. Run validate_backlog.py first."
+        )
     try:
         data = json.loads(read_text(lock_path))
     except json.JSONDecodeError as exc:
         raise SystemExit(f"Invalid backlog lock {display_path(lock_path)}: {exc}") from exc
+    if not isinstance(data, dict):
+        raise SystemExit(f"Invalid backlog lock {display_path(lock_path)}: expected an object.")
     if data.get("schema_version") != 1 or data.get("product") != product:
         raise SystemExit(f"Backlog lock {display_path(lock_path)} is not for product '{product}'.")
     declared = [("brd", data.get("brd"), data.get("brd_sha256"))]
@@ -50,6 +56,7 @@ def load_lock(lock_path: Path, product: str) -> tuple[dict, list[Path]]:
         raise SystemExit(f"Backlog lock {display_path(lock_path)} lists no stories.")
     declared += [("story", key, digest) for key, digest in stories.items()]
     paths: list[Path] = []
+    digests: dict[str, str] = {}
     for kind, key, digest in declared:
         if not isinstance(key, str) or not isinstance(digest, str):
             raise SystemExit(f"Backlog lock {display_path(lock_path)} has a malformed entry.")
@@ -69,7 +76,18 @@ def load_lock(lock_path: Path, product: str) -> tuple[dict, list[Path]]:
             )
         if kind == "story":
             paths.append(path)
-    return data, sorted(paths)
+            digests[str(path.resolve())] = digest
+        else:
+            digests[str(path.resolve())] = digest
+    actual = {str(path.resolve()) for path in story_files(backlog_dir)}
+    if actual != {str(path.resolve()) for path in paths}:
+        missing = sorted(actual - {str(path.resolve()) for path in paths})
+        raise SystemExit(
+            "Backlog lock does not cover the current story files"
+            + (f" (new: {', '.join(display_path(Path(p)) for p in missing)})" if missing else "")
+            + ". Re-run validate_backlog.py."
+        )
+    return data, sorted(paths), digests
 
 
 def main() -> None:
@@ -89,7 +107,7 @@ def main() -> None:
     product = slug_from_path(technical_design)
     backlog_dir = project_path(args.backlog) if args.backlog else ROOT / "06-backlog" / product
     lock_path = backlog_dir / "backlog.lock.json"
-    lock, story_paths = load_lock(lock_path, product)
+    _lock, story_paths, lock_hashes = load_lock(lock_path, product, backlog_dir)
 
     epics = set()
     for path in story_paths:
@@ -114,6 +132,15 @@ def main() -> None:
     )
     context = bundle_documents("Approved Inputs", sources)
     verify_bundle(context, statuses)
+    for item in context.sources:
+        path = Path(item["path"])
+        if not path.is_absolute():
+            path = ROOT / path
+        expected = lock_hashes.get(str(path.resolve()))
+        if expected is not None and expected != item["sha256"]:
+            raise SystemExit(
+                f"Locked input changed during generation: {display_path(path)}. Re-run validate_backlog.py."
+            )
 
     prompt = compose_prompt(PROMPTS / "07-scaffold-code.md", None, context)
     default_out = ROOT / "07-implementation" / f"{product}-implementation-plan.md"

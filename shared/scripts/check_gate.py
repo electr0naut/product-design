@@ -25,7 +25,11 @@ def all_products(manifest_dir: Path, today: dt.date) -> list[dict]:
             continue
         gates = {}
         for gate in data["gates"]:
-            report = evaluate_gate(manifest, gate["id"], today=today)
+            try:
+                report = evaluate_gate(manifest, gate["id"], today=today)
+            except (ValueError, KeyError, TypeError, OSError, SystemExit) as exc:
+                gates[gate["id"]] = {"error": str(exc)}
+                continue
             gates[gate["id"]] = {
                 "ready": report["ready"],
                 "lanes": {
@@ -75,6 +79,9 @@ def main() -> int:
                     print(f"{product['product']}: INVALID — {product['error']}")
                     continue
                 for gate, report in product["gates"].items():
+                    if "error" in report:
+                        print(f"{product['product']}/{gate}: INVALID — {report['error']}")
+                        continue
                     for lane, state in report["lanes"].items():
                         print(
                             f"{product['product']}/{gate}/{lane}: "
