@@ -15,6 +15,7 @@ import pytest
 SCRIPTS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS))
 
+import workflow_common  # noqa: E402
 from gate_reviews import artifact_status, generation_receipt, maybe_enforce_gate  # noqa: E402
 from test_gate_reviews import decide, manifest_fixture, write_manifest  # noqa: E402
 from workflow_common import bundle_documents, compose_prompt, generate  # noqa: E402
@@ -299,22 +300,26 @@ def test_snapshot_failure_writes_neither_document_nor_sidecar(tmp_path: Path):
     assert not output.with_suffix(".provenance.json").exists()
 
 
-def test_document_write_failure_leaves_no_sidecar(tmp_path: Path):
+def test_document_write_failure_leaves_no_sidecar(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     output = tmp_path / "04-prd" / "demo-prd.md"
     output.parent.mkdir(parents=True)
-    output.parent.chmod(0o500)
-    try:
-        with pytest.raises(OSError):
-            generate(
-                prompt_fixture(tmp_path),
-                output,
-                False,
-                fake_cli(tmp_path),
-                snapshot=generation_receipt(None, output),
-            )
-        assert not output.with_suffix(".provenance.json").exists()
-    finally:
-        output.parent.chmod(0o700)
+
+    def fail_write(_path: Path, _content: str) -> None:
+        raise OSError("simulated write failure")
+
+    # A failing writer keeps this test meaningful when the suite runs as root,
+    # where directory permissions are not enforced.
+    monkeypatch.setattr(workflow_common, "write_text", fail_write)
+    with pytest.raises(OSError, match="simulated write failure"):
+        generate(
+            prompt_fixture(tmp_path),
+            output,
+            False,
+            fake_cli(tmp_path),
+            snapshot=generation_receipt(None, output),
+        )
+    assert not output.exists()
+    assert not output.with_suffix(".provenance.json").exists()
 
 
 def test_cli_generation_records_snapshot_fields(tmp_path: Path):
