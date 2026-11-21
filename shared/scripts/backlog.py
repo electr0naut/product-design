@@ -12,7 +12,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from workflow_common import is_prompt_file
+from workflow_common import is_prompt_file, read_text, reject_symlink
 
 REQUIREMENT_REF = re.compile(r"\b(BR|NFR)-(\d+)\b", re.IGNORECASE)
 STORY_REF = re.compile(r"\bUS-(\d+)\b", re.IGNORECASE)
@@ -24,6 +24,7 @@ HEADING = re.compile(r"^(#{1,6})\s")
 STORY_MARKER = re.compile(
     r"^[ \t]*<!--\s*story:\s*(US-\d+)\s*-->[ \t]*$", re.IGNORECASE | re.MULTILINE
 )
+STORY_MARKER_LIKE = re.compile(r"<!--\s*story\s*:", re.IGNORECASE)
 GIVEN_WHEN_THEN = re.compile(r"\bgiven\b.*\bwhen\b.*\bthen\b", re.IGNORECASE)
 
 PRIORITY_RANK = {"must": 0, "should": 1, "could": 2, "won't": 3, "wont": 3}
@@ -43,11 +44,6 @@ def story_id(number: str) -> str:
 
 def epic_id(number: str) -> str:
     return f"E{int(number):02d}"
-
-
-def normalize_story_id(value: str) -> str:
-    match = STORY_REF.search(value or "")
-    return story_id(match.group(1)) if match else ""
 
 
 def normalize_epic_id(value: str) -> str:
@@ -273,7 +269,7 @@ class Story:
 
     @classmethod
     def load(cls, path: Path) -> Story:
-        meta, body = parse_frontmatter(path.read_text(encoding="utf-8"))
+        meta, body = parse_frontmatter(read_text(path))
         return cls(path, meta, body)
 
     def text(self, key: str) -> str:
@@ -282,7 +278,8 @@ class Story:
 
     @property
     def id(self) -> str:
-        return normalize_story_id(self.text("id"))
+        value = self.text("id")
+        return value if re.fullmatch(r"US-\d{3}", value) else ""
 
     @property
     def title(self) -> str:
@@ -290,7 +287,8 @@ class Story:
 
     @property
     def epic(self) -> str:
-        return normalize_epic_id(self.text("epic"))
+        value = self.text("epic")
+        return value if re.fullmatch(r"E\d{2}", value) else ""
 
     @property
     def traces_to(self) -> list[str]:
@@ -337,9 +335,13 @@ def is_story_file(path: Path, backlog_dir: Path) -> bool:
 
 
 def story_files(backlog_dir: Path) -> list[Path]:
+    reject_symlink(backlog_dir, "backlog directory")
     if not backlog_dir.exists():
         return []
-    return sorted(p for p in backlog_dir.rglob("*.md") if is_story_file(p, backlog_dir))
+    files = sorted(p for p in backlog_dir.rglob("*.md") if is_story_file(p, backlog_dir))
+    for path in files:
+        reject_symlink(path, "story file")
+    return files
 
 
 def files_for_story(backlog_dir: Path, sid: str) -> list[Path]:
@@ -362,12 +364,12 @@ def split_stories(response: str) -> list[tuple[str, str]]:
     around a story are removed.
     """
     markers = list(STORY_MARKER.finditer(response))
+    if len(markers) != len(STORY_MARKER_LIKE.findall(response)):
+        raise ValueError("Malformed story marker; expected <!-- story: US-001 --> on its own line.")
     chunks = []
     for index, marker in enumerate(markers):
         end = markers[index + 1].start() if index + 1 < len(markers) else len(response)
-        chunks.append(
-            (normalize_story_id(marker.group(1)), _strip_fences(response[marker.end() : end]))
-        )
+        chunks.append((marker.group(1), _strip_fences(response[marker.end() : end])))
     return chunks
 
 
@@ -418,6 +420,11 @@ def check_backlog(
         if not story.id:
             check.errors.append(f"{where(story)}: missing or invalid `id`.")
             continue
+        if not re.fullmatch(rf"{re.escape(story.id)}(?:-[^/]+)?\.md", story.path.name):
+            check.errors.append(
+                f"{where(story)}: filename does not match canonical frontmatter id {story.id}."
+            )
+            continue
         if story.id in check.stories:
             check.errors.append(
                 f"{story.id}: duplicate ID in {where(story)} and {where(check.stories[story.id])}."
@@ -426,6 +433,8 @@ def check_backlog(
         check.stories[story.id] = story
 
     for sid, story in check.stories.items():
+        if not story.epic:
+            check.errors.append(f"{sid}: missing or invalid `epic` (expected E01).")
         if not story.traces_to:
             check.errors.append(
                 f"{sid}: `traces_to` is empty; every story must trace to a BRD requirement."

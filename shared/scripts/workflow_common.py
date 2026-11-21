@@ -30,15 +30,17 @@ def project_path(value: str) -> Path:
 
 
 def reject_symlink(path: Path, kind: str) -> None:
-    current = path
-    while not current.exists():
-        if current.is_symlink():
+    """Check each lexical component; an existing descendant does not end the walk."""
+    absolute = path if path.is_absolute() else ROOT / path
+    current = Path(absolute.anchor)
+    for part in absolute.parts[1:]:
+        if part == "..":
+            raise SystemExit(f"Refusing parent traversal in {kind}: {display_path(path)}")
+        current /= part
+        # System-level aliases are common (/tmp on some Linux installations,
+        # /var on macOS); all descendants are still checked independently.
+        if current.is_symlink() and current not in (Path("/tmp"), Path("/var")):
             raise SystemExit(f"Refusing symlinked {kind}: {display_path(current)}")
-        if current == current.parent:
-            return
-        current = current.parent
-    if current.is_symlink():
-        raise SystemExit(f"Refusing symlinked {kind}: {display_path(current)}")
 
 
 def read_text(path: Path) -> str:
@@ -94,6 +96,10 @@ def markdown_files(
     """
     reject_symlink(path, "input")
     if path.is_file():
+        if names is not None and path.name not in names:
+            return []
+        if is_prompt_file(path):
+            return []
         return [path]
     if not path.exists():
         raise SystemExit(f"Missing directory: {display_path(path)}")
@@ -158,7 +164,7 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def run_claude(prompt: str, claude_bin: str, fallback: Path) -> str | None:
+def run_claude(prompt: str, claude_bin: str, fallback: Path, force: bool = False) -> str | None:
     """Run `claude -p` on the prompt and return its output.
 
     If the CLI is not installed, write the prompt to `fallback` for manual use
@@ -166,6 +172,14 @@ def run_claude(prompt: str, claude_bin: str, fallback: Path) -> str | None:
     """
     executable = shutil.which(claude_bin)
     if executable is None:
+        reject_symlink(fallback, "fallback prompt")
+        if fallback.exists() and not force:
+            print(
+                f"Claude CLI '{claude_bin}' not found. Existing prompt preserved: "
+                f"{display_path(fallback)} (use --force to overwrite).",
+                file=sys.stderr,
+            )
+            return None
         write_text(fallback, prompt)
         print(
             f"Claude CLI '{claude_bin}' not found. Wrote prompt for manual use: "
@@ -202,7 +216,11 @@ def generate(
     Never overwrites an existing document unless `force` is set, because
     documents are reviewed and edited by people after generation.
     """
+    reject_symlink(output, "output")
     if prompt_only:
+        if output.exists() and not force:
+            print(f"Skipped {display_path(output)}: it already exists (use --force to overwrite).")
+            return SKIPPED
         write_text(output, prompt)
         print(f"Wrote prompt: {display_path(output)}")
         return WROTE
@@ -211,7 +229,7 @@ def generate(
         print(f"Skipped {display_path(output)}: it already exists (use --force to overwrite).")
         return SKIPPED
 
-    text = run_claude(prompt, claude_bin, output.with_suffix(PROMPT_SUFFIX))
+    text = run_claude(prompt, claude_bin, output.with_suffix(PROMPT_SUFFIX), force)
     if text is None:
         return FALLBACK
 

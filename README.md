@@ -39,8 +39,20 @@ The scripts use the files in `shared/prompts/` and the templates in each phase
 folder. By default they call `claude -p`. If the Claude CLI is not installed,
 they write a `.prompt.md` file that can be pasted into another model.
 
-Generated documents are meant to be reviewed and edited, so the scripts never
-overwrite an existing document. Pass `--force` to regenerate one.
+Generated documents and `.prompt.md` prompts are meant to be reviewed and edited,
+so the scripts never overwrite an existing file without `--force`. If Claude is
+unavailable, a fallback prompt is written and the command exits 1; if that
+prompt already exists, it is preserved (use `--force` to replace it). A
+`--prompt-only` collision is skipped with exit 0 unless forced. An invalid
+story response never overwrites an existing saved `.response.md` without
+`--force` either.
+
+Output paths (including explicit `--out`, `--out-dir`, and `--report` paths) reject
+symlinked files or directory components and parent traversal (`..`). The
+system-level `/tmp` and `/var` aliases are accepted for Linux/macOS, but
+symlinks below them are not. Use real directories for external outputs; no
+write or story deletion is permitted through a symlinked product path. This is
+not a sandbox against concurrent filesystem mutation by another process.
 
 ## Commands
 
@@ -57,10 +69,12 @@ python shared/scripts/generate_analysis.py \
   --idea 01-ideation/my-product.md \
   --role legal
 
-# 3. Generate BRD from idea plus this product's analyses
+# 3. Generate BRD from idea plus all seven exact analyses for this product
 python shared/scripts/generate_brd.py \
   --idea 01-ideation/my-product.md \
   --analysis 02-analysis/
+# For exploratory work with at least one exact analysis, add --allow-partial-analysis
+# Duplicate exact analysis filenames under different directories are rejected.
 
 # 4. Generate PRD from approved BRD
 python shared/scripts/generate_prd.py \
@@ -80,7 +94,7 @@ python shared/scripts/validate_backlog.py \
   --brd 03-brd/my-product-brd.md \
   --prd 04-prd/my-product-prd.md
 
-# 7. Generate implementation scaffold from approved technical design
+# 7. Generate an implementation plan from approved technical design
 python shared/scripts/scaffold_code.py \
   --technical-design 05-technical-design/architecture/my-product-technical-design.md
 ```
@@ -136,6 +150,15 @@ status: Draft
 Without the Claude CLI, run `generate_stories.py --prompt-only --epic E01`,
 paste the prompt into another model, save its answer, and split it into story
 files with `--epic E01 --response <saved answer>`.
+
+The response marker and each story file's frontmatter `id` must use the exact
+canonical form `US-001` (three digits), and the filename must be `US-001.md`
+or `US-001-<title>.md` with the same ID. Frontmatter `epic` must be exact
+`E01` (two digits). The importer rejects noncanonical identities before any
+story files change; the validator also treats noncanonical frontmatter as an
+error. PRD story-map parsing still accepts alternate ID spelling but produces
+canonical IDs for imports. `--force` is required to replace an existing
+`.prompt.md`, including saved epic prompts.
 
 `validate_backlog.py` checks the backlog and writes
 `06-backlog/<product>/traceability.md` with a requirement coverage matrix and a

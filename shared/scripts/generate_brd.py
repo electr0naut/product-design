@@ -36,6 +36,11 @@ def main() -> None:
     parser.add_argument("--idea", required=True, help="Path to the completed idea canvas.")
     parser.add_argument("--analysis", default="02-analysis", help="Analysis directory or file.")
     parser.add_argument("--out", help="Output BRD path.")
+    parser.add_argument(
+        "--allow-partial-analysis",
+        action="store_true",
+        help="Allow exploratory BRD generation with fewer than seven analyses.",
+    )
     add_common_args(parser)
     args = parser.parse_args()
 
@@ -44,6 +49,16 @@ def main() -> None:
     analysis = project_path(args.analysis)
     expected_names = {f"{slug}-{role}-analysis.md" for role in ANALYSIS_ROLES}
     analyses = markdown_files(analysis, names=expected_names)
+    found = {p.name for p in analyses}
+    duplicates = sorted(name for name in found if sum(p.name == name for p in analyses) > 1)
+    if duplicates:
+        raise SystemExit(f"Duplicate phase-02 analyses for '{slug}': {', '.join(duplicates)}.")
+    missing = sorted(expected_names - found)
+    if missing and not args.allow_partial_analysis:
+        raise SystemExit(
+            f"Missing phase-02 analyses for '{slug}': {', '.join(missing)}. "
+            "Use --allow-partial-analysis for exploratory work."
+        )
     if not analyses:
         raise SystemExit(
             f"No phase-02 analysis documents for '{slug}' in {display_path(analysis)}."

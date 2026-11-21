@@ -6,10 +6,10 @@ The pipeline discovers product inputs with loose prefix matching and follows fil
 
 ## Scope
 
-- Select only the seven exact phase-02 analysis artefact names for a product when generating a BRD.
+- Select only the seven exact phase-02 analysis artefact names for a product when generating a BRD; require all seven unless `--allow-partial-analysis` is supplied.
 - Reject symlinked discovered Markdown inputs.
-- Reject symlinked managed output files and parent directories.
-- Preserve explicit external input/output paths only when they are not symlinked.
+- Reject symlinked managed output files and ancestor directories, including existing descendants and story deletion paths.
+- Apply the same policy to explicit external output paths; only top-level `/tmp` and `/var` system aliases are exempt, not their descendants. Reject `..` traversal.
 
 ## Non-goals
 
@@ -26,10 +26,10 @@ The pipeline discovers product inputs with loose prefix matching and follows fil
 
 ## Acceptance criteria
 
-- [ ] A prefix-neighbour artefact is excluded from the BRD prompt.
-- [ ] A symlinked analysis document is rejected.
-- [ ] A symlinked output target is rejected and its external target remains unchanged.
-- [ ] Existing generation tests remain green.
+- [x] A prefix-neighbour artefact is excluded from the BRD prompt.
+- [x] A symlinked analysis document is rejected.
+- [x] A symlinked output target is rejected and its external target remains unchanged.
+- [x] Existing generation tests remain green.
 
 ## Test plan
 

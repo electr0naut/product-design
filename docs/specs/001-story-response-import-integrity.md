@@ -25,10 +25,10 @@ Validate every story response for one selected epic before any existing story fi
 
 ## Acceptance criteria
 
-- [ ] Unknown, duplicate, missing or mismatched IDs return a nonzero result.
-- [ ] Invalid responses write no new story file and delete no existing story file.
-- [ ] A valid complete response retains current `--force` overwrite semantics.
-- [ ] Existing generation and validation tests remain green.
+- [x] Unknown, duplicate, missing or mismatched IDs return a nonzero result.
+- [x] Invalid responses write no new story file and delete no existing story file.
+- [x] A valid complete response retains current `--force` overwrite semantics.
+- [x] Existing generation and validation tests remain green.
 
 ## Test plan
 
