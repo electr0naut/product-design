@@ -77,7 +77,10 @@ export async function listProducts(): Promise<string[]> {
 
 export async function readManifest(product: string): Promise<Manifest> {
   const name = safeSegment(product, PRODUCT);
-  const raw = await readFile(/*turbopackIgnore: true*/ path.join(REVIEW, `${name}.json`), "utf8");
+  const files = await readdir(REVIEW);
+  const match = files.find((file) => file === `${name}.json`);
+  if (!match) throw new Error("unknown product manifest");
+  const raw = await readFile(/*turbopackIgnore: true*/ path.join(REVIEW, match), "utf8");
   return JSON.parse(raw) as Manifest;
 }
 
