@@ -350,3 +350,72 @@ def test_cli_generation_records_snapshot_fields(tmp_path: Path):
     assert sidecar["output_review_status"]["status"] == "draft"
     assert sidecar["input_gate_readiness"] is None
     assert sidecar["output_review_status"]["manifest"] is None
+
+
+def approved_report(tmp_path: Path, lanes: list[str]):
+    manifest, doc = manifest_fixture(tmp_path)
+    (tmp_path / PRD).parent.mkdir(parents=True)
+    (tmp_path / PRD).write_text("# PRD\n", encoding="utf-8")
+    prd_digest = digest((tmp_path / PRD).read_bytes())
+    for lane, roles in (("E01", ("product", "engineering")), ("E02", ("product", "legal"))):
+        for role in roles:
+            decide(tmp_path, doc, lane, role)
+            if lane == "E01":
+                doc["decisions"][-1]["artifact_sha256"][PRD] = prd_digest
+    doc["assumptions"] = [
+        {
+            "id": "A-001",
+            "statement": "Market stays open",
+            "source": "ticket-001",
+            "checked_at": "2026-11-01",
+            "review_by": "2026-11-28",
+        }
+    ]
+    doc["gates"][0]["lanes"]["E01"]["assumptions"] = ["A-001"]
+    doc["gates"][0]["lanes"]["E01"]["artifacts"].append(PRD)
+    write_manifest(manifest, doc)
+    return manifest, maybe_enforce_gate(
+        review_args(manifest),
+        "demo",
+        "design-to-backlog",
+        [tmp_path / "review" / "accounts.md"],
+        lanes,
+    )
+
+
+def test_generation_receipt_defaults_to_a_seven_day_warning_window(tmp_path: Path):
+    manifest, report = approved_report(tmp_path, ["E01"])
+
+    on_day_seven = generation_receipt(report, tmp_path / PRD, today=dt.date(2026, 11, 21))("d" * 64)
+    assert [
+        warning["assumption"] for warning in on_day_seven["output_review_status"]["warnings"]
+    ] == ["A-001"]
+
+    doc = json.loads(manifest.read_text(encoding="utf-8"))
+    doc["assumptions"][0]["review_by"] = "2026-11-29"
+    write_manifest(manifest, doc)
+    report = maybe_enforce_gate(
+        review_args(manifest),
+        "demo",
+        "design-to-backlog",
+        [tmp_path / "review" / "accounts.md"],
+        ["E01"],
+    )
+    on_day_eight = generation_receipt(report, tmp_path / PRD, today=dt.date(2026, 11, 21))("d" * 64)
+    assert on_day_eight["output_review_status"]["warnings"] == []
+
+
+def test_generation_receipt_marks_a_complete_gate_as_complete(tmp_path: Path):
+    _, report = approved_report(tmp_path, ["E01", "E02"])
+
+    fields = generation_receipt(report, tmp_path / PRD, today=dt.date(2026, 11, 21))("e" * 64)
+
+    assert fields["input_gate_readiness"]["lanes_evaluated"] == ["E01", "E02"]
+    assert fields["input_gate_readiness"]["gate_complete"] is True
+
+
+def test_generation_receipt_rechecks_lanes_on_the_requested_day(tmp_path: Path):
+    _, report = approved_report(tmp_path, ["E01"])
+
+    with pytest.raises(ValueError, match="changed during generation"):
+        generation_receipt(report, tmp_path / PRD, today=dt.date(2026, 12, 1))("f" * 64)

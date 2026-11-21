@@ -1032,3 +1032,188 @@ class ScriptTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ParsingEdgeCaseTests(unittest.TestCase):
+    """Contracts the mutation run showed were only implicitly tested."""
+
+    def test_header_columns_are_matched_case_insensitively_by_title(self):
+        prd = textwrap.dedent(
+            """\
+            ### E01: Accounts
+            | id | Priority | Story | Persona | Requirement |
+            |----|----------|-------|---------|-------------|
+            | US-001 | Should | Sign up | Freelancer | BR-001 |
+            """
+        )
+        ref = parse_story_map(prd).stories["US-001"]
+        self.assertEqual(ref.summary, "Sign up")
+        self.assertEqual(ref.persona, "Freelancer")
+        self.assertEqual(ref.traces_to, ["BR-001"])
+        self.assertEqual(ref.priority, "Should")
+
+    def test_story_traces_fall_back_to_a_requirement_in_any_cell(self):
+        prd = textwrap.dedent(
+            """\
+            ### E01: Accounts
+            | US-001 | Sign up (BR-001) | Freelancer | | Must |
+            """
+        )
+        self.assertEqual(parse_story_map(prd).stories["US-001"].traces_to, ["BR-001"])
+
+    def test_table_cells_accepts_a_single_cell_and_trims_emphasis(self):
+        from backlog import _table_cells
+
+        self.assertEqual(_table_cells("| US-001 |"), ["US-001"])
+        self.assertEqual(_table_cells("| **BR-001** | Keep |"), ["BR-001", "Keep"])
+        self.assertEqual(_table_cells("not | a row"), [])
+
+    def test_frontmatter_tolerates_bom_comments_and_empty_lists(self):
+        text = (
+            "\ufeff---\n# comment\n  - orphan\nid: US-001\ntraces_to: []\n"
+            "components: [a, b]\nnotes: [unterminated\n---\nbody\n"
+        )
+        meta, body = parse_frontmatter(text)
+        self.assertEqual(meta["id"], "US-001")
+        self.assertEqual(meta["traces_to"], [])
+        self.assertEqual(meta["components"], ["a", "b"])
+        self.assertEqual(meta["notes"], "[unterminated")
+        self.assertNotIn("", meta)
+        self.assertEqual(body, "body")
+        self.assertEqual(parse_frontmatter(""), ({}, ""))
+
+    def test_unknown_priority_ranks_last(self):
+        from backlog import priority_rank
+
+        self.assertEqual(priority_rank("Must have"), 0)
+        self.assertEqual(priority_rank("later"), 5)
+
+    def test_requirement_row_without_a_description(self):
+        self.assertEqual(parse_requirements("| BR-009 |\n")["BR-009"].text, "")
+
+    def test_strip_fences_strips_one_leading_and_one_trailing_fence(self):
+        from backlog import _strip_fences
+
+        self.assertEqual(_strip_fences("```\nfirst\nsecond\n```"), "first\nsecond")
+        self.assertEqual(_strip_fences("```\nno closing fence"), "no closing fence")
+        self.assertEqual(_strip_fences("```\nx\n```  "), "x")
+
+    def test_is_story_file_skips_templates_prompts_and_notes(self):
+        from backlog import is_story_file
+
+        base = Path("/backlog")
+        self.assertTrue(is_story_file(base / "US-001.md", base))
+        self.assertFalse(is_story_file(base / "templates" / "US-999.md", base))
+        self.assertFalse(is_story_file(base / "prompts" / "US-001.md", base))
+        self.assertFalse(is_story_file(base / "prompts" / "US-001.prompt.md", base))
+        self.assertFalse(is_story_file(base / "notes.md", base))
+
+    def test_split_stories_uses_the_next_marker_only(self):
+        response = (
+            "<!-- story: US-001 -->\nA\n<!-- story: US-002 -->\nB\n<!-- story: US-003 -->\nC\n"
+        )
+        self.assertEqual(
+            split_stories(response),
+            [("US-001", "A"), ("US-002", "B"), ("US-003", "C")],
+        )
+
+
+class CheckEdgeCaseTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self.tmp.name)
+        self.requirements = parse_requirements(BRD)
+        self.story_map = parse_story_map(PRD)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def write(self, name: str, text: str) -> None:
+        (self.dir / name).write_text(text, encoding="utf-8")
+
+    def check(self):
+        return check_backlog(self.requirements, self.story_map, load_stories(self.dir), self.dir)
+
+    def test_each_story_without_frontmatter_is_reported(self):
+        self.write("US-001-a.md", "No frontmatter.\n")
+        self.write("US-002-b.md", "No frontmatter either.\n")
+        errors = self.check().errors
+        self.assertEqual(sum("no frontmatter" in error for error in errors), 2)
+
+    def test_a_duplicate_id_does_not_hide_later_errors(self):
+        self.write("US-001-a.md", story_text("US-001", "A", "E01", "BR-001"))
+        self.write("US-001-b.md", story_text("US-001", "B", "E01", "BR-001"))
+        self.write("US-002-c.md", story_text("US-002", "C", "E01", ""))
+        errors = self.check().errors
+        self.assertTrue(any("duplicate ID" in error for error in errors))
+        self.assertTrue(any("US-002: `traces_to` is empty" in error for error in errors))
+
+    def test_a_dependency_planned_in_the_story_map_is_not_an_error(self):
+        self.write("US-001-a.md", story_text("US-001", "A", "E01", "BR-001", depends="US-003"))
+        errors = self.check().errors
+        self.assertFalse(any("depends on US-003" in error for error in errors))
+
+    def test_a_story_without_an_estimate_says_so(self):
+        story = story_text("US-001", "A", "E01", "BR-001").replace("estimate: M", "estimate:")
+        self.write("US-001-a.md", story)
+        self.assertIn("US-001: has no estimate.", self.check().warnings)
+
+    def test_build_order_breaks_priority_ties_by_epic_before_id(self):
+        self.write("US-001-a.md", story_text("US-001", "A", "E02", "BR-002"))
+        self.write("US-002-b.md", story_text("US-002", "B", "E01", "BR-001"))
+        order = [story.id for story in self.check().build_order]
+        self.assertEqual(order, ["US-002", "US-001"])
+
+
+class ParserDetailTests(unittest.TestCase):
+    def test_duplicate_story_map_rows_do_not_hide_later_rows(self):
+        prd = textwrap.dedent(
+            """\
+            ### E01: Accounts
+            | US-001 | First | Freelancer | BR-001 | Must |
+            | US-001 | Again | Freelancer | BR-001 | Must |
+            | US-002 | Second | Freelancer | BR-001 | Must |
+            """
+        )
+        story_map = parse_story_map(prd)
+        self.assertEqual(story_map.duplicates, ["US-001"])
+        self.assertEqual(list(story_map.stories), ["US-001", "US-002"])
+
+    def test_requirement_row_can_have_only_two_cells(self):
+        self.assertEqual(parse_requirements("| BR-010 | Short text |")["BR-010"].text, "Short text")
+
+    def test_table_cell_escapes_newlines_and_pipes(self):
+        self.assertEqual(table_cell("a\nb"), "a b")
+        self.assertEqual(table_cell(None), "")  # pyright: ignore[reportArgumentType]
+        self.assertEqual(table_cell("a|b"), r"a\|b")
+
+    def test_missing_frontmatter_key_reads_as_empty(self):
+        story = Story(Path("US-001.md"), {"id": "US-001"}, "")
+        self.assertEqual(story.text("title"), "")
+
+    def test_refs_of_empty_text_are_empty(self):
+        from backlog import requirement_refs, story_refs
+
+        self.assertEqual(requirement_refs(""), [])
+        self.assertEqual(story_refs(None), [])  # pyright: ignore[reportArgumentType]
+
+    def test_scalar_unquotes_matching_quotes_only(self):
+        from backlog import _scalar
+
+        self.assertEqual(_scalar("'a'"), "a")
+        self.assertEqual(_scalar("''"), "")
+        self.assertEqual(_scalar("'a''"), "a'")
+
+    def test_priority_rank_strips_trailing_punctuation(self):
+        from backlog import priority_rank
+
+        self.assertEqual(priority_rank("Must."), 0)
+        self.assertEqual(priority_rank("should;"), 1)
+
+    def test_strip_fences_of_a_bare_fence(self):
+        from backlog import _strip_fences
+
+        self.assertEqual(_strip_fences("```"), "")
+
+    def test_frontmatter_may_be_empty(self):
+        self.assertEqual(parse_frontmatter("---\n---\nbody\n"), ({}, "body"))

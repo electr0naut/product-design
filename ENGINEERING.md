@@ -37,7 +37,7 @@ The command runs Python linting, type checking and tests, followed by frontend l
 - Use focused regression tests for bugs, then run the full suite.
 - Add golden fixtures for realistic generated Markdown.
 - Add property tests when a parser gains meaningful input surface area.
-- Run mutation tests periodically on critical validation modules; mutation score is diagnostic, not a release target.
+- Run mutation tests periodically on critical validation modules with `make mutate` (mutmut over `shared/scripts/gate_reviews.py` and `shared/scripts/backlog.py`, configured in `pyproject.toml`); the mutation score is diagnostic, not a release target.
 
 ## Specification template
 
