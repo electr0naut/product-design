@@ -4,7 +4,8 @@
 - **Version:** 1.0
 - **Date:** YYYY-MM-DD
 - **Author:** 
-- **PRD Reference:** [link to 04-prd/approved/<prd>.md]
+- **PRD Reference:** [link to canonical `04-prd/<product>-prd.md`]
+- **PRD Review:** Check the relevant gate and lane in `review/<product>.json`; approval binds both the declared artifact path and the exact PRD bytes.
 
 ---
 
