@@ -6,9 +6,9 @@
 - **Product Manager:** 
 - **Engineering Lead:** 
 - **Design Lead:** 
-- **Review Status:** Derived from `review/<product>.json` for the current artifact bytes; do not set this by hand.
+- **Review Status:** Derived from `review/<product>.json` for this artifact's declared path and current bytes; do not set this by hand.
 - **BRD Reference:** [link to canonical `03-brd/<product>-brd.md`]
-- **BRD Review:** Check the relevant gate and lane in `review/<product>.json`; approval binds the exact BRD bytes, not the document's filename.
+- **BRD Review:** Check the relevant gate and lane in `review/<product>.json`; approval binds both the declared artifact path and the exact BRD bytes.
 
 ---
 
