@@ -78,6 +78,9 @@ The generic product-design scaffold is the scope; FIX is only a later test run. 
 - Template reference clean-up (PR #25, squash-merged as `55bce0f`; initial source commit `51444c3`). The PRD and technical-design templates now reference canonical BRD/PRD paths and explain that review status is derived from `review/<product>.json` for the declared path and current bytes; the PRD template no longer asks an author to set approval by hand. CodeRabbit caught misleading path-versus-hash wording, which was fixed in `d9ef6cc` and answered before merge. `make check` passed with 213 tests plus 6 subtests; template-reference assertions found no old approved-folder paths.
   In plain English: the sample documents point to the paths where BRDs and PRDs are generated and tell reviewers where to check sign-off. The risk is that users who copied the old template may still carry stale links until they update their copies.
 
+- Handover refresh (PR #26, initial source commit `81ad212`): records PR #25's merge and resolved review finding, drops its obsolete open item, and names the Step 2 proposal and story-provenance choice as the next work. This status-only PR keeps the recorded state aligned with the merged branch without changing production behaviour.
+  In plain English: the project handover now says the template fix is finished and points to the next planning decision. The risk is that this handover can become stale again when later work merges, so refresh it at the next milestone.
+
 ## Open
 
 - Security triage is merged: PR #18 sets `persist-credentials: false` and records the two accepted loopback risks; PR #19 records why the nanoid advisory does not apply (3.3.20 is outside both ranges, `npm audit` clean). No CodeRabbit findings existed; Dependabot's only alert was already fixed and CodeQL reports zero alerts.
