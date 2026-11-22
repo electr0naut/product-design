@@ -9,12 +9,14 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
 SCRIPTS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS))
 
+import gate_reviews  # noqa: E402
 import workflow_common  # noqa: E402
 from gate_reviews import artifact_status, generation_receipt, maybe_enforce_gate  # noqa: E402
 from test_gate_reviews import decide, manifest_fixture, write_manifest  # noqa: E402
@@ -350,3 +352,95 @@ def test_cli_generation_records_snapshot_fields(tmp_path: Path):
     assert sidecar["output_review_status"]["status"] == "draft"
     assert sidecar["input_gate_readiness"] is None
     assert sidecar["output_review_status"]["manifest"] is None
+
+
+def enforce_gate_on_day(manifest: Path, lanes: list[str]) -> dict | None:
+    """Keep the initial gate check on the same fixed day as the receipt tests."""
+    evaluate = gate_reviews.evaluate_gate
+
+    def fixed_date_evaluation(path: Path, gate_id: str, lane: str | None = None) -> dict:
+        return evaluate(path, gate_id, lane, today=dt.date(2026, 11, 21))
+
+    with patch.object(gate_reviews, "evaluate_gate", fixed_date_evaluation):
+        return maybe_enforce_gate(
+            review_args(manifest),
+            "demo",
+            "design-to-backlog",
+            [manifest.parent / "accounts.md"],
+            lanes,
+        )
+
+
+def approved_report(tmp_path: Path, lanes: list[str]):
+    manifest, doc = manifest_fixture(tmp_path)
+    (tmp_path / PRD).parent.mkdir(parents=True)
+    (tmp_path / PRD).write_text("# PRD\n", encoding="utf-8")
+    prd_digest = digest((tmp_path / PRD).read_bytes())
+    for lane, roles in (("E01", ("product", "engineering")), ("E02", ("product", "legal"))):
+        for role in roles:
+            decide(tmp_path, doc, lane, role)
+            if lane == "E01":
+                doc["decisions"][-1]["artifact_sha256"][PRD] = prd_digest
+    doc["assumptions"] = [
+        {
+            "id": "A-001",
+            "statement": "Market stays open",
+            "source": "ticket-001",
+            "checked_at": "2026-11-01",
+            "review_by": "2026-11-28",
+        }
+    ]
+    doc["gates"][0]["lanes"]["E01"]["assumptions"] = ["A-001"]
+    doc["gates"][0]["lanes"]["E01"]["artifacts"].append(PRD)
+    write_manifest(manifest, doc)
+    return manifest, enforce_gate_on_day(manifest, lanes)
+
+
+def test_approved_report_does_not_depend_on_the_host_clock(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    real_date = dt.date
+
+    class FutureDate(real_date):
+        @classmethod
+        def today(cls):
+            return cls(2026, 12, 1)
+
+    with monkeypatch.context() as clock:
+        clock.setattr(gate_reviews.dt, "date", FutureDate)
+        _, report = approved_report(tmp_path, ["E01"])
+
+    assert report is not None
+    assert report["lanes"]["E01"]["ready"] is True
+
+
+def test_generation_receipt_defaults_to_a_seven_day_warning_window(tmp_path: Path):
+    manifest, report = approved_report(tmp_path, ["E01"])
+
+    on_day_seven = generation_receipt(report, tmp_path / PRD, today=dt.date(2026, 11, 21))("d" * 64)
+    assert [
+        warning["assumption"] for warning in on_day_seven["output_review_status"]["warnings"]
+    ] == ["A-001"]
+
+    doc = json.loads(manifest.read_text(encoding="utf-8"))
+    doc["assumptions"][0]["review_by"] = "2026-11-29"
+    write_manifest(manifest, doc)
+    report = enforce_gate_on_day(manifest, ["E01"])
+    on_day_eight = generation_receipt(report, tmp_path / PRD, today=dt.date(2026, 11, 21))("d" * 64)
+    assert on_day_eight["output_review_status"]["warnings"] == []
+
+
+def test_generation_receipt_marks_a_complete_gate_as_complete(tmp_path: Path):
+    _, report = approved_report(tmp_path, ["E01", "E02"])
+
+    fields = generation_receipt(report, tmp_path / PRD, today=dt.date(2026, 11, 21))("e" * 64)
+
+    assert fields["input_gate_readiness"]["lanes_evaluated"] == ["E01", "E02"]
+    assert fields["input_gate_readiness"]["gate_complete"] is True
+
+
+def test_generation_receipt_rechecks_lanes_on_the_requested_day(tmp_path: Path):
+    _, report = approved_report(tmp_path, ["E01"])
+
+    with pytest.raises(ValueError, match="changed during generation"):
+        generation_receipt(report, tmp_path / PRD, today=dt.date(2026, 12, 1))("f" * 64)

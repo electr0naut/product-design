@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime as dt
 import hashlib
 import json
 import os
@@ -949,3 +950,434 @@ def test_output_product_manifest_is_enforced_over_the_input_products():
         result = subprocess.run(command, capture_output=True, text=True, check=False)
         assert result.returncode != 0
         assert "other" in result.stdout + result.stderr
+
+
+# ---------------------------------------------------------------------------
+# Boundary contracts found by mutation testing (mutmut, 2026-11-21).
+
+
+def question(
+    doc: dict, lane: str, role: str, qid: str = "Q-001", raised: str = "2026-11-21T10:00:00Z"
+):
+    artifact = f"review/{'accounts' if lane == 'E01' else 'billing'}.md"
+    doc.setdefault("questions", []).append(
+        {
+            "id": qid,
+            "gate": "design-to-backlog",
+            "lane": lane,
+            "role": role,
+            "text": f"Open point for {qid}",
+            "source": {"artifact": artifact, "heading": "Scope"},
+            "raised_at": raised,
+        }
+    )
+
+
+def answer(doc: dict, qid: str, answered_at: str) -> None:
+    doc.setdefault("question_answers", []).append(
+        {
+            "id": f"QA-{qid}",
+            "question_id": qid,
+            "text": "Answered.",
+            "answered_by": "product",
+            "answered_at": answered_at,
+            "ai_assisted": False,
+            "evidence": "ticket-answer-1",
+        }
+    )
+
+
+def test_assumption_is_valid_through_its_review_by_date():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        path, doc = manifest_fixture(root)
+        for role in ("product", "engineering"):
+            decide(root, doc, "E01", role)
+        doc["assumptions"] = [
+            {
+                "id": "A-001",
+                "statement": "Retention stays 30 days",
+                "source": "legal-memo-1",
+                "checked_at": "2026-11-01",
+                "review_by": "2026-11-30",
+            }
+        ]
+        doc["gates"][0]["lanes"]["E01"]["assumptions"] = ["A-001"]
+        write_manifest(path, doc)
+
+        from gate_reviews import evaluate_gate
+
+        due = evaluate_gate(path, "design-to-backlog", "E01", today=dt.date(2026, 11, 30))
+        assert due["lanes"]["E01"]["ready"] is True
+        after = evaluate_gate(path, "design-to-backlog", "E01", today=dt.date(2026, 12, 1))
+        assert after["lanes"]["E01"]["reasons"] == ["expired assumption: A-001"]
+
+
+def test_assumption_review_by_may_equal_checked_at():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        path, doc = manifest_fixture(root)
+        doc["assumptions"] = [
+            {
+                "id": "A-001",
+                "statement": "Short-lived assumption",
+                "source": "ticket-1",
+                "checked_at": "2026-11-21",
+                "review_by": "2026-11-21",
+            }
+        ]
+        doc["gates"][0]["lanes"]["E01"]["assumptions"] = ["A-001"]
+        write_manifest(path, doc)
+
+        from gate_reviews import evaluate_gate
+
+        report = evaluate_gate(path, "design-to-backlog", "E01", today=dt.date(2026, 11, 21))
+        assert "expired assumption: A-001" not in report["lanes"]["E01"]["reasons"]
+
+
+def test_question_answered_at_approval_time_still_needs_reapproval():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        path, doc = manifest_fixture(root)
+        for role in ("product", "engineering"):
+            decide(root, doc, "E01", role)
+        question(doc, "E01", "product", raised="2026-11-21T12:00:00Z")
+        answer(doc, "Q-001", "2026-11-21T12:00:00Z")
+        write_manifest(path, doc)
+
+        report = check(root, doc, lane="E01")
+        assert report["lanes"]["E01"]["reasons"] == ["question needs reapproval: Q-001"]
+
+
+def test_every_unanswered_question_is_reported():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        path, doc = manifest_fixture(root)
+        for role in ("product", "engineering"):
+            decide(root, doc, "E01", role)
+        question(doc, "E01", "product", qid="Q-001")
+        question(doc, "E01", "engineering", qid="Q-002")
+        write_manifest(path, doc)
+
+        report = check(root, doc, lane="E01")
+        assert report["lanes"]["E01"]["reasons"] == [
+            "unanswered question: Q-001",
+            "unanswered question: Q-002",
+        ]
+
+
+def test_question_reapproval_uses_the_decisions_own_lane():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        path, doc = manifest_fixture(root)
+        for role in ("product", "legal"):
+            decide(root, doc, "E02", role)
+            doc["decisions"][-1]["recorded_at"] = (
+                "2026-11-21T11:00:00Z" if role == "product" else "2026-11-21T14:00:00Z"
+            )
+        for role in ("product", "engineering"):
+            decide(root, doc, "E01", role)
+            doc["decisions"][-1]["recorded_at"] = "2026-11-21T13:00:00Z"
+        question(doc, "E02", "product", raised="2026-11-21T10:00:00Z")
+        answer(doc, "Q-001", "2026-11-21T12:00:00Z")
+        write_manifest(path, doc)
+
+        report = check(root, doc)
+        assert report["lanes"]["E01"]["ready"] is True
+        assert report["lanes"]["E01"]["decisions"]["product"]["id"] == "D-003"
+        assert report["lanes"]["E02"]["decisions"]["product"]["id"] == "D-001"
+        assert "question needs reapproval: Q-001" in report["lanes"]["E02"]["reasons"]
+
+
+def test_reapproval_and_decision_projections_do_not_cross_gates_with_same_lane():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        path, doc = manifest_fixture(root)
+        doc["gates"].append(
+            {
+                "id": "draft-to-design",
+                "lanes": {
+                    "E01": {
+                        "roles": ["product"],
+                        "artifacts": ["review/accounts.md"],
+                        "depends_on": [],
+                        "assumptions": [],
+                    }
+                },
+            }
+        )
+        product = decide(root, doc, "E01", "product")
+        product["recorded_at"] = "2026-11-21T11:00:00Z"
+        decide(root, doc, "E01", "engineering")
+        later_other_gate = decide(root, doc, "E01", "product")
+        later_other_gate["gate"] = "draft-to-design"
+        later_other_gate["recorded_at"] = "2026-11-21T14:00:00Z"
+        question(doc, "E01", "product", raised="2026-11-21T10:00:00Z")
+        answer(doc, "Q-001", "2026-11-21T12:00:00Z")
+        write_manifest(path, doc)
+
+        from gate_reviews import evaluate_gate
+
+        report = evaluate_gate(path, "design-to-backlog", "E01")
+        state = report["lanes"]["E01"]
+        assert state["decisions"]["product"]["id"] == product["id"]
+        assert state["reasons"] == ["question needs reapproval: Q-001"]
+        other = evaluate_gate(path, "draft-to-design", "E01")
+        assert other["lanes"]["E01"]["decisions"]["product"]["id"] == later_other_gate["id"]
+
+
+def test_change_resolved_at_approval_time_still_needs_reapproval():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        path, doc = manifest_fixture(root)
+        for role in ("product", "engineering"):
+            decide(root, doc, "E01", role)
+        doc["changes"] = [
+            {
+                "id": "CHG-001",
+                "source": "customer-notice",
+                "raised_at": "2026-11-21T10:00:00Z",
+                "effective_at": "2026-11-20",
+                "affected": [{"gate": "design-to-backlog", "lane": "E01"}],
+            }
+        ]
+        doc["change_events"] = [
+            {
+                "id": "CE-001",
+                "change_id": "CHG-001",
+                "action": "resolve",
+                "text": "Handled in the plan.",
+                "at": "2026-11-21T12:00:00Z",
+                "by": "product",
+                "evidence": "ticket-9",
+            }
+        ]
+        write_manifest(path, doc)
+
+        report = check(root, doc, lane="E01")
+        assert (
+            "reapproval required after change: CHG-001 (product)"
+            in report["lanes"]["E01"]["reasons"]
+        )
+        assert (
+            "reapproval required after change: CHG-001 (engineering)"
+            in report["lanes"]["E01"]["reasons"]
+        )
+
+
+def test_change_event_at_the_raise_time_is_valid():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        path, doc = manifest_fixture(root)
+        for role in ("product", "engineering"):
+            decide(root, doc, "E01", role)
+        doc["changes"] = [
+            {
+                "id": "CHG-001",
+                "source": "customer-notice",
+                "raised_at": "2026-11-21T10:00:00Z",
+                "effective_at": "2026-11-20",
+                "affected": [{"gate": "design-to-backlog", "lane": "E01"}],
+            }
+        ]
+        doc["change_events"] = [
+            {
+                "id": "CE-001",
+                "change_id": "CHG-001",
+                "action": "resolve",
+                "text": "Resolved at once.",
+                "at": "2026-11-21T10:00:00Z",
+                "by": "product",
+                "evidence": "ticket-9",
+            }
+        ]
+        write_manifest(path, doc)
+
+        report = check(root, doc, lane="E01")
+        assert report["lanes"]["E01"]["ready"] is True
+
+
+def test_feedback_is_scoped_to_its_own_lane():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        path, doc = manifest_fixture(root)
+        for lane, role, fid in (
+            ("E01", "product", "F-01"),
+            ("E01", "engineering", "F-02"),
+            ("E02", "product", "F-03"),
+            ("E02", "legal", "F-04"),
+        ):
+            decision = decide(root, doc, lane, role)
+            decision["feedback"].append({"id": fid, "text": f"Note {fid}"})
+        write_manifest(path, doc)
+
+        report = check(root, doc, lane="E01")
+        assert [item["id"] for item in report["lanes"]["E01"]["feedback"]] == ["F-01", "F-02"]
+        assert report["lanes"]["E01"]["feedback"][0]["status"] == "open"
+        report = check(root, doc, lane="E02")
+        assert [item["id"] for item in report["lanes"]["E02"]["feedback"]] == ["F-03", "F-04"]
+
+
+def test_lane_epic_flag_defaults_to_false():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        path, doc = manifest_fixture(root)
+        del doc["gates"][0]["lanes"]["E02"]["epic"]
+        write_manifest(path, doc)
+
+        report = check(root, doc)
+        assert report["lanes"]["E01"]["epic"] is True
+        assert report["lanes"]["E02"]["epic"] is False
+
+
+def test_policy_digest_hashes_canonical_content():
+    from gate_reviews import policy_digest
+
+    policy = {
+        "roles": ["product", "engineering"],
+        "artifacts": ["review/accounts.md"],
+        "depends_on": [],
+        "assumptions": ["A-001"],
+    }
+    reordered = dict(reversed(list(policy.items())))
+    canonical = json.dumps(policy, sort_keys=True, separators=(",", ":"))
+
+    assert policy_digest(policy) == policy_digest(reordered)
+    assert policy_digest(policy) == hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    assert policy_digest({**policy, "assumptions": []}) != policy_digest(policy)
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"source_commit": "a" * 40, "recorded_by": "product-owner"},
+        {"attestation": "typed-name, unverified"},
+        {"source_commit": "b" * 40, "attestation": "verified"},
+    ],
+)
+def test_optional_decision_fields_are_accepted(overrides: dict):
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        path, doc = manifest_fixture(root)
+        decision = decide(root, doc, "E01", "product")
+        decision.update(overrides)
+        write_manifest(path, doc)
+
+        assert check(root, doc, lane="E01")["lanes"]["E01"]["ready"] is False
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("source_commit", 7), ("attestation", "signed-by-email")],
+)
+def test_optional_decision_fields_are_type_checked(field: str, value: object):
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        path, doc = manifest_fixture(root)
+        decision = decide(root, doc, "E01", "product")
+        decision[field] = value
+        with pytest.raises(ValueError):
+            check(root, doc, lane="E01")
+
+
+def test_answers_are_matched_to_their_own_question():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        path, doc = manifest_fixture(root)
+        for role in ("product", "engineering"):
+            decide(root, doc, "E01", role)
+        question(doc, "E01", "product", qid="Q-001")
+        question(doc, "E01", "engineering", qid="Q-002")
+        answer(doc, "Q-002", "2026-11-21T12:30:00Z")
+        write_manifest(path, doc)
+
+        report = check(root, doc, lane="E01")
+        assert report["lanes"]["E01"]["reasons"] == [
+            "unanswered question: Q-001",
+            "question needs reapproval: Q-002",
+        ]
+
+
+def test_questions_from_another_lane_do_not_attach():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        path, doc = manifest_fixture(root)
+        for role in ("product", "engineering"):
+            decide(root, doc, "E01", role)
+        question(doc, "E02", "product")
+        write_manifest(path, doc)
+
+        report = check(root, doc, lane="E01")
+        assert report["lanes"]["E01"]["ready"] is True
+
+
+def test_stale_approvals_name_the_roles_that_must_reapprove():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        path, doc = manifest_fixture(root)
+        for role in ("product", "engineering"):
+            decide(root, doc, "E01", role)
+        (root / "review" / "accounts.md").write_text("Accounts v2\n", encoding="utf-8")
+        write_manifest(path, doc)
+
+        report = check(root, doc, lane="E01")
+        assert report["lanes"]["E01"]["stale_roles"] == ["product", "engineering"]
+
+
+def test_artifact_hash_rejects_unsafe_names():
+    from gate_reviews import artifact_hash
+
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        (root / "accounts.md").write_text("Accounts\n", encoding="utf-8")
+        for bad in ("/etc/passwd", "../outside.md", "", 7):
+            with pytest.raises(ValueError, match="unsafe artifact path"):
+                artifact_hash(root, bad)  # pyright: ignore[reportArgumentType]
+        assert artifact_hash(root, "accounts.md") == hashlib.sha256(b"Accounts\n").hexdigest()
+
+
+def test_fields_and_day_reject_bad_input():
+    from gate_reviews import day, fields
+
+    with pytest.raises(ValueError):
+        fields({}, {"id"})
+    with pytest.raises(ValueError):
+        fields({"id": "x", "extra": 1}, {"id"})
+    with pytest.raises(ValueError):
+        fields("not a mapping", {"id"})
+    with pytest.raises(ValueError):
+        day("2026-13-01")
+    with pytest.raises(ValueError):
+        day(20261121)
+    assert day("2026-11-21") == dt.date(2026, 11, 21)
+
+
+def test_timestamps_inside_the_clock_skew_are_accepted():
+    from gate_reviews import parsed_timestamp
+
+    soon = (dt.datetime.now(dt.UTC) + dt.timedelta(minutes=4)).isoformat()
+    assert parsed_timestamp(soon).tzinfo is not None
+
+
+def test_manifest_must_live_in_a_review_directory_named_for_its_product():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        _, doc = manifest_fixture(root)
+        elsewhere = root / "manifests"
+        elsewhere.mkdir()
+        manifest = elsewhere / "demo.json"
+        write_manifest(manifest, doc)
+
+        from gate_reviews import evaluate_gate
+
+        with pytest.raises(ValueError, match="review/<product>.json"):
+            evaluate_gate(manifest, "design-to-backlog")
+
+
+def test_lane_epic_must_be_a_boolean():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        _, doc = manifest_fixture(root)
+        doc["gates"][0]["lanes"]["E02"]["epic"] = "yes"
+        with pytest.raises(ValueError, match="epic must be a boolean"):
+            check(root, doc, lane="E02")

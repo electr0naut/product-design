@@ -288,3 +288,95 @@ def test_cli_invalid_unhashable_role_returns_invalid_exit_not_traceback(tmp_path
     )
     assert result.returncode == 2
     assert "Traceback" not in result.stderr
+
+
+def test_warning_window_includes_the_review_by_day_and_allows_zero_days(tmp_path: Path):
+    manifest, doc = manifest_fixture(tmp_path)
+    artifact = tmp_path / "review" / "accounts.md"
+    for role in ("product", "engineering"):
+        decide(tmp_path, doc, "E01", role)
+    doc["assumptions"] = [
+        {
+            "id": "A-001",
+            "statement": "Market stays open",
+            "source": "ticket-001",
+            "checked_at": "2026-11-01",
+            "review_by": "2026-11-30",
+        }
+    ]
+    doc["gates"][0]["lanes"]["E01"]["assumptions"] = ["A-001"]
+    write_manifest(manifest, doc)
+
+    due_today = artifact_status(manifest, artifact, today=dt.date(2026, 11, 30), warning_days=0)
+    assert due_today["status"] == "approved"
+    assert [warning["assumption"] for warning in due_today["warnings"]] == ["A-001"]
+    assert set(due_today) == {"artifact", "status", "scopes", "warnings"}
+    assert set(due_today["scopes"][0]) == {"gate", "lane", "status", "reasons"}
+
+
+def test_portal_view_reports_every_pending_lane_for_the_role(tmp_path: Path):
+    from gate_reviews import portal_view
+
+    manifest, doc = manifest_fixture(tmp_path)
+    decision = decide(tmp_path, doc, "E01", "engineering")
+    decision["feedback"].append({"id": "F-01", "text": "Clarify scope"})
+    write_manifest(manifest, doc)
+
+    view = portal_view(manifest, "product")
+
+    assert view["schema_version"] == 1
+    assert set(view) == {
+        "schema_version",
+        "product",
+        "role",
+        "generated_at",
+        "pending_for_role",
+        "blocked_on_others",
+        "context",
+        "questions_for_role",
+    }
+    assert [entry["lane"] for entry in view["pending_for_role"]] == ["E01", "E02"]
+    entry = next(item for item in view["pending_for_role"] if item["lane"] == "E01")
+    assert entry["other_roles"]["engineering"]["id"] == "D-001"
+    assert entry["decision"] is None
+
+
+def test_portal_view_handles_a_role_that_only_one_lane_needs(tmp_path: Path):
+    from gate_reviews import portal_view
+
+    manifest, doc = manifest_fixture(tmp_path)
+    write_manifest(manifest, doc)
+
+    view = portal_view(manifest, "legal")
+
+    assert [entry["lane"] for entry in view["pending_for_role"]] == ["E02"]
+    assert [entry["lane"] for entry in view["context"]] == ["E01"]
+
+
+def test_portal_view_reports_the_roles_own_approval_without_counting_it_ready(tmp_path: Path):
+    from gate_reviews import portal_view
+
+    manifest, doc = manifest_fixture(tmp_path)
+    decide(tmp_path, doc, "E01", "product")
+    write_manifest(manifest, doc)
+
+    view = portal_view(manifest, "product")
+
+    blocked = next(entry for entry in view["blocked_on_others"] if entry["lane"] == "E01")
+    assert blocked["decision"]["id"] == "D-001"
+    assert [entry["lane"] for entry in view["pending_for_role"]] == ["E02"]
+
+
+def test_portal_view_questions_exclude_other_roles_and_answered_ones(tmp_path: Path):
+    from gate_reviews import portal_view
+    from test_gate_reviews import answer, question
+
+    manifest, doc = manifest_fixture(tmp_path)
+    question(doc, "E01", "product", qid="Q-001")
+    question(doc, "E01", "engineering", qid="Q-002")
+    answer(doc, "Q-001", "2026-11-21T12:00:00Z")
+    write_manifest(manifest, doc)
+
+    view = portal_view(manifest, "product")
+
+    assert view["questions_for_role"] == []

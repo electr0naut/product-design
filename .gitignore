@@ -49,6 +49,10 @@ coverage/
 .venv/
 __pycache__/
 
+# Mutation testing (advisory, run on demand)
+mutants/
+.mutmut-cache
+
 # Assembled prompts and saved model responses (regenerate with --prompt-only)
 *.prompt.md
 06-backlog/*/prompts/

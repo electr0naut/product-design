@@ -399,6 +399,16 @@ npm ci
 make check
 ```
 
+Mutation testing is advisory and scoped to the review-gate and backlog parsers;
+it is not part of `make check`:
+
+```bash
+make mutate
+```
+
+See `docs/plans/mutation-testing-2026-11-21.md` for the last scores and the
+survivor triage.
+
 See `AGENTS.md` for portable coding-agent instructions and `ENGINEERING.md` for the
 full change, testing, specification and AI-review rules. Use
 `docs/specs/TEMPLATE.md` for behaviour-changing work.
