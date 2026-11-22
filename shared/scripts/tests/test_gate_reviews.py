@@ -1029,7 +1029,9 @@ def test_assumption_review_by_may_equal_checked_at():
         doc["gates"][0]["lanes"]["E01"]["assumptions"] = ["A-001"]
         write_manifest(path, doc)
 
-        report = check(root, doc, lane="E01")
+        from gate_reviews import evaluate_gate
+
+        report = evaluate_gate(path, "design-to-backlog", "E01", today=dt.date(2026, 11, 21))
         assert "expired assumption: A-001" not in report["lanes"]["E01"]["reasons"]
 
 
@@ -1085,6 +1087,43 @@ def test_question_reapproval_uses_the_decisions_own_lane():
         assert report["lanes"]["E01"]["decisions"]["product"]["id"] == "D-003"
         assert report["lanes"]["E02"]["decisions"]["product"]["id"] == "D-001"
         assert "question needs reapproval: Q-001" in report["lanes"]["E02"]["reasons"]
+
+
+def test_reapproval_and_decision_projections_do_not_cross_gates_with_same_lane():
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR")) as name:
+        root = Path(name)
+        path, doc = manifest_fixture(root)
+        doc["gates"].append(
+            {
+                "id": "draft-to-design",
+                "lanes": {
+                    "E01": {
+                        "roles": ["product"],
+                        "artifacts": ["review/accounts.md"],
+                        "depends_on": [],
+                        "assumptions": [],
+                    }
+                },
+            }
+        )
+        product = decide(root, doc, "E01", "product")
+        product["recorded_at"] = "2026-11-21T11:00:00Z"
+        decide(root, doc, "E01", "engineering")
+        later_other_gate = decide(root, doc, "E01", "product")
+        later_other_gate["gate"] = "draft-to-design"
+        later_other_gate["recorded_at"] = "2026-11-21T14:00:00Z"
+        question(doc, "E01", "product", raised="2026-11-21T10:00:00Z")
+        answer(doc, "Q-001", "2026-11-21T12:00:00Z")
+        write_manifest(path, doc)
+
+        from gate_reviews import evaluate_gate
+
+        report = evaluate_gate(path, "design-to-backlog", "E01")
+        state = report["lanes"]["E01"]
+        assert state["decisions"]["product"]["id"] == product["id"]
+        assert state["reasons"] == ["question needs reapproval: Q-001"]
+        other = evaluate_gate(path, "draft-to-design", "E01")
+        assert other["lanes"]["E01"]["decisions"]["product"]["id"] == later_other_gate["id"]
 
 
 def test_change_resolved_at_approval_time_still_needs_reapproval():

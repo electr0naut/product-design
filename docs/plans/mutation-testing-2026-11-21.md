@@ -48,7 +48,8 @@ uv run --with "mutmut==3.8.1" mutmut show <mutant>
 | Run | Scored mutants | Killed | Survived | Score |
 | --- | --- | --- | --- | --- |
 | Before | 2784 | 2210 | 574 | 79.4% |
-| After | 2784 | 2568 | 216 | 92.2% |
+| After initial test additions | 2784 | 2568 | 216 | 92.2% |
+| After PR #24 review fixes | 2784 | 2571 | 213 | 92.3% |
 
 Twenty-two further mutations are reported as "not checked" (mutants that could
 not be applied); they are excluded from both scores.
@@ -81,39 +82,47 @@ not be applied); they are excluded from both scores.
   and requirement rows are covered.
 - Build order breaks priority ties by epic before ID.
 
+Two additional tests from PR #24 review pin cross-gate decision scope when two
+gates share `E01`, and keep the receipt fixture's initial gate evaluation on
+November 21 even when the host clock is later. The existing equality-date test
+also evaluates on its stated date. Rerunning all initial survivors killed three
+more mutants: `_evaluate_gate_data` 116 and 230 (gate filters) and
+`generation_receipt` 120. No production code changed.
+
 ## Reading the remaining survivors
 
-216 mutants survive. They are grouped in the appendix as:
+213 mutants survive. They are grouped in the appendix as:
 
-- **W — wording/label only (130).** The mutation changes an error message, a
-  label passed to `reject_symlink`, or an output field name. Pinning all of
-  them would make the tests restate the source and freeze prose that the
-  owner may reword; keys that are part of a documented contract are asserted
-  where they matter.
-- **E — equivalent under the current contract (48).** Redundant boolean terms
-  masked by a later condition (`or`/`and` reorderings around an absorbing
-  test), omitted keyword arguments whose default is the same value, and
-  falsy-marker substitutions (`None` vs `""` for a header sentinel). These
-  cannot change observable behaviour with the fixtures the contract defines.
-- **G — genuine gap, not fixed in this pass (38).** Behaviour that is real but
-  not exercised by any test, mostly cross-gate/cross-lane matching
-  (`latest(...)` filters dropped in `_evaluate_gate_data` and
-  `_project_artifact`), history filtering (`previously_approved`), the
-  hash-cache `continue`, `include_cross_cutting`'s default, the unchecked
-  `unknown` lane list, `generation_receipt` evaluating the projected status at
-  the real date, multi-gate policy digests, and parser corners (fence counts,
-  short story rows, table-cell trimming, cycle ordering).
+- **W — wording, labels, or field-name mutations (130).** Many alter only
+  human-readable errors or labels passed to `reject_symlink`; others rename
+  output fields, which can be part of the API contract and are *not* equivalent.
+  Triage field-name survivors as test gaps where consumers rely on those keys;
+  do not freeze incidental prose merely to raise the score.
+- **E — equivalent under the current tests (49).** Defaults (`None` versus
+  omitted or `False` after `bool()`), redundant boolean conditions, and
+  sentinel substitutions. This classification does not prove equivalence for
+  every possible input; revisit it if the contract expands.
+- **G — behaviour-bearing test gaps (34).** Remaining gaps include history
+  filtering (`previously_approved`), the hash-cache `continue`,
+  `include_cross_cutting`'s default, the unchecked `unknown` lane list,
+  projected status date in `generation_receipt`, multi-gate policy digests,
+  and parser corners (fence counts, short rows, table-cell trimming, cycle
+  ordering). Cross-gate and cross-lane filters are *already* part of the
+  contract: test them with overlapping lane IDs rather than calling them
+  owner decisions. The new cross-gate test killed the two known
+  `_evaluate_gate_data` gate-filter mutants; any remaining scope-filter
+  survivors belong in this test-gap category.
 
-These gaps were left open on purpose: closing them means deciding new
-behaviour, which is the owner's call, not a mutation-score cleanup. Triage
-them as product decisions rather than test chores.
+Write tests for contract-covered gaps without changing production behavior.
+Ask the owner only where the expected behavior really is unspecified; a
+surviving mutant alone is not a policy question.
 
 ## Appendix: every surviving mutant
 
 Format: mutant ids within each function; a backticked number is the `__mutmut_<n>` suffix.
 
 - **x__build_order** — gaps: `35`; wording: `11`, `12`
-- **x__evaluate_gate_data** — gaps: `116`, `230`, `262`; equivalent: `255`, `260`, `302`, `303`, `304`, `305`, `322`; wording: `14`, `21`, `266`, `267`, `274`, `275`, `288`, `289`, `292`, `293`, `296`, `297`, `300`, `301`, `306`, `307`, `308`, `315`, `316`, `346`, `347`
+- **x__evaluate_gate_data** — equivalent: `255`, `260`, `262`, `302`, `303`, `304`, `305`, `322`; wording: `14`, `21`, `266`, `267`, `274`, `275`, `288`, `289`, `292`, `293`, `296`, `297`, `300`, `301`, `306`, `307`, `308`, `315`, `316`, `346`, `347`
 - **x__find_cycle** — gaps: `8`, `17`
 - **x__non_goal_refs** — wording: `9`, `10`
 - **x__project_artifact** — gaps: `88`, `94`, `105`, `106`, `155`, `156`, `157`, `225`; equivalent: `1`, `2`, `20`, `32`, `37`, `101`; wording: `16`, `23`, `24`, `35`, `36`, `42`, `43`, `44`, `45`, `203`, `204`, `205`, `206`, `209`, `210`
@@ -127,7 +136,7 @@ Format: mutant ids within each function; a backticked number is the `__mutmut_<n
 - **x_change_state** — gaps: `5`; equivalent: `11`; wording: `13`, `14`, `18`, `19`
 - **x_check_backlog** — equivalent: `2`; wording: `76`, `77`
 - **x_feedback_state** — gaps: `5`; wording: `17`, `18`, `19`, `20`
-- **x_generation_receipt** — gaps: `14`, `120`; equivalent: `29`; wording: `27`, `28`, `42`, `43`, `44`, `45`, `48`, `49`, `91`
+- **x_generation_receipt** — gaps: `14`; equivalent: `29`; wording: `27`, `28`, `42`, `43`, `44`, `45`, `48`, `49`, `91`
 - **x_load_manifest_snapshot** — equivalent: `2`; wording: `5`, `6`, `15`
 - **x_maybe_enforce_gate** — gaps: `2`, `3`, `29`; equivalent: `51`; wording: `54`, `55`
 - **x_nonempty** — equivalent: `4`

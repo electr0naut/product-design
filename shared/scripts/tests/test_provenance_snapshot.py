@@ -9,12 +9,14 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
 SCRIPTS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS))
 
+import gate_reviews  # noqa: E402
 import workflow_common  # noqa: E402
 from gate_reviews import artifact_status, generation_receipt, maybe_enforce_gate  # noqa: E402
 from test_gate_reviews import decide, manifest_fixture, write_manifest  # noqa: E402
@@ -352,6 +354,23 @@ def test_cli_generation_records_snapshot_fields(tmp_path: Path):
     assert sidecar["output_review_status"]["manifest"] is None
 
 
+def enforce_gate_on_day(manifest: Path, lanes: list[str]) -> dict | None:
+    """Keep the initial gate check on the same fixed day as the receipt tests."""
+    evaluate = gate_reviews.evaluate_gate
+
+    def fixed_date_evaluation(path: Path, gate_id: str, lane: str | None = None) -> dict:
+        return evaluate(path, gate_id, lane, today=dt.date(2026, 11, 21))
+
+    with patch.object(gate_reviews, "evaluate_gate", fixed_date_evaluation):
+        return maybe_enforce_gate(
+            review_args(manifest),
+            "demo",
+            "design-to-backlog",
+            [manifest.parent / "accounts.md"],
+            lanes,
+        )
+
+
 def approved_report(tmp_path: Path, lanes: list[str]):
     manifest, doc = manifest_fixture(tmp_path)
     (tmp_path / PRD).parent.mkdir(parents=True)
@@ -374,13 +393,25 @@ def approved_report(tmp_path: Path, lanes: list[str]):
     doc["gates"][0]["lanes"]["E01"]["assumptions"] = ["A-001"]
     doc["gates"][0]["lanes"]["E01"]["artifacts"].append(PRD)
     write_manifest(manifest, doc)
-    return manifest, maybe_enforce_gate(
-        review_args(manifest),
-        "demo",
-        "design-to-backlog",
-        [tmp_path / "review" / "accounts.md"],
-        lanes,
-    )
+    return manifest, enforce_gate_on_day(manifest, lanes)
+
+
+def test_approved_report_does_not_depend_on_the_host_clock(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    real_date = dt.date
+
+    class FutureDate(real_date):
+        @classmethod
+        def today(cls):
+            return cls(2026, 12, 1)
+
+    with monkeypatch.context() as clock:
+        clock.setattr(gate_reviews.dt, "date", FutureDate)
+        _, report = approved_report(tmp_path, ["E01"])
+
+    assert report is not None
+    assert report["lanes"]["E01"]["ready"] is True
 
 
 def test_generation_receipt_defaults_to_a_seven_day_warning_window(tmp_path: Path):
@@ -394,13 +425,7 @@ def test_generation_receipt_defaults_to_a_seven_day_warning_window(tmp_path: Pat
     doc = json.loads(manifest.read_text(encoding="utf-8"))
     doc["assumptions"][0]["review_by"] = "2026-11-29"
     write_manifest(manifest, doc)
-    report = maybe_enforce_gate(
-        review_args(manifest),
-        "demo",
-        "design-to-backlog",
-        [tmp_path / "review" / "accounts.md"],
-        ["E01"],
-    )
+    report = enforce_gate_on_day(manifest, ["E01"])
     on_day_eight = generation_receipt(report, tmp_path / PRD, today=dt.date(2026, 11, 21))("d" * 64)
     assert on_day_eight["output_review_status"]["warnings"] == []
 
