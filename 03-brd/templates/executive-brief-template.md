@@ -1,6 +1,6 @@
 # Executive Decision Brief: [Product]
 
-Draft for human review; not an approval or an instruction to advance a gate.
+Draft for human review; not an approval.
 
 ## Ask
 [Decision required, with card references or Unknown.]

@@ -50,6 +50,20 @@ def brief(source: str, quote: str = "Budget estimate: $12,000.") -> str:
     return fixture.read_text(encoding="utf-8").format(source=source, quote=quote)
 
 
+def test_template_disclaimer_produces_a_valid_brief(tmp_path: Path):
+    brd = tmp_path / "demo-brd.md"
+    brd.write_text("# Demo BRD\nBudget estimate: $12,000.\n", encoding="utf-8")
+    template = (
+        SCRIPTS.parents[1] / "03-brd" / "templates" / "executive-brief-template.md"
+    ).read_text(encoding="utf-8")
+    disclaimer = template.splitlines()[2]
+    out = tmp_path / "demo.draft.md"
+    response = brief(str(brd)).replace("Draft for human review; not an approval.", disclaimer)
+    result = run_brief(brd, out, "--claude-bin", fake_model(tmp_path, response))
+    assert result.returncode == 0, result.stderr
+    assert out.exists()
+
+
 def test_approval_preamble_is_rejected(tmp_path: Path):
     brd = tmp_path / "demo-brd.md"
     brd.write_text("# Demo BRD\nBudget estimate: $12,000.\n", encoding="utf-8")
