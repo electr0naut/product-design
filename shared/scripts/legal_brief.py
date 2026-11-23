@@ -112,7 +112,7 @@ def validate_legal_brief(content: str, brd: Path, expected_sha256: str) -> None:
                     raise SystemExit(f"Legal brief {name} line needs a declared value")
                 if not any(
                     re.search(
-                        rf"(?<![A-Za-z0-9]){re.escape(declared)}(?![A-Za-z0-9])",
+                        rf"(?<![A-Za-z0-9-]){re.escape(declared)}(?![A-Za-z0-9-])",
                         quotes[ref],
                     )
                     for ref in refs
