@@ -18,11 +18,22 @@ SECTIONS = (
 CARD_ID = re.compile(r"C[1-9][0-9]*")
 REFERENCE = re.compile(r"\[(C[1-9][0-9]*)\]")
 DECLARATIVE_SECTIONS = ("Citation", "Jurisdiction")
+CITATION_TOKEN = re.compile(
+    r"(?:[A-Z][A-Za-z0-9./-]*\s*)?(?:Art|§|Section|Clause)\.?\s*[A-Za-z0-9./()-]+"
+)
+NAME_TOKEN = re.compile(r"[A-Z][A-Za-z]+|[A-Z]{2,}")
 
 
 def strip_sentence_period(token: str) -> str:
     """Drop a sentence-ending full stop so it cannot split an otherwise equal token."""
     return token[:-1] if token.endswith(".") and not token.endswith("..") else token
+
+
+def quote_tokens(quote: str) -> set[str]:
+    """Every value a quote can support, extracted once and compared as complete tokens."""
+    return {strip_sentence_period(token) for token in CITATION_TOKEN.findall(quote)} | {
+        strip_sentence_period(token) for token in NAME_TOKEN.findall(quote)
+    }
 
 
 def validate_legal_brief(content: str, brd: Path, expected_sha256: str) -> None:
@@ -110,13 +121,11 @@ def validate_legal_brief(content: str, brd: Path, expected_sha256: str) -> None:
                 declared = re.sub(r"[\s.]*$", "", plain).strip()
                 if not declared:
                     raise SystemExit(f"Legal brief {name} line needs a declared value")
-                if not any(
-                    re.search(
-                        rf"(?<![A-Za-z0-9./()-]){re.escape(declared)}(?![A-Za-z0-9./()-])",
-                        strip_sentence_period(quotes[ref].strip()),
-                    )
-                    for ref in refs
-                ):
+                parts = quote_tokens(declared)
+                supported: set[str] = set()
+                for ref in refs:
+                    supported |= quote_tokens(quotes[ref])
+                if not parts or not parts <= supported:
                     raise SystemExit(
                         f"Legal brief {name} value {declared!r} is not in a cited BRD quote"
                     )
