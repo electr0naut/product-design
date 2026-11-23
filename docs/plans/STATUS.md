@@ -44,6 +44,7 @@ The generic product-design scaffold is the scope; FIX is only a later test run. 
 **Uncommitted or stashed work.** None; the stash list is empty. `wip/review-provenance-and-portal-hardening` at `f1fe7bb`, checked out in `/srv/lab/product-design`, is unmerged WIP (31 files: story provenance sidecars, split-PRD, question extraction, Vitest/Playwright, nonce CSP). It is not reviewed; do not merge it without the owner.
 
 ## Done
+- Gate 1 discovery policy (this PR): initial market sizing or verified counterparty demand is no longer required before analysis; the canvas records the hypothesis and analysis can test it. A team could enter analysis without validating demand first, so the named sponsor and approved analysis budget still govern that investment.
 - Saved the planning-session document verbatim in `docs/plans/next-phase.md` (commit `d3271b2`).
 - Inspected the current review manifest evaluator, provenance writer, existing gate/provenance specs, repo instructions, and spec template on the `main` baseline.
 - Isolated the planning and Step 1a branches in separate worktrees from the in-progress provenance/portal code (subsequently parked below).
@@ -85,6 +86,7 @@ The generic product-design scaffold is the scope; FIX is only a later test run. 
   In plain English: an executive can read a short decision brief instead of scanning the full BRD, and each claim points back to words in that BRD. The risk is that a correctly quoted source can still be misunderstood, so a person must review the draft and its claims before making any decision.
 
 ## Open
+- Future policy switch: allow a product to opt into requiring sourced market or counterparty-demand evidence at Gate 1. The default remains discovery-first; define the owner, exact evidence, review binding and migration for existing products before adding configuration or enforcement.
 
 - Security triage is merged: PR #18 sets `persist-credentials: false` and records the two accepted loopback risks; PR #19 records why the nanoid advisory does not apply (3.3.20 is outside both ranges, `npm audit` clean). No CodeRabbit findings existed; Dependabot's only alert was already fixed and CodeQL reports zero alerts.
 - Story directories (`06-backlog/<product>/`) are written by the story importer, which creates no provenance sidecars; snapshot coverage there remains a gap.
