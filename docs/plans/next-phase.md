@@ -24,21 +24,33 @@ approved output. Approvals resting on assumptions get flagged before
 review_by, not only after expiry.
 Also: fix CLAUDE.md, which still says approval is not an enforced check.
 
-## Step 2: Role-shaped outputs (two layers)
-Decision layer (short, human): one page per audience.
-- Executive: ask, recommendation, 2-3 options, cost, main risk, deadline,
-  cost of saying no.
-- Finance: few numbers, assumptions beside each, ranges, exact spend asked.
-- Legal: claims relied on, with citation and jurisdiction.
-- Compliance: obligation -> control mapping, gaps flagged.
-- Operations: who does what differently on day one, volumes, failure
-  modes, staffing impact.
-Evidence layer (underneath): claim cards, one claim each, quoted source,
-owning role. Reuse known formats: decision memo, ADR, RACI.
-Review is a queue of small cards per role, riskiest first, ~10 per session.
-Answers: agree / disagree / unsure / not my area + one line why.
-Later rounds show only changed claims.
-Extends the existing role review pages and question flow.
+## Step 2: Collaborative decision workflow (role-shaped inputs to the BRD)
+
+The workflow is collaborative with feedback loops, not a linear sequence of standalone outputs. Decision briefs are inputs to the BRD, and the BRD is the gate document for the Risk Committee.
+
+**Workflow.** Business Development pitches ideas to the executive commission, which decides whether to assess. Legal and Compliance review whether we can do it — legally and regulatory-wise. Finance details what's needed to keep the books in line: the ledger model, billing, how to reflect activity, report producing, and the proofs needed to show collateralisation to a regulator (which may require collaboration with Legal and Compliance — the whole project requires syncing up and teams reviewing what the others produced and what they missed). Risk looks at how and whether we can model it. Product picks up all the moving parts: chasing open questions across teams, interfacing to get everyone in line, and producing the BRD.
+
+The BRD is the gate document that goes to the Risk Committee — at least one designated person from each team — who reads it, raises questions, pushes back or approves. From there: PRD, then phased buildout.
+
+**Decision briefs as BRD inputs.** Each team produces a short decision brief as their input to the BRD:
+- Executive: whether to proceed with assessment (already done as #27, still valid)
+- Legal: claims relied on, with citation and jurisdiction (already done as #32, still valid)
+- Compliance: obligation → control mapping, gaps flagged (not yet specified)
+- Finance: ledger model, billing, activity reflection, report producing, collateralisation proofs (the existing finance brief #29 is wrong by this definition — it was about spending, not the ledger/billing/proofs model; needs to be redone)
+- Risk: how and whether we can model it (not yet specified)
+- Operations: who does what differently on day one, volumes, failure modes, staffing impact (separate concern, unplaced)
+
+**Production order.** The briefs follow the workflow dependencies:
+1. Executive assessment (whether to proceed) — already done
+2. Legal and Compliance (can we do it?) — can run in parallel
+3. Finance (what's needed to keep the books in line) — may need input from Legal/Compliance
+4. Risk (how and whether we can model it) — may need input from Finance, Legal, Compliance
+5. Product: chase open questions, interface across teams, produce the BRD
+6. BRD → Risk Committee review → PRD → phased buildout
+
+The Risk Committee review is the gate, not individual brief approvals. The briefs are inputs to the BRD; the BRD is what the Risk Committee reads and approves or pushes back on.
+
+**Evidence layer (underneath).** Claim cards, one claim each, quoted source, owning role. Reuse known formats: decision memo, ADR, RACI. Review is a queue of small cards per role, riskiest first, ~10 per session. Answers: agree / disagree / unsure / not my area + one line why. Later rounds show only changed claims. Extends the existing role review pages and question flow.
 
 ## Step 3: Decisions feed the next generation
 Recorded answers and confirmed claims become locked constraints in the next
