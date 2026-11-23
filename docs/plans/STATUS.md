@@ -25,11 +25,11 @@ The generic product-design scaffold is the scope; FIX is only a later test run. 
 
 ## Handover (2026-11-22)
 
-**State.** `main` is `55bce0f` after PR #25 merged on November 22, 2026. All four post-merge default-branch checks passed (`check` and three CodeQL analyses). The working tree was clean when this handover refresh started and the inbox is empty. Steps 1a–1d, mutation testing, template reference clean-up, security triage, the nanoid audit and the root-safety test fix are merged. CodeRabbit's PR #25 finding was fixed and answered; its thread was resolved and the current-head check passed before merging. The handover prompt lives in `docs/prompts/handover.md`. `/srv/lab/product-design` still holds the unmerged WIP branch; `/srv/lab/product-design-status` is a stale detached worktree. Always check `origin/main` for the true head.
+**State.** PR #26 merged as `cb2a0eb` after the template-reference clean-up in PR #25 (`55bce0f`), and its post-merge checks passed. Steps 1a–1d, mutation testing, template references, security triage, the nanoid audit and the root-safety test fix are merged. The handover prompt lives in `docs/prompts/handover.md`. `/srv/lab/product-design` still holds the unmerged WIP branch; `/srv/lab/product-design-status` is a stale detached worktree. Always check `origin/main` for the true head rather than assuming the last named merge SHA is current.
 
-**Next step.** Plan Step 2's role-shaped outputs against `docs/plans/next-phase.md` as a proposal, not an approved implementation. Decide separately whether the story-provenance sidecar gap should come first; do not start Step 2 implementation without settling its behavioural contract.
+**Next step.** Step 2 starts with the executive decision brief in PR #27, using `docs/specs/016-executive-decision-brief.md` as its narrow behavioural contract. After trying that draft with a human reviewer, decide which role brief to add next; prioritize the separate story-provenance gap explicitly rather than mixing it into this slice.
 
-**Remaining known gaps.** Story directories `06-backlog/<product>/` receive no provenance sidecars because the story importer writes none. Steps 2–4 (role-shaped output, decision constraints, Atlassian) are outside this pass. The mutation-testing report lists contract-covered test gaps separately from genuinely unspecified behaviour.
+**Remaining known gaps.** Story directories `06-backlog/<product>/` receive no provenance sidecars because the story importer writes none. Other role-shaped outputs, decision constraints and Atlassian (the rest of Steps 2–4) are outside this first slice. The mutation-testing report lists contract-covered test gaps separately from genuinely unspecified behaviour.
 
 **Gotchas.**
 - PRs #1–#23 have no CodeRabbit review, comment or check run recorded; the app's earlier installation state is unknown. The owner enabled it by November 22, 2026; CodeRabbit reviewed PRs #24 and #25, and all actionable comments were fixed or answered before merge. Future PRs must wait for its review, with no unanswered thread; recording a missed review window is never a substitute.
@@ -81,12 +81,15 @@ The generic product-design scaffold is the scope; FIX is only a later test run. 
 - Handover refresh (PR #26, initial source commit `81ad212`): records PR #25's merge and resolved review finding, drops its obsolete open item, and names the Step 2 proposal and story-provenance choice as the next work. This status-only PR keeps the recorded state aligned with the merged branch without changing production behaviour.
   In plain English: the project handover now says the template fix is finished and points to the next planning decision. The risk is that this handover can become stale again when later work merges, so refresh it at the next milestone.
 
+- Executive decision brief (PR #27, initial source commit `497c928`): the first Step 2 slice adds a draft executive memo from a named BRD, with an evidence-card appendix, exact-line quote checks, and the existing gate and provenance contract. Independent pre-PR review found four correctness gaps; regression tests now cover approval claims, unknown-value loopholes, duplicate option numbering and a source change during snapshot creation.
+  In plain English: an executive can read a short decision brief instead of scanning the full BRD, and each claim points back to words in that BRD. The risk is that a correctly quoted source can still be misunderstood, so a person must review the draft and its claims before making any decision.
+
 ## Open
 
 - Security triage is merged: PR #18 sets `persist-credentials: false` and records the two accepted loopback risks; PR #19 records why the nanoid advisory does not apply (3.3.20 is outside both ranges, `npm audit` clean). No CodeRabbit findings existed; Dependabot's only alert was already fixed and CodeQL reports zero alerts.
 - Story directories (`06-backlog/<product>/`) are written by the story importer, which creates no provenance sidecars; snapshot coverage there remains a gap.
 - Mutation-testing survivors now listed in `docs/plans/mutation-testing-2026-11-21.md`: 34 behaviour-bearing gaps remain after adding a cross-gate regression test. Gate/lane scope is an existing contract, so filter survivors are test gaps, not owner decisions; ask the owner only where the expected behavior is genuinely unspecified. No production changes should be made merely to raise the mutation score.
-- Steps 2–4 (role-shaped output, decision constraints, Atlassian) are outside this planning pass.
+- The other Step 2 audiences and Steps 3–4 (decision constraints and Atlassian) remain outside this first slice.
 - CodeRabbit reviewed PRs #24 and #25; their findings were fixed or answered and all threads resolved before merging. A recorded gap is never a substitute for review on the next PR.
 
 ## Questions
