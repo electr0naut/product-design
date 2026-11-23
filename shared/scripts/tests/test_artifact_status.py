@@ -367,6 +367,75 @@ def test_portal_view_reports_the_roles_own_approval_without_counting_it_ready(tm
     assert [entry["lane"] for entry in view["pending_for_role"]] == ["E02"]
 
 
+def test_portal_view_returns_stale_approval_to_own_role(tmp_path: Path):
+    from gate_reviews import portal_view
+
+    manifest, doc = manifest_fixture(tmp_path)
+    decide(tmp_path, doc, "E01", "product")
+    write_manifest(manifest, doc)
+    (tmp_path / "review" / "accounts.md").write_text("Accounts v2\n", encoding="utf-8")
+    before = manifest.read_bytes()
+
+    view = portal_view(manifest, "product")
+
+    pending = next(entry for entry in view["pending_for_role"] if entry["lane"] == "E01")
+    assert pending["decision"]["decision"] == "approve"
+    assert pending["actions"] == ["review_again"]
+    assert "stale approval: product" in pending["reasons"]
+    assert not any(entry["lane"] == "E01" for entry in view["blocked_on_others"])
+    assert manifest.read_bytes() == before
+
+
+def test_portal_view_requires_roles_own_reapproval_after_question_answer(tmp_path: Path):
+    from gate_reviews import portal_view
+    from test_gate_reviews import answer, question
+
+    manifest, doc = manifest_fixture(tmp_path)
+    decide(tmp_path, doc, "E01", "product")
+    question(doc, "E01", "product")
+    answer(doc, "Q-001", "2026-11-21T13:00:00Z")
+    write_manifest(manifest, doc)
+
+    view = portal_view(manifest, "product")
+
+    entry = next(item for item in view["pending_for_role"] if item["lane"] == "E01")
+    assert entry["actions"] == ["review_again"]
+    assert "question needs reapproval: Q-001" in entry["reasons"]
+    assert not any(item["lane"] == "E01" for item in view["blocked_on_others"])
+
+
+def test_portal_view_keeps_own_unresolved_feedback_actionable(tmp_path: Path):
+    from gate_reviews import portal_view
+
+    manifest, doc = manifest_fixture(tmp_path)
+    engineer = decide(tmp_path, doc, "E01", "engineering")
+    engineer["feedback"] = [{"id": "F-001", "text": "Confirm retention"}]
+    decide(tmp_path, doc, "E01", "product")
+    write_manifest(manifest, doc)
+
+    view = portal_view(manifest, "engineering")
+
+    pending = next(item for item in view["pending_for_role"] if item["lane"] == "E01")
+    assert pending["actions"] == ["resolve_feedback"]
+    assert "unresolved feedback: engineering" in pending["reasons"]
+    assert not any(item["lane"] == "E01" for item in view["blocked_on_others"])
+
+
+def test_portal_view_keeps_current_approval_blocked_on_others(tmp_path: Path):
+    from gate_reviews import portal_view
+
+    manifest, doc = manifest_fixture(tmp_path)
+    decide(tmp_path, doc, "E01", "product")
+    write_manifest(manifest, doc)
+
+    view = portal_view(manifest, "product")
+
+    blocked = next(item for item in view["blocked_on_others"] if item["lane"] == "E01")
+    assert blocked["actions"] == []
+    assert blocked["decision"]["decision"] == "approve"
+    assert not any(item["lane"] == "E01" for item in view["pending_for_role"])
+
+
 def test_portal_view_questions_exclude_other_roles_and_answered_ones(tmp_path: Path):
     from gate_reviews import portal_view
     from test_gate_reviews import answer, question
