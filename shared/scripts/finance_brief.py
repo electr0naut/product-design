@@ -18,10 +18,10 @@ SECTIONS = (
 )
 CARD_ID = re.compile(r"C[1-9][0-9]*")
 REFERENCE = re.compile(r"\[(C[1-9][0-9]*)\]")
-NUMBER_WITH_UNIT = re.compile(
-    r"(?<![\w])(?:[$€£]\s*)?\d[\d,]*(?:\.\d+)?"
-    r"(?:\s*(?:%|USD|EUR|GBP|days?|weeks?|months?|quarters?|years?))?"
-    r"(?:\s*(?:per|/)\s*(?:day|week|month|quarter|year))?(?![\w%])",
+NUMERIC_TOKEN = re.compile(
+    r"(?<![\w])(?:(?-i:[A-Z]{3})\s+|[$€£]\s*)?\d[\d,]*(?:\.\d+)?"
+    r"(?:\s*(?:%|(?!per\b)[A-Za-z]+))?"
+    r"(?:\s*(?:per|/)\s*[A-Za-z]+)?(?![\w%])",
     re.IGNORECASE,
 )
 
@@ -98,8 +98,8 @@ def validate_finance_brief(content: str, brd: Path, expected_sha256: str) -> Non
             if "Unknown" in line:
                 raise SystemExit("Finance brief cannot mix Unknown with an assertion")
             plain = REFERENCE.sub("", line)
-            for number in NUMBER_WITH_UNIT.findall(plain):
-                if not any(number in quotes[ref] for ref in refs):
+            for number in NUMERIC_TOKEN.findall(plain):
+                if not any(number in NUMERIC_TOKEN.findall(quotes[ref]) for ref in refs):
                     raise SystemExit(
                         f"Finance brief numeric literal {number!r} is not in a cited BRD quote"
                     )

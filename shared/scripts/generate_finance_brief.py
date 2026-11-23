@@ -60,7 +60,7 @@ def main() -> None:
     )
     if args.prompt_only:
         output = output.with_suffix(PROMPT_SUFFIX)
-    snapshot = None if args.prompt_only else generation_receipt(statuses, output)
+    snapshot = generation_receipt(statuses, output)
 
     def validate(content: str) -> None:
         validate_finance_brief(content, brd, context.sources[0]["sha256"])

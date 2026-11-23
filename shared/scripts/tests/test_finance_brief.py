@@ -76,6 +76,68 @@ def test_valid_finance_brief_is_a_draft_with_provenance(tmp_path: Path) -> None:
     assert sidecar["input_gate_readiness"] is None
 
 
+def test_unsupported_numeric_suffix_does_not_escape_validation(tmp_path: Path) -> None:
+    brd = tmp_path / "demo-brd.md"
+    brd.write_text(
+        "# Demo BRD\nStudy costs $10,000–$15,000.\nStudy duration is one quarter.\n",
+        encoding="utf-8",
+    )
+    out = tmp_path / "demo.draft.md"
+    response = finance_brief(str(brd)).replace("$10,000–$15,000 [C1].", "$10M [C1].")
+    result = run_finance(brd, out, "--claude-bin", fake_model(tmp_path, response))
+    assert result.returncode != 0
+    assert not out.exists()
+    assert not out.with_suffix(".provenance.json").exists()
+
+
+def test_substring_is_not_a_supported_amount(tmp_path: Path) -> None:
+    brd = tmp_path / "demo-brd.md"
+    brd.write_text(
+        "# Demo BRD\nStudy costs $10,000–$15,000.\nStudy duration is one quarter.\n",
+        encoding="utf-8",
+    )
+    out = tmp_path / "demo.draft.md"
+    response = finance_brief(str(brd)).replace("$10,000–$15,000 [C1].", "$10 [C1].")
+    result = run_finance(brd, out, "--claude-bin", fake_model(tmp_path, response))
+    assert result.returncode != 0
+    assert not out.exists()
+    assert not out.with_suffix(".provenance.json").exists()
+
+
+def test_period_must_match_the_cited_quote(tmp_path: Path) -> None:
+    brd = tmp_path / "demo-brd.md"
+    brd.write_text(
+        "# Demo BRD\nStudy costs $10,000 per year.\nStudy duration is one quarter.\n",
+        encoding="utf-8",
+    )
+    out = tmp_path / "demo.draft.md"
+    response = (
+        finance_brief(str(brd))
+        .replace("$10,000–$15,000 [C1].", "$10,000 per month [C1].")
+        .replace("Study costs $10,000–$15,000.", "Study costs $10,000 per year.")
+    )
+    result = run_finance(brd, out, "--claude-bin", fake_model(tmp_path, response))
+    assert result.returncode != 0
+    assert not out.exists()
+
+
+def test_currency_code_prefix_must_match_quote(tmp_path: Path) -> None:
+    brd = tmp_path / "demo-brd.md"
+    brd.write_text(
+        "# Demo BRD\nStudy costs USD 10,000.\nStudy duration is one quarter.\n",
+        encoding="utf-8",
+    )
+    out = tmp_path / "demo.draft.md"
+    response = (
+        finance_brief(str(brd))
+        .replace("$10,000–$15,000 [C1].", "EUR 10,000 [C1].")
+        .replace("Study costs $10,000–$15,000.", "Study costs USD 10,000.")
+    )
+    result = run_finance(brd, out, "--claude-bin", fake_model(tmp_path, response))
+    assert result.returncode != 0
+    assert not out.exists()
+
+
 def test_percent_is_not_supported_by_bare_number(tmp_path: Path) -> None:
     brd = tmp_path / "demo-brd.md"
     brd.write_text(
@@ -140,6 +202,32 @@ def test_unsourced_or_malformed_claims_leave_no_files(tmp_path: Path, change) ->
     assert result.returncode != 0
     assert not out.exists()
     assert not out.with_suffix(".provenance.json").exists()
+
+
+def test_prompt_only_rejects_output_outside_configured_product_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.syspath_prepend(str(SCRIPTS))
+    import generate_finance_brief as finance_cli
+
+    root = tmp_path / "product"
+    root.mkdir()
+    brd = root / "demo-brd.md"
+    brd.write_text("# Demo BRD\nStudy costs $10,000–$15,000.\n", encoding="utf-8")
+    out = tmp_path / "elsewhere" / "demo.draft.md"
+    monkeypatch.setattr(
+        finance_cli,
+        "maybe_enforce_gate",
+        lambda *args, **kwargs: {"root": str(root), "lanes": {}},
+    )
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["generate_finance_brief.py", "--brd", str(brd), "--out", str(out), "--prompt-only"],
+    )
+    with pytest.raises(SystemExit, match="outside the review manifest product root"):
+        finance_cli.main()
+    assert not out.with_suffix(".prompt.md").exists()
 
 
 def test_prompt_only_excludes_sibling_and_has_no_sidecar(tmp_path: Path) -> None:
