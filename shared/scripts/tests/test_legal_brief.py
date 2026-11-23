@@ -28,11 +28,11 @@ def legal_brief(source: str) -> str:
     return (
         "# Legal Decision Brief: Demo\n\n"
         "Draft for human review; not a legal conclusion.\n\n"
-        "## Claim Relied On\nData subject consent is required [C1].\n\n"
+        "## Claim Relied On\nConsent is required [C1].\n\n"
         "## Citation\nGDPR Art. 6(1)(a) [C1].\n\n"
         "## Jurisdiction\nEU [C1].\n\n"
         "## Main Legal Risk\nUnknown.\n\n"
-        "## Decision Needed\nConfirm consent flow [C1].\n\n"
+        "## Decision Needed\nConsent required [C1].\n\n"
         "## Evidence Cards\n"
         "### C1\n- Claim: Consent requirement.\n"
         f"- Source: {source}\n- Quote: Consent required under GDPR Art. 6(1)(a) in the EU.\n"
@@ -108,7 +108,7 @@ def test_titlecase_jurisdiction_is_rejected(tmp_path: Path) -> None:
     )
     out = tmp_path / "demo.draft.md"
     response = legal_brief(str(brd)).replace(
-        "## Jurisdiction\nEU [C1].", "## Jurisdiction\nCA [C1]."
+        "## Jurisdiction\nEU [C1].", "## Jurisdiction\nCanada [C1]."
     )
     result = run_legal(brd, out, "--claude-bin", fake_model(tmp_path, response))
     assert result.returncode != 0
@@ -169,7 +169,7 @@ def test_draft_cannot_claim_approval_in_decision_layer(tmp_path: Path) -> None:
     )
     out = tmp_path / "demo.draft.md"
     response = legal_brief(str(brd)).replace(
-        "Confirm consent flow [C1].", "Legal approval granted [C1]."
+        "Consent required [C1].", "Legal approval granted [C1]."
     )
     result = run_legal(brd, out, "--claude-bin", fake_model(tmp_path, response))
     assert result.returncode != 0
