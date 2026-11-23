@@ -100,6 +100,22 @@ def test_unsupported_jurisdiction_is_rejected(tmp_path: Path) -> None:
     assert not out.exists()
 
 
+def test_paraphrased_claim_is_supported_by_cited_quote(tmp_path: Path) -> None:
+    brd = tmp_path / "demo-brd.md"
+    brd.write_text(
+        "# Demo BRD\nConsent required under GDPR Art. 6(1)(a) in the EU.\n",
+        encoding="utf-8",
+    )
+    out = tmp_path / "demo.draft.md"
+    response = legal_brief(str(brd)).replace(
+        "## Claim Relied On\nConsent is required [C1].",
+        "## Claim Relied On\nThe requirement is consent [C1].",
+    )
+    result = run_legal(brd, out, "--claude-bin", fake_model(tmp_path, response))
+    assert result.returncode == 0, result.stderr
+    assert out.read_text(encoding="utf-8") == response
+
+
 def test_titlecase_jurisdiction_is_rejected(tmp_path: Path) -> None:
     brd = tmp_path / "demo-brd.md"
     brd.write_text(
@@ -108,7 +124,7 @@ def test_titlecase_jurisdiction_is_rejected(tmp_path: Path) -> None:
     )
     out = tmp_path / "demo.draft.md"
     response = legal_brief(str(brd)).replace(
-        "## Jurisdiction\nEU [C1].", "## Jurisdiction\nCanada [C1]."
+        "## Jurisdiction\nEU [C1].", "## Jurisdiction\nCA [C1]."
     )
     result = run_legal(brd, out, "--claude-bin", fake_model(tmp_path, response))
     assert result.returncode != 0
