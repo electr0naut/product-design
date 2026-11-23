@@ -15,6 +15,9 @@ Draft for human review; not an approval.
 ## Cost
 [Estimate or range and assumptions, with card references or Unknown.]
 
+## Client Evidence
+[Who was asked, what they said, or "none yet". This is a field, not a gate, with card references or Unknown.]
+
 ## Main Risk
 [Risk and mitigation, with card references or Unknown.]
 

@@ -12,6 +12,7 @@ SECTIONS = (
     "Recommendation",
     "Options",
     "Cost",
+    "Client Evidence",
     "Main Risk",
     "Deadline",
     "Cost of Saying No",

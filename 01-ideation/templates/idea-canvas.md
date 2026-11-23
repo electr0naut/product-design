@@ -38,20 +38,26 @@ High-level description of what we're building.
 2. 
 3. 
 
-## 8. Success Metrics
+## 8. Design Partners / Client Evidence
+Who was asked, what they said, or "none yet". This is a field, not a gate.
+- **Design partners consulted:** 
+- **Client feedback:** 
+- **Evidence status:** None yet | Early conversations | Formal validation
+
+## 9. Success Metrics
 - **North star metric:** 
 - **Leading indicators:** 
 - **Lagging indicators:** 
 
-## 9. High-Level Timeline
+## 10. High-Level Timeline
 | Phase | Duration | Milestone |
 |-------|----------|-----------|
 |       |          |           |
 
-## 10. Initial Resource Estimate
+## 11. Initial Resource Estimate
 - **Team:** 
 - **Budget:** 
 - **Infrastructure:** 
 
-## 11. Open Questions
+## 12. Open Questions
 - 
