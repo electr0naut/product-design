@@ -17,6 +17,7 @@ SECTIONS = (
 )
 CARD_ID = re.compile(r"C[1-9][0-9]*")
 REFERENCE = re.compile(r"\[(C[1-9][0-9]*)\]")
+DECLARATIVE_SECTIONS = ("Citation", "Jurisdiction")
 
 
 def validate_legal_brief(content: str, brd: Path, expected_sha256: str) -> None:
@@ -100,6 +101,21 @@ def validate_legal_brief(content: str, brd: Path, expected_sha256: str) -> None:
                 raise SystemExit(f"Legal brief {name} line needs an existing claim card")
             references.extend(refs)
             plain = REFERENCE.sub("", line)
+            if name in DECLARATIVE_SECTIONS:
+                declared = re.sub(r"[\s.]*$", "", plain).strip()
+                if not declared:
+                    raise SystemExit(f"Legal brief {name} line needs a declared value")
+                if not any(
+                    re.search(
+                        rf"(?<![A-Za-z0-9]){re.escape(declared)}(?![A-Za-z0-9])",
+                        quotes[ref],
+                    )
+                    for ref in refs
+                ):
+                    raise SystemExit(
+                        f"Legal brief {name} value {declared!r} is not in a cited BRD quote"
+                    )
+                continue
             for token in re.findall(
                 r"(?:[A-Z][A-Za-z0-9./-]*\s*)?(?:Art|§|Section|Clause)\.?\s*[A-Za-z0-9./()-]+(?![A-Za-z0-9./()-])|[A-Z]{2,}",
                 plain,

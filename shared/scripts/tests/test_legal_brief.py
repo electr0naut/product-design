@@ -401,3 +401,39 @@ def test_blocked_manifest_rejects_legal_generation(tmp_path: Path) -> None:
     assert "blocked" in result.stderr.lower()
     assert not out.exists()
     assert not out.with_suffix(".provenance.json").exists()
+
+
+def test_titlecase_country_absent_from_quote_is_rejected(tmp_path: Path) -> None:
+    brd = tmp_path / "demo-brd.md"
+    brd.write_text(
+        "# Demo BRD\nConsent required under GDPR Art. 6(1)(a) in the EU.\n",
+        encoding="utf-8",
+    )
+    out = tmp_path / "demo.draft.md"
+    response = legal_brief(str(brd)).replace(
+        "## Jurisdiction\nEU [C1].", "## Jurisdiction\nCanada [C1]."
+    )
+    result = run_legal(brd, out, "--claude-bin", fake_model(tmp_path, response))
+    assert result.returncode != 0
+    assert "canada" in result.stderr.lower()
+    assert not out.exists()
+
+
+def test_titlecase_country_present_in_quote_is_accepted(tmp_path: Path) -> None:
+    brd = tmp_path / "demo-brd.md"
+    brd.write_text(
+        "# Demo BRD\nConsent required under GDPR Art. 6(1)(a) in Canada.\n",
+        encoding="utf-8",
+    )
+    out = tmp_path / "demo.draft.md"
+    response = (
+        legal_brief(str(brd))
+        .replace(
+            "Consent required under GDPR Art. 6(1)(a) in the EU.",
+            "Consent required under GDPR Art. 6(1)(a) in Canada.",
+        )
+        .replace("## Jurisdiction\nEU [C1].", "## Jurisdiction\nCanada [C1].")
+    )
+    result = run_legal(brd, out, "--claude-bin", fake_model(tmp_path, response))
+    assert result.returncode == 0, result.stderr
+    assert "## Jurisdiction\nCanada [C1]." in out.read_text(encoding="utf-8")
