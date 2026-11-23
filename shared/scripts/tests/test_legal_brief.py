@@ -100,16 +100,67 @@ def test_unsupported_jurisdiction_is_rejected(tmp_path: Path) -> None:
     assert not out.exists()
 
 
-def test_adjacent_abbreviations_are_checked_separately(tmp_path: Path) -> None:
+def test_citation_must_match_complete_token(tmp_path: Path) -> None:
     brd = tmp_path / "demo-brd.md"
     brd.write_text(
-        "# Demo BRD\nConsent required under GDPR Art. 6(1)(a) in the EU.\n",
+        "# Demo BRD\nConsent required under GDPR Art. 60(1)(a) in the EU.\n",
         encoding="utf-8",
     )
     out = tmp_path / "demo.draft.md"
-    response = legal_brief(str(brd)).replace(
-        "## Claim Relied On\nConsent is required [C1].",
-        "## Claim Relied On\nEU GDPR consent is required [C1].",
+    response = (
+        legal_brief(str(brd))
+        .replace(
+            "- Quote: Consent required under GDPR Art. 6(1)(a) in the EU.",
+            "- Quote: Consent required under GDPR Art. 60(1)(a) in the EU.",
+        )
+        .replace("GDPR Art. 6(1)(a) [C1].", "GDPR Art. 6 [C1].")
+    )
+    result = run_legal(brd, out, "--claude-bin", fake_model(tmp_path, response))
+    assert result.returncode != 0
+    assert not out.exists()
+
+
+def test_hyphenated_citation_must_match_quote(tmp_path: Path) -> None:
+    brd = tmp_path / "demo-brd.md"
+    brd.write_text(
+        "# Demo BRD\nConsent required under GDPR Art. 6-1 in the EU.\n",
+        encoding="utf-8",
+    )
+    out = tmp_path / "demo.draft.md"
+    response = (
+        legal_brief(str(brd))
+        .replace(
+            "- Quote: Consent required under GDPR Art. 6(1)(a) in the EU.",
+            "- Quote: Consent required under GDPR Art. 6-1 in the EU.",
+        )
+        .replace("GDPR Art. 6(1)(a) [C1].", "GDPR Art. 6-2 [C1].")
+    )
+    result = run_legal(brd, out, "--claude-bin", fake_model(tmp_path, response))
+    assert result.returncode != 0
+    assert not out.exists()
+
+
+def test_adjacent_abbreviations_are_checked_separately(tmp_path: Path) -> None:
+    brd = tmp_path / "demo-brd.md"
+    brd.write_text(
+        "# Demo BRD\nConsent required under EU GDPR Art. 6(1)(a) in the EU.\n",
+        encoding="utf-8",
+    )
+    out = tmp_path / "demo.draft.md"
+    response = (
+        legal_brief(str(brd))
+        .replace(
+            "- Quote: Consent required under GDPR Art. 6(1)(a) in the EU.",
+            "- Quote: Consent required under EU GDPR Art. 6(1)(a) in the EU.",
+        )
+        .replace(
+            "## Citation\nGDPR Art. 6(1)(a) [C1].",
+            "## Citation\nEU GDPR Art. 6(1)(a) [C1].",
+        )
+        .replace(
+            "## Claim Relied On\nConsent is required [C1].",
+            "## Claim Relied On\nEU consent is required [C1].",
+        )
     )
     result = run_legal(brd, out, "--claude-bin", fake_model(tmp_path, response))
     assert result.returncode == 0, result.stderr

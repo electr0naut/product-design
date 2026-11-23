@@ -101,10 +101,17 @@ def validate_legal_brief(content: str, brd: Path, expected_sha256: str) -> None:
             references.extend(refs)
             plain = REFERENCE.sub("", line)
             for token in re.findall(
-                r"(?:[A-Z][A-Za-z0-9./-]*\s*)?(?:Art|§|Section|Clause)\.?\s*[A-Za-z0-9./()]+|[A-Z]{2,}",
+                r"(?:[A-Z][A-Za-z0-9./-]*\s*)?(?:Art|§|Section|Clause)\.?\s*[A-Za-z0-9./()-]+(?![A-Za-z0-9./()-])|[A-Z]{2,}",
                 plain,
             ):
-                if not any(token in quotes[ref] for ref in refs):
+                if not any(
+                    token == quote_token
+                    for ref in refs
+                    for quote_token in re.findall(
+                        r"(?:[A-Z][A-Za-z0-9./-]*\s*)?(?:Art|§|Section|Clause)\.?\s*[A-Za-z0-9./()-]+(?![A-Za-z0-9./()-])|[A-Z]{2,}(?![A-Za-z])",
+                        quotes[ref],
+                    )
+                ):
                     raise SystemExit(
                         f"Legal brief citation or jurisdiction {token!r} is not in a cited BRD quote"
                     )
