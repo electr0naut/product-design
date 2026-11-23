@@ -483,3 +483,24 @@ def test_declared_citation_cannot_pass_as_a_prefix(tmp_path: Path) -> None:
     assert result.returncode != 0
     assert "not in a cited brd quote" in result.stderr.lower()
     assert not out.exists()
+
+
+def test_declared_citation_cannot_drop_a_subsection(tmp_path: Path) -> None:
+    brd = tmp_path / "demo-brd.md"
+    brd.write_text(
+        "# Demo BRD\nIn the EU, consent required under GDPR Art. 6(1)(a).\n",
+        encoding="utf-8",
+    )
+    out = tmp_path / "demo.draft.md"
+    response = (
+        legal_brief(str(brd))
+        .replace("## Citation\nGDPR Art. 6(1)(a) [C1].", "## Citation\nGDPR Art. 6(1) [C1].")
+        .replace(
+            "Consent required under GDPR Art. 6(1)(a) in the EU.",
+            "In the EU, consent required under GDPR Art. 6(1)(a).",
+        )
+    )
+    result = run_legal(brd, out, "--claude-bin", fake_model(tmp_path, response))
+    assert result.returncode != 0
+    assert "not in a cited brd quote" in result.stderr.lower()
+    assert not out.exists()
