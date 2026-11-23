@@ -138,6 +138,23 @@ def test_currency_code_prefix_must_match_quote(tmp_path: Path) -> None:
     assert not out.exists()
 
 
+def test_plain_prose_after_amount_does_not_become_a_unit(tmp_path: Path) -> None:
+    brd = tmp_path / "demo-brd.md"
+    brd.write_text(
+        "# Demo BRD\nStudy costs $10,000 for the pilot.\nStudy duration is one quarter.\n",
+        encoding="utf-8",
+    )
+    out = tmp_path / "demo.draft.md"
+    response = (
+        finance_brief(str(brd))
+        .replace("$10,000–$15,000 [C1].", "$10,000 [C1].")
+        .replace("Study costs $10,000–$15,000.", "Study costs $10,000 for the pilot.")
+    )
+    result = run_finance(brd, out, "--claude-bin", fake_model(tmp_path, response))
+    assert result.returncode == 0, result.stderr
+    assert out.read_text(encoding="utf-8") == response
+
+
 def test_percent_is_not_supported_by_bare_number(tmp_path: Path) -> None:
     brd = tmp_path / "demo-brd.md"
     brd.write_text(
