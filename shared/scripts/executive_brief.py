@@ -59,8 +59,9 @@ def validate_executive_brief(content: str, brd: Path, expected_sha256: str) -> N
             if any(not CARD_ID.fullmatch("C" + ref) for ref in raw_refs):
                 raise SystemExit("Executive brief has malformed evidence card reference")
             unknown_value = re.fullmatch(r"(?:- Option [1-3]: )?Unknown\.?", line.strip())
-            if not REFERENCE.search(line) and unknown_value is None:
-                raise SystemExit(f"Executive brief {name} line needs a claim card or Unknown")
+            none_yet_value = re.fullmatch(r"(?:- Option [1-3]: )?none yet\.?", line.strip(), re.IGNORECASE)
+            if not REFERENCE.search(line) and unknown_value is None and none_yet_value is None:
+                raise SystemExit(f"Executive brief {name} line needs a claim card, Unknown, or 'none yet'")
     cards_text = bodies["Evidence Cards"]
     cards = list(re.finditer(r"(?m)^### (C[1-9][0-9]*)$", cards_text))
     if not cards or cards_text[: cards[0].start()].strip():
