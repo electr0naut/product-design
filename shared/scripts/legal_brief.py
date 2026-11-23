@@ -72,25 +72,36 @@ def validate_legal_brief(content: str, brd: Path, expected_sha256: str) -> None:
         if quote not in source_lines:
             raise SystemExit(f"Legal brief card {card.group(1)} quote is not in the BRD")
         quotes[card.group(1)] = quote
+        claim = fields[0][len("- Claim: ") :]
+        if re.search(
+            r"(?i)\b(?:approved|signed[- ]off|authorized|approval\s+(?:granted|confirmed|received|obtained))\b",
+            claim,
+        ):
+            raise SystemExit(
+                f"Legal brief card {card.group(1)} claim cannot assert an approval or sign-off"
+            )
     references: list[str] = []
     for name in SECTIONS[:-1]:
-        for line in bodies[name].splitlines():
+        body = bodies[name]
+        if body == "Unknown.":
+            continue
+        if "Unknown" in body:
+            raise SystemExit("Legal brief cannot mix Unknown with an assertion")
+        for line in body.splitlines():
             if not line.strip():
                 continue
             raw_refs = re.findall(r"\[C([^\]]*)\]", line)
             if any(not CARD_ID.fullmatch("C" + ref) for ref in raw_refs):
                 raise SystemExit("Legal brief has malformed evidence card reference")
             refs = REFERENCE.findall(line)
-            if not refs and line.strip() == "Unknown.":
-                continue
-            if not refs or any(ref not in quotes for ref in refs):
-                raise SystemExit(f"Legal brief {name} line needs an existing claim card or Unknown")
+            if not refs:
+                raise SystemExit(f"Legal brief {name} line needs an existing claim card")
+            if any(ref not in quotes for ref in refs):
+                raise SystemExit(f"Legal brief {name} line needs an existing claim card")
             references.extend(refs)
-            if "Unknown" in line:
-                raise SystemExit("Legal brief cannot mix Unknown with an assertion")
             plain = REFERENCE.sub("", line)
             for token in re.findall(
-                r"(?:[A-Z][A-Za-z0-9./-]*\s*)?(?:Art|§|Section|Clause)\.?\s*[A-Za-z0-9./-]+|[A-Z]{2,}(?:\s+[A-Z]{2,})?",
+                r"(?:[A-Z][A-Za-z0-9./-]*\s*)?(?:Art|§|Section|Clause)\.?\s*[A-Za-z0-9./()]+|[A-Z]{2,}(?:\s+[A-Z]{2,})?",
                 plain,
             ):
                 if not any(token in quotes[ref] for ref in refs):

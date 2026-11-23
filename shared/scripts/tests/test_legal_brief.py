@@ -100,6 +100,67 @@ def test_unsupported_jurisdiction_is_rejected(tmp_path: Path) -> None:
     assert not out.exists()
 
 
+def test_titlecase_jurisdiction_is_rejected(tmp_path: Path) -> None:
+    brd = tmp_path / "demo-brd.md"
+    brd.write_text(
+        "# Demo BRD\nConsent required under GDPR Art. 6(1)(a) in the EU.\n",
+        encoding="utf-8",
+    )
+    out = tmp_path / "demo.draft.md"
+    response = legal_brief(str(brd)).replace(
+        "## Jurisdiction\nEU [C1].", "## Jurisdiction\nCA [C1]."
+    )
+    result = run_legal(brd, out, "--claude-bin", fake_model(tmp_path, response))
+    assert result.returncode != 0
+    assert "jurisdiction" in result.stderr.lower() or "citation" in result.stderr.lower()
+    assert not out.exists()
+
+
+def test_citation_subsection_must_match_quote(tmp_path: Path) -> None:
+    brd = tmp_path / "demo-brd.md"
+    brd.write_text(
+        "# Demo BRD\nConsent required under GDPR Art. 6(1)(a) in the EU.\n",
+        encoding="utf-8",
+    )
+    out = tmp_path / "demo.draft.md"
+    response = legal_brief(str(brd)).replace("GDPR Art. 6(1)(a) [C1].", "GDPR Art. 6(1)(b) [C1].")
+    result = run_legal(brd, out, "--claude-bin", fake_model(tmp_path, response))
+    assert result.returncode != 0
+    assert not out.exists()
+
+
+def test_unknown_must_fill_the_section(tmp_path: Path) -> None:
+    brd = tmp_path / "demo-brd.md"
+    brd.write_text(
+        "# Demo BRD\nConsent required under GDPR Art. 6(1)(a) in the EU.\n",
+        encoding="utf-8",
+    )
+    out = tmp_path / "demo.draft.md"
+    response = legal_brief(str(brd)).replace(
+        "## Jurisdiction\nEU [C1].",
+        "## Jurisdiction\nUnknown.\nEU [C1].",
+    )
+    result = run_legal(brd, out, "--claude-bin", fake_model(tmp_path, response))
+    assert result.returncode != 0
+    assert not out.exists()
+
+
+def test_card_claim_cannot_assert_approval(tmp_path: Path) -> None:
+    brd = tmp_path / "demo-brd.md"
+    brd.write_text(
+        "# Demo BRD\nConsent required under GDPR Art. 6(1)(a) in the EU.\n",
+        encoding="utf-8",
+    )
+    out = tmp_path / "demo.draft.md"
+    response = legal_brief(str(brd)).replace(
+        "- Claim: Consent requirement.", "- Claim: Legal approval granted."
+    )
+    result = run_legal(brd, out, "--claude-bin", fake_model(tmp_path, response))
+    assert result.returncode != 0
+    assert "approval" in result.stderr.lower()
+    assert not out.exists()
+
+
 def test_draft_cannot_claim_approval_in_decision_layer(tmp_path: Path) -> None:
     brd = tmp_path / "demo-brd.md"
     brd.write_text(
