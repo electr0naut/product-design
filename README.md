@@ -101,6 +101,26 @@ python shared/scripts/scaffold_code.py \
   --technical-design 05-technical-design/architecture/my-product-technical-design.md
 ```
 
+For an executive-facing decision brief, use the named BRD as the only content
+source. This is a separate, optional draft—not an approval or a replacement for
+the BRD/PRD. The output lands in `03-brd/executive/my-product.draft.md` with a
+provenance sidecar; `--out` must also end in `.draft.md`. The existing
+`brd-to-prd` input gate applies when a review manifest exists, unless `--draft`
+explicitly bypasses it. Source quotes in the evidence cards are checked before
+writing, but the executive must still review the interpretation and decision.
+
+```bash
+python shared/scripts/generate_executive_brief.py \
+  --brd 03-brd/my-product-brd.md
+# To inspect the assembled prompt without generating, add --prompt-only.
+```
+
+A valid generated brief exits 0; an existing output is skipped with exit 0
+unless `--force` is supplied. A blocked gate, invalid model output or unsafe
+path exits nonzero without writing the brief or sidecar. A missing Claude CLI
+writes a fallback `.prompt.md` and exits 1. Copy promotion never approves the
+brief; a human review decision remains necessary.
+
 Split the PRD once epics exist, so an approval or edit of E02 does not stale
 E01:
 

@@ -294,6 +294,7 @@ def generate(
     claude_bin: str,
     force: bool = False,
     snapshot: Callable[[str], dict] | None = None,
+    validate: Callable[[str], None] | None = None,
 ) -> str:
     """Write the prompt (prompt-only) or the generated document to `output`.
 
@@ -301,6 +302,7 @@ def generate(
     documents are reviewed and edited by people after generation.
     `snapshot` maps the written bytes' SHA-256 to extra provenance fields; it
     runs before anything is written, so a failure leaves no partial output.
+    `validate` checks model output before any document or sidecar write.
     """
     reject_symlink(output, "output")
     if prompt_only:
@@ -327,6 +329,8 @@ def generate(
         return FALLBACK
 
     content = text.rstrip() + "\n"
+    if validate is not None:
+        validate(content)
     document_sha256 = sha256(content.encode("utf-8"))
     extra = snapshot(document_sha256) if snapshot is not None else {}
     provenance = dict(getattr(prompt, "provenance", {}))
@@ -338,6 +342,10 @@ def generate(
             "generated_at": dt.datetime.now(dt.UTC).isoformat(),
         }
     )
+    # A snapshot callback may re-read the gate and its inputs after the first
+    # validation. Recheck the exact content and sources at the write boundary.
+    if validate is not None:
+        validate(content)
     write_text(output, content)
     sidecar.parent.mkdir(parents=True, exist_ok=True)
     flags = os.O_WRONLY | os.O_CREAT | (os.O_TRUNC if force else os.O_EXCL)
