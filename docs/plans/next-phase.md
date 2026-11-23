@@ -28,7 +28,7 @@ Also: fix CLAUDE.md, which still says approval is not an enforced check.
 
 The workflow is collaborative with feedback loops, not a linear sequence of standalone outputs. Decision briefs are inputs to the BRD, and the BRD is the gate document for the Risk Committee.
 
-**Workflow.** Business Development pitches ideas to the executive commission (which includes the CTO, who estimates infrastructure needs and evaluates options and costs), which decides whether to assess. Legal and Compliance review whether we can do it — legally and regulatory-wise. Finance details what's needed to keep the books in line: the ledger model, billing, how to reflect activity, report producing, and the proofs needed to show collateralisation to a regulator (which may require collaboration with Legal and Compliance — the whole project requires syncing up and teams reviewing what the others produced and what they missed). Risk looks at how and whether we can model it. Product picks up all the moving parts: chasing open questions across teams, interfacing to get everyone in line, and producing the BRD. Operations is separate: they surface the tooling needed to operate the product on a day-to-day basis, with proper visibility over the health of the platform/product.
+**Workflow.** Business Development pitches ideas to the executive commission (which includes the CTO, who estimates infrastructure needs and evaluates options and costs), which decides whether to assess. Legal and Compliance review whether we can do it — legally and regulatory-wise. Finance details what's needed to keep the books in line: the ledger model, billing, how to reflect activity, report producing, and the proofs needed to show collateralisation to a regulator (which may require collaboration with Legal and Compliance — the whole project requires syncing up and teams reviewing what the others produced and what they missed). Risk looks at how and whether we can model it. Operations assesses operability: manual steps, cut-offs, volumes, staffing, failure modes. Product picks up all the moving parts: chasing open questions across teams, interfacing to get everyone in line, and producing the BRD.
 
 The BRD is the gate document that goes to the Risk Committee — at least one designated person from each team — who reads it, raises questions, pushes back or approves. From there: PRD (where the Head of Product coordinates with the CTO/Development team), then phased buildout. During the QA phase, Operations is brought in to be shown the runbooks that show the tooling, the decisions that need to be taken, the escalation paths, etc. Then the first trade is executed by Risk, reviewed by all teams, and if all sign off on their side of the window, the product is considered live and can get its first pilot clients.
 
@@ -38,8 +38,9 @@ The BRD is the gate document that goes to the Risk Committee — at least one de
 - Compliance: obligation → control mapping, gaps flagged (not yet specified)
 - Finance: ledger model, billing, activity reflection, report producing, collateralisation proofs (redone as #34)
 - Risk: how and whether we can model it (not yet specified)
+- Operations: operability — manual steps, cut-offs, volumes, staffing, failure modes (02-analysis already has operations-template.md; generate_brd.py requires all seven analyses)
 
-Operations is not a BRD input; they come in during QA to review runbooks, tooling, decisions, and escalation paths.
+Operations also comes in during QA to review runbooks, tooling, decisions, and escalation paths.
 
 **Production order.** The briefs follow the workflow dependencies:
 1. Executive assessment (whether to proceed) — already done
