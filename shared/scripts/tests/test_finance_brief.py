@@ -24,21 +24,47 @@ def fake_model(tmp_path: Path, response: str) -> str:
     return str(executable)
 
 
-def finance_brief(source: str) -> str:
+def finance_brief(source: str, brd_content: str | None = None) -> str:
+    """Generate a finance brief. If brd_content is provided, use it to determine quotes."""
+    if brd_content and "Billing amount is" in brd_content:
+        # Extract the billing line from the BRD for C1
+        billing_line = [line for line in brd_content.split("\n") if "Billing amount is" in line]
+        c1_quote = (
+            billing_line[0]
+            if billing_line
+            else "Activity recorded in the main ledger with monthly billing."
+        )
+        return (
+            "# Finance Decision Brief: Demo\n\n"
+            "Draft for human review; not an approval.\n\n"
+            "## Ledger Model\nBilling recorded [C1].\n\n"
+            "## Billing\nMonthly billing cycle [C1].\n\n"
+            "## Activity Reflection\nActivity reflected quarterly [C2].\n\n"
+            "## Report Producing\nUnknown.\n\n"
+            "## Collateralisation Proofs\nUnknown.\n\n"
+            "## Main Uncertainty\nUnknown.\n\n"
+            "## Decision Needed\nReview ledger model [C1].\n\n"
+            "## Evidence Cards\n"
+            "### C1\n- Claim: Ledger and billing structure.\n"
+            f"- Source: {source}\n- Quote: {c1_quote}\n"
+            "### C2\n- Claim: Activity reflection period.\n"
+            f"- Source: {source}\n- Quote: Activity reflected quarterly.\n"
+        )
     return (
         "# Finance Decision Brief: Demo\n\n"
         "Draft for human review; not an approval.\n\n"
-        "## Ask\nFund a limited study [C1].\n\n"
-        "## Spend Range\n$10,000–$15,000 [C1].\n\n"
-        "## Assumptions\nStudy covers one quarter [C2].\n\n"
-        "## Funding Source\nUnknown.\n\n"
+        "## Ledger Model\nActivity recorded in the main ledger [C1].\n\n"
+        "## Billing\nMonthly billing cycle [C1].\n\n"
+        "## Activity Reflection\nActivity reflected quarterly [C2].\n\n"
+        "## Report Producing\nUnknown.\n\n"
+        "## Collateralisation Proofs\nUnknown.\n\n"
         "## Main Uncertainty\nUnknown.\n\n"
-        "## Decision Needed\nReview study funding [C1].\n\n"
+        "## Decision Needed\nReview ledger model [C1].\n\n"
         "## Evidence Cards\n"
-        "### C1\n- Claim: Study funding estimate.\n"
-        f"- Source: {source}\n- Quote: Study costs $10,000–$15,000.\n"
-        "### C2\n- Claim: Duration.\n"
-        f"- Source: {source}\n- Quote: Study duration is one quarter.\n"
+        "### C1\n- Claim: Ledger and billing structure.\n"
+        f"- Source: {source}\n- Quote: Activity recorded in the main ledger with monthly billing.\n"
+        "### C2\n- Claim: Activity reflection period.\n"
+        f"- Source: {source}\n- Quote: Activity reflected quarterly.\n"
     )
 
 
@@ -62,7 +88,7 @@ def run_finance(brd: Path, out: Path, *args: str) -> subprocess.CompletedProcess
 def test_valid_finance_brief_is_a_draft_with_provenance(tmp_path: Path) -> None:
     brd = tmp_path / "demo-brd.md"
     brd.write_text(
-        "# Demo BRD\nStudy costs $10,000–$15,000.\nStudy duration is one quarter.\n",
+        "# Demo BRD\nActivity recorded in the main ledger with monthly billing.\nActivity reflected quarterly.\n",
         encoding="utf-8",
     )
     out = tmp_path / "demo.draft.md"
@@ -79,11 +105,13 @@ def test_valid_finance_brief_is_a_draft_with_provenance(tmp_path: Path) -> None:
 def test_unsupported_numeric_suffix_does_not_escape_validation(tmp_path: Path) -> None:
     brd = tmp_path / "demo-brd.md"
     brd.write_text(
-        "# Demo BRD\nStudy costs $10,000–$15,000.\nStudy duration is one quarter.\n",
+        "# Demo BRD\nBilling amount is $10,000–$15,000.\nActivity reflected quarterly.\n",
         encoding="utf-8",
     )
     out = tmp_path / "demo.draft.md"
-    response = finance_brief(str(brd)).replace("$10,000–$15,000 [C1].", "$10M [C1].")
+    response = finance_brief(str(brd)).replace(
+        "Activity recorded in the main ledger [C1].", "Billing amount is $10M [C1]."
+    )
     result = run_finance(brd, out, "--claude-bin", fake_model(tmp_path, response))
     assert result.returncode != 0
     assert not out.exists()
@@ -93,11 +121,13 @@ def test_unsupported_numeric_suffix_does_not_escape_validation(tmp_path: Path) -
 def test_substring_is_not_a_supported_amount(tmp_path: Path) -> None:
     brd = tmp_path / "demo-brd.md"
     brd.write_text(
-        "# Demo BRD\nStudy costs $10,000–$15,000.\nStudy duration is one quarter.\n",
+        "# Demo BRD\nBilling amount is $10,000–$15,000.\nActivity reflected quarterly.\n",
         encoding="utf-8",
     )
     out = tmp_path / "demo.draft.md"
-    response = finance_brief(str(brd)).replace("$10,000–$15,000 [C1].", "$10 [C1].")
+    response = finance_brief(str(brd)).replace(
+        "Activity recorded in the main ledger [C1].", "Billing amount is $10 [C1]."
+    )
     result = run_finance(brd, out, "--claude-bin", fake_model(tmp_path, response))
     assert result.returncode != 0
     assert not out.exists()
@@ -107,14 +137,20 @@ def test_substring_is_not_a_supported_amount(tmp_path: Path) -> None:
 def test_period_must_match_the_cited_quote(tmp_path: Path) -> None:
     brd = tmp_path / "demo-brd.md"
     brd.write_text(
-        "# Demo BRD\nStudy costs $10,000 per year.\nStudy duration is one quarter.\n",
+        "# Demo BRD\nBilling amount is $10,000 per year.\nActivity reflected quarterly.\n",
         encoding="utf-8",
     )
     out = tmp_path / "demo.draft.md"
     response = (
         finance_brief(str(brd))
-        .replace("$10,000–$15,000 [C1].", "$10,000 per month [C1].")
-        .replace("Study costs $10,000–$15,000.", "Study costs $10,000 per year.")
+        .replace(
+            "Activity recorded in the main ledger [C1].",
+            "Billing amount is $10,000 per month [C1].",
+        )
+        .replace(
+            "Activity recorded in the main ledger with monthly billing.",
+            "Billing amount is $10,000 per year.",
+        )
     )
     result = run_finance(brd, out, "--claude-bin", fake_model(tmp_path, response))
     assert result.returncode != 0
@@ -124,14 +160,17 @@ def test_period_must_match_the_cited_quote(tmp_path: Path) -> None:
 def test_currency_code_prefix_must_match_quote(tmp_path: Path) -> None:
     brd = tmp_path / "demo-brd.md"
     brd.write_text(
-        "# Demo BRD\nStudy costs USD 10,000.\nStudy duration is one quarter.\n",
+        "# Demo BRD\nBilling amount is USD 10,000.\nActivity reflected quarterly.\n",
         encoding="utf-8",
     )
     out = tmp_path / "demo.draft.md"
     response = (
         finance_brief(str(brd))
-        .replace("$10,000–$15,000 [C1].", "EUR 10,000 [C1].")
-        .replace("Study costs $10,000–$15,000.", "Study costs USD 10,000.")
+        .replace("Activity recorded in the main ledger [C1].", "Billing amount is EUR 10,000 [C1].")
+        .replace(
+            "Activity recorded in the main ledger with monthly billing.",
+            "Billing amount is USD 10,000.",
+        )
     )
     result = run_finance(brd, out, "--claude-bin", fake_model(tmp_path, response))
     assert result.returncode != 0
@@ -147,14 +186,19 @@ def test_separated_unit_or_scale_must_match_quote(
 ) -> None:
     brd = tmp_path / "demo-brd.md"
     brd.write_text(
-        f"# Demo BRD\nStudy costs {quoted}.\nStudy duration is one quarter.\n",
+        f"# Demo BRD\nBilling amount is {quoted}.\nActivity reflected quarterly.\n",
         encoding="utf-8",
     )
     out = tmp_path / "demo.draft.md"
     response = (
         finance_brief(str(brd))
-        .replace("$10,000–$15,000 [C1].", f"{asserted} [C1].")
-        .replace("Study costs $10,000–$15,000.", f"Study costs {quoted}.")
+        .replace(
+            "Activity recorded in the main ledger [C1].", f"Billing amount is {asserted} [C1]."
+        )
+        .replace(
+            "Activity recorded in the main ledger with monthly billing.",
+            f"Billing amount is {quoted}.",
+        )
     )
     result = run_finance(brd, out, "--claude-bin", fake_model(tmp_path, response))
     assert result.returncode != 0
@@ -164,14 +208,17 @@ def test_separated_unit_or_scale_must_match_quote(
 def test_plain_prose_after_amount_does_not_become_a_unit(tmp_path: Path) -> None:
     brd = tmp_path / "demo-brd.md"
     brd.write_text(
-        "# Demo BRD\nStudy costs $10,000 for the pilot.\nStudy duration is one quarter.\n",
+        "# Demo BRD\nBilling amount is $10,000 for the pilot.\nActivity reflected quarterly.\n",
         encoding="utf-8",
     )
     out = tmp_path / "demo.draft.md"
     response = (
         finance_brief(str(brd))
-        .replace("$10,000–$15,000 [C1].", "$10,000 [C1].")
-        .replace("Study costs $10,000–$15,000.", "Study costs $10,000 for the pilot.")
+        .replace("Activity recorded in the main ledger [C1].", "Billing amount is $10,000 [C1].")
+        .replace(
+            "Activity recorded in the main ledger with monthly billing.",
+            "Billing amount is $10,000 for the pilot.",
+        )
     )
     result = run_finance(brd, out, "--claude-bin", fake_model(tmp_path, response))
     assert result.returncode == 0, result.stderr
@@ -181,13 +228,16 @@ def test_plain_prose_after_amount_does_not_become_a_unit(tmp_path: Path) -> None
 def test_percent_is_not_supported_by_bare_number(tmp_path: Path) -> None:
     brd = tmp_path / "demo-brd.md"
     brd.write_text(
-        "# Demo BRD\nStudy costs 10.\nStudy duration is one quarter.\n", encoding="utf-8"
+        "# Demo BRD\nBilling amount is 10.\nActivity reflected quarterly.\n", encoding="utf-8"
     )
     out = tmp_path / "demo.draft.md"
     response = (
         finance_brief(str(brd))
-        .replace("$10,000–$15,000 [C1].", "10% [C1].")
-        .replace("Study costs $10,000–$15,000.", "Study costs 10.")
+        .replace("Activity recorded in the main ledger [C1].", "Billing amount is 10% [C1].")
+        .replace(
+            "Activity recorded in the main ledger with monthly billing.",
+            "Billing amount is 10.",
+        )
     )
     result = run_finance(brd, out, "--claude-bin", fake_model(tmp_path, response))
     assert result.returncode != 0
@@ -199,12 +249,12 @@ def test_percent_is_not_supported_by_bare_number(tmp_path: Path) -> None:
 def test_draft_cannot_claim_approval_in_decision_layer(tmp_path: Path) -> None:
     brd = tmp_path / "demo-brd.md"
     brd.write_text(
-        "# Demo BRD\nStudy costs $10,000–$15,000.\nStudy duration is one quarter.\n",
+        "# Demo BRD\nActivity recorded in the main ledger with monthly billing.\nActivity reflected quarterly.\n",
         encoding="utf-8",
     )
     out = tmp_path / "demo.draft.md"
     response = finance_brief(str(brd)).replace(
-        "Review study funding [C1].", "Finance approval granted [C1]."
+        "Review ledger model [C1].", "Finance approval granted [C1]."
     )
     result = run_finance(brd, out, "--claude-bin", fake_model(tmp_path, response))
     assert result.returncode != 0
@@ -215,14 +265,22 @@ def test_draft_cannot_claim_approval_in_decision_layer(tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     "change",
     [
-        lambda text: text.replace("$10,000–$15,000 [C1]", "$10,000–$99,000 [C1]"),
-        lambda text: text.replace("$10,000–$15,000 [C1]", "$10,000 per month [C1]"),
-        lambda text: text.replace("$10,000–$15,000 [C1]", "€10,000–€15,000 [C1]"),
+        lambda text: text.replace(
+            "Activity recorded in the main ledger [C1].", "Billing amount is $10,000–$99,000 [C1]."
+        ),
+        lambda text: text.replace(
+            "Activity recorded in the main ledger [C1].",
+            "Billing amount is $10,000 per month [C1].",
+        ),
+        lambda text: text.replace(
+            "Activity recorded in the main ledger [C1].", "Billing amount is €10,000–€15,000 [C1]."
+        ),
         lambda text: text.replace(
             "Unknown.\n\n## Main Uncertainty", "Unknown. Funds secured.\n\n## Main Uncertainty"
         ),
         lambda text: text.replace(
-            "- Quote: Study costs $10,000–$15,000.", "- Quote: Invented cost."
+            "- Quote: Activity recorded in the main ledger with monthly billing.",
+            "- Quote: Invented cost.",
         ),
         lambda text: text.replace("### C2", "### C1"),
         lambda text: text.replace("- Source: ", "- Source: other.md "),
@@ -232,7 +290,7 @@ def test_draft_cannot_claim_approval_in_decision_layer(tmp_path: Path) -> None:
 def test_unsourced_or_malformed_claims_leave_no_files(tmp_path: Path, change) -> None:
     brd = tmp_path / "demo-brd.md"
     brd.write_text(
-        "# Demo BRD\nStudy costs $10,000–$15,000.\nStudy duration is one quarter.\n",
+        "# Demo BRD\nActivity recorded in the main ledger with monthly billing.\nActivity reflected quarterly.\n",
         encoding="utf-8",
     )
     out = tmp_path / "demo.draft.md"

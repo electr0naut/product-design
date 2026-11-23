@@ -2,20 +2,23 @@
 
 Draft for human review; not an approval.
 
-## Ask
-[The finance decision requested, with card references or Unknown.]
+## Ledger Model
+[How activity is recorded in the ledger, with card references or Unknown.]
 
-## Spend Range
-[Exact BRD range or Unknown. Do not derive or calculate an amount.]
+## Billing
+[How billing is structured, with card references or Unknown.]
 
-## Assumptions
-[Assumptions beside the requested spend, with card references or Unknown.]
+## Activity Reflection
+[How activity is reflected in the books, with card references or Unknown.]
 
-## Funding Source
-[Source of funds from the BRD, with card references or Unknown.]
+## Report Producing
+[How reports are produced, with card references or Unknown.]
+
+## Collateralisation Proofs
+[What proofs are needed to show collateralisation to a regulator, with card references or Unknown.]
 
 ## Main Uncertainty
-[The largest cost uncertainty, with card references or Unknown.]
+[The largest accounting or regulatory uncertainty, with card references or Unknown.]
 
 ## Decision Needed
 [Exact finance response needed, with card references or Unknown.]
