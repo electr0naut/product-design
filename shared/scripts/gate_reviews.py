@@ -496,6 +496,7 @@ def _evaluate_gate_data(
             for change in data["changes"]
             if {"gate": gid, "lane": lane_id} in change["affected"]
         ]
+        role_actions: dict[str, list[str]] = {role: [] for role in policy["roles"]}
         for change in affected:
             state, _ = change_state(data, change["id"])
             if state == "open":
@@ -505,12 +506,14 @@ def _evaluate_gate_data(
             answer = latest(data["question_answers"], question_id=question["id"])
             if answer is None:
                 reasons.append(f"unanswered question: {question['id']}")
+                role_actions[question["role"]].append("answer_question")
                 continue
             role_decision = latest(data["decisions"], gate=gid, lane=lane_id, role=question["role"])
             if role_decision is None or parsed_timestamp(
                 role_decision["recorded_at"]
             ) <= parsed_timestamp(answer["answered_at"]):
                 reasons.append(f"question needs reapproval: {question['id']}")
+                role_actions[question["role"]].append("review_again")
         stale_roles: list[str] = []
         for role in policy["roles"]:
             decisions = [
@@ -520,19 +523,26 @@ def _evaluate_gate_data(
             ]
             if not decisions:
                 reasons.append(f"missing approval: {role}")
+                role_actions[role].append("review")
                 continue
             decision = decisions[-1]
-            if decision["decision"] != "approve":
-                reasons.append(f"not approved: {role}")
-            elif decision["artifact_sha256"] != expected:
-                reasons.append(f"stale approval: {role}")
-                stale_roles.append(role)
-            if any(
+            has_open_feedback = any(
                 feedback_state(data, comment["id"]) == "open"
                 for d in decisions
                 for comment in d["feedback"]
-            ):
+            )
+            if decision["decision"] != "approve":
+                reasons.append(f"not approved: {role}")
+                if not has_open_feedback:
+                    role_actions[role].append("review")
+            elif decision["artifact_sha256"] != expected:
+                reasons.append(f"stale approval: {role}")
+                stale_roles.append(role)
+                role_actions[role].append("review_again")
+            if has_open_feedback:
                 reasons.append(f"unresolved feedback: {role}")
+                if "resolve_feedback" not in role_actions[role]:
+                    role_actions[role].append("resolve_feedback")
             for change in affected:
                 state, resolved = change_state(data, change["id"])
                 if (
@@ -542,6 +552,8 @@ def _evaluate_gate_data(
                     <= parsed_timestamp(resolved["at"])
                 ):
                     reasons.append(f"reapproval required after change: {change['id']} ({role})")
+                    if "review_again" not in role_actions[role]:
+                        role_actions[role].append("review_again")
         for dependency in policy["depends_on"]:
             upstream = status(dependency["gate"], dependency["lane"])
             if not upstream["ready"]:
@@ -584,6 +596,7 @@ def _evaluate_gate_data(
                 for comment in d["feedback"]
             ],
             "stale_roles": stale_roles,
+            "role_actions": role_actions,
         }
         active.remove(key)
         return cache[key]
@@ -887,6 +900,7 @@ def portal_view(manifest: Path, role: str) -> dict:
                     for path in state["artifacts"]
                 ],
                 "decision": decision,
+                "actions": state["role_actions"][role],
                 "other_roles": {
                     name: value for name, value in state["decisions"].items() if name != role
                 },
@@ -894,7 +908,7 @@ def portal_view(manifest: Path, role: str) -> dict:
             }
             if state["ready"]:
                 context.append(entry)
-            elif decision is None or decision["decision"] != "approve":
+            elif entry["actions"]:
                 pending.append(entry)
             else:
                 blocked.append(entry)

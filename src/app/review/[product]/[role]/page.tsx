@@ -69,7 +69,7 @@ export default async function RoleQueue({
         </p>
 
         <section className="mt-8">
-          <h2 className="text-lg font-semibold">Awaiting your decision</h2>
+          <h2 className="text-lg font-semibold">Needs your attention</h2>
           <LaneList
             product={product}
             role={role}
