@@ -8,9 +8,15 @@ recorded approval; silence is not approval either.
 
 ## Gate 1: Ideation → Analysis
 - [ ] Idea canvas completed with all sections
-- [ ] Initial market sizing done
 - [ ] Executive sponsor identified
 - [ ] Budget for analysis phase approved
+
+Discovery note (not a Gate 1 blocker): record the target audience and the demand
+hypothesis in the canvas. Initial market sizing or verified counterparty demand
+can be investigated during analysis; do not invent it to pass this gate. A future
+product-scoped policy switch may require demand evidence before analysis, but no
+such switch exists yet. This note does not waive the sponsor, budget or recorded
+review-decision requirements.
 
 ## Gate 2: Analysis → BRD
 - [ ] All 7 team analyses completed
