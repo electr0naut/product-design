@@ -138,6 +138,29 @@ def test_currency_code_prefix_must_match_quote(tmp_path: Path) -> None:
     assert not out.exists()
 
 
+@pytest.mark.parametrize(
+    ("quoted", "asserted"),
+    [("10 hours", "10 minutes"), ("$10 million", "$10 billion")],
+)
+def test_separated_unit_or_scale_must_match_quote(
+    tmp_path: Path, quoted: str, asserted: str
+) -> None:
+    brd = tmp_path / "demo-brd.md"
+    brd.write_text(
+        f"# Demo BRD\nStudy costs {quoted}.\nStudy duration is one quarter.\n",
+        encoding="utf-8",
+    )
+    out = tmp_path / "demo.draft.md"
+    response = (
+        finance_brief(str(brd))
+        .replace("$10,000–$15,000 [C1].", f"{asserted} [C1].")
+        .replace("Study costs $10,000–$15,000.", f"Study costs {quoted}.")
+    )
+    result = run_finance(brd, out, "--claude-bin", fake_model(tmp_path, response))
+    assert result.returncode != 0
+    assert not out.exists()
+
+
 def test_plain_prose_after_amount_does_not_become_a_unit(tmp_path: Path) -> None:
     brd = tmp_path / "demo-brd.md"
     brd.write_text(

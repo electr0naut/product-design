@@ -20,7 +20,8 @@ CARD_ID = re.compile(r"C[1-9][0-9]*")
 REFERENCE = re.compile(r"\[(C[1-9][0-9]*)\]")
 NUMERIC_TOKEN = re.compile(
     r"(?<![\w])(?:(?-i:[A-Z]{3})\s+|[$€£]\s*)?\d[\d,]*(?:\.\d+)?"
-    r"(?:[A-Za-z]+|\s*(?:%|(?-i:[A-Z]{3})|days?|weeks?|months?|quarters?|years?))?"
+    r"(?:[A-Za-z]+|\s*(?:%|(?-i:[A-Z]{3})|seconds?|minutes?|hours?|days?|"
+    r"weeks?|months?|quarters?|years?|thousands?|millions?|billions?|trillions?))?"
     r"(?:\s*(?:per|/)\s*[A-Za-z]+)?(?![\w%])",
     re.IGNORECASE,
 )
