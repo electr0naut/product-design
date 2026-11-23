@@ -20,6 +20,11 @@ REFERENCE = re.compile(r"\[(C[1-9][0-9]*)\]")
 DECLARATIVE_SECTIONS = ("Citation", "Jurisdiction")
 
 
+def strip_sentence_period(token: str) -> str:
+    """Drop a sentence-ending full stop so it cannot split an otherwise equal token."""
+    return token[:-1] if token.endswith(".") and not token.endswith("..") else token
+
+
 def validate_legal_brief(content: str, brd: Path, expected_sha256: str) -> None:
     """Reject unsourced claims, citations and jurisdictions before any output is written."""
     source = read_text(brd)
@@ -121,7 +126,7 @@ def validate_legal_brief(content: str, brd: Path, expected_sha256: str) -> None:
                 plain,
             ):
                 if not any(
-                    token == quote_token
+                    strip_sentence_period(token) == strip_sentence_period(quote_token)
                     for ref in refs
                     for quote_token in re.findall(
                         r"(?:[A-Z][A-Za-z0-9./-]*\s*)?(?:Art|§|Section|Clause)\.?\s*[A-Za-z0-9./()-]+(?![A-Za-z0-9./()-])|[A-Z]{2,}(?![A-Za-z])",
