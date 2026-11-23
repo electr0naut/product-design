@@ -24,7 +24,32 @@ def fake_model(tmp_path: Path, response: str) -> str:
     return str(executable)
 
 
-def finance_brief(source: str) -> str:
+def finance_brief(source: str, brd_content: str | None = None) -> str:
+    """Generate a finance brief. If brd_content is provided, use it to determine quotes."""
+    if brd_content and "Billing amount is" in brd_content:
+        # Extract the billing line from the BRD for C1
+        billing_line = [line for line in brd_content.split("\n") if "Billing amount is" in line]
+        c1_quote = (
+            billing_line[0]
+            if billing_line
+            else "Activity recorded in the main ledger with monthly billing."
+        )
+        return (
+            "# Finance Decision Brief: Demo\n\n"
+            "Draft for human review; not an approval.\n\n"
+            "## Ledger Model\nBilling recorded [C1].\n\n"
+            "## Billing\nMonthly billing cycle [C1].\n\n"
+            "## Activity Reflection\nActivity reflected quarterly [C2].\n\n"
+            "## Report Producing\nUnknown.\n\n"
+            "## Collateralisation Proofs\nUnknown.\n\n"
+            "## Main Uncertainty\nUnknown.\n\n"
+            "## Decision Needed\nReview ledger model [C1].\n\n"
+            "## Evidence Cards\n"
+            "### C1\n- Claim: Ledger and billing structure.\n"
+            f"- Source: {source}\n- Quote: {c1_quote}\n"
+            "### C2\n- Claim: Activity reflection period.\n"
+            f"- Source: {source}\n- Quote: Activity reflected quarterly.\n"
+        )
     return (
         "# Finance Decision Brief: Demo\n\n"
         "Draft for human review; not an approval.\n\n"
