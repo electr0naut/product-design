@@ -4,7 +4,7 @@
 A real product can enter analysis with only a demand hypothesis. Requiring initial market sizing before analysis forces invented numbers or prevents the research meant to test the hypothesis. For internal infrastructure, counterparty-demand evidence may be more relevant than commercial TAM, but it too may not exist at ideation.
 
 ## Scope
-Change the human Gate 1 checklist so market sizing and verified counterparty demand are not default preconditions for ideation-to-analysis. Ask for a target audience and demand hypothesis in the canvas; evaluate demand evidence during analysis. Keep sponsor, analysis budget and the review-decision contract unchanged. Record the future option to make demand evidence a product-scoped policy switch, without implementing it now.
+Change the human Gate 1 checklist so market sizing and verified counterparty demand are not default preconditions for ideation-to-analysis. Ask for a target audience and demand hypothesis in the canvas; direct analysts to investigate demand and document evidence or remaining unknowns, without adding a Gate 2 approval condition. Keep sponsor, analysis budget and the review-decision contract unchanged. Record the future option to make demand evidence a product-scoped policy switch, without implementing it now.
 
 ## Non-goals
 - No automatic waiver or approval of any product gate.

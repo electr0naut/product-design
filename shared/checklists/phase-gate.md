@@ -12,8 +12,9 @@ recorded approval; silence is not approval either.
 - [ ] Budget for analysis phase approved
 
 Discovery note (not a Gate 1 blocker): record the target audience and the demand
-hypothesis in the canvas. Initial market sizing or verified counterparty demand
-can be investigated during analysis; do not invent it to pass this gate. A future
+hypothesis in the canvas. During analysis, investigate that hypothesis and record
+evidence or remaining unknowns; do not invent market sizing or counterparty
+commitments. This guidance adds no Gate 2 approval condition. A future
 product-scoped policy switch may require demand evidence before analysis, but no
 such switch exists yet. This note does not waive the sponsor, budget or recorded
 review-decision requirements.
