@@ -526,18 +526,20 @@ def _evaluate_gate_data(
                 role_actions[role].append("review")
                 continue
             decision = decisions[-1]
+            has_open_feedback = any(
+                feedback_state(data, comment["id"]) == "open"
+                for d in decisions
+                for comment in d["feedback"]
+            )
             if decision["decision"] != "approve":
                 reasons.append(f"not approved: {role}")
-                role_actions[role].append("review")
+                if not has_open_feedback:
+                    role_actions[role].append("review")
             elif decision["artifact_sha256"] != expected:
                 reasons.append(f"stale approval: {role}")
                 stale_roles.append(role)
                 role_actions[role].append("review_again")
-            if any(
-                feedback_state(data, comment["id"]) == "open"
-                for d in decisions
-                for comment in d["feedback"]
-            ):
+            if has_open_feedback:
                 reasons.append(f"unresolved feedback: {role}")
                 if "resolve_feedback" not in role_actions[role]:
                     role_actions[role].append("resolve_feedback")

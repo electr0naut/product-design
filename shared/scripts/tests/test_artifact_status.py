@@ -408,7 +408,7 @@ def test_portal_view_keeps_own_unresolved_feedback_actionable(tmp_path: Path):
     from gate_reviews import portal_view
 
     manifest, doc = manifest_fixture(tmp_path)
-    engineer = decide(tmp_path, doc, "E01", "engineering")
+    engineer = decide(tmp_path, doc, "E01", "engineering", decision="request_changes")
     engineer["feedback"] = [{"id": "F-001", "text": "Confirm retention"}]
     decide(tmp_path, doc, "E01", "product")
     write_manifest(manifest, doc)
@@ -418,6 +418,7 @@ def test_portal_view_keeps_own_unresolved_feedback_actionable(tmp_path: Path):
     pending = next(item for item in view["pending_for_role"] if item["lane"] == "E01")
     assert pending["actions"] == ["resolve_feedback"]
     assert "unresolved feedback: engineering" in pending["reasons"]
+    assert "not approved: engineering" in pending["reasons"]
     assert not any(item["lane"] == "E01" for item in view["blocked_on_others"])
 
 
