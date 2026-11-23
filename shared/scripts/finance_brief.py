@@ -8,10 +8,11 @@ from pathlib import Path
 from workflow_common import display_path, read_text, sha256
 
 SECTIONS = (
-    "Ask",
-    "Spend Range",
-    "Assumptions",
-    "Funding Source",
+    "Ledger Model",
+    "Billing",
+    "Activity Reflection",
+    "Report Producing",
+    "Collateralisation Proofs",
     "Main Uncertainty",
     "Decision Needed",
     "Evidence Cards",
