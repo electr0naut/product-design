@@ -44,9 +44,9 @@ Operations also comes in during QA to review runbooks, tooling, decisions, and e
 
 **Production order.** The briefs follow the workflow dependencies:
 1. Executive assessment (whether to proceed) — already done
-2. Legal and Compliance (can we do it?) — can run in parallel
+2. Legal, Compliance, and Operations (can we do it, and can we operate it?) — can run in parallel
 3. Finance (what's needed to keep the books in line) — may need input from Legal/Compliance
-4. Risk (how and whether we can model it) — may need input from Finance, Legal, Compliance
+4. Risk (how and whether we can model it) — may need input from Finance, Legal, Compliance, Operations
 5. Product: chase open questions, interface across teams, produce the BRD
 6. BRD → Risk Committee review → PRD → phased buildout
 
