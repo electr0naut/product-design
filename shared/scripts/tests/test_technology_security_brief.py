@@ -100,3 +100,26 @@ def test_draft_cannot_claim_approval(tmp_path: Path) -> None:
     assert result.returncode != 0
     assert "approval" in result.stderr.lower()
     assert not out.exists()
+
+
+def test_all_unknown_with_unstructured_evidence_cards_rejected(tmp_path: Path) -> None:
+    brd = tmp_path / "demo-brd.md"
+    brd.write_text("# Demo BRD\nSome text.\n", encoding="utf-8")
+    out = tmp_path / "demo.draft.md"
+    response = (
+        "# Technology and Security Decision Brief: Demo\n\n"
+        "Draft for human review; not an approval.\n\n"
+        "## Build Options\nUnknown.\n\n"
+        "## Custody/Keys\nUnknown.\n\n"
+        "## Venue Connectivity\nUnknown.\n\n"
+        "## Security Risks\nUnknown.\n\n"
+        "## Hard Blockers\nnone yet.\n\n"
+        "## Main Uncertainty\nUnknown.\n\n"
+        "## Decision Needed\nUnknown.\n\n"
+        "## Evidence Cards\n"
+        "- Claim: Unstructured text without card heading.\n"
+    )
+    result = run_tech(brd, out, "--claude-bin", fake_model(tmp_path, response))
+    assert result.returncode != 0
+    assert "empty Evidence Cards" in result.stderr
+    assert not out.exists()

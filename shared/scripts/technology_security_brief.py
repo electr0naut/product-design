@@ -57,7 +57,13 @@ def validate_technology_security_brief(content: str, brd: Path, expected_sha256:
         re.fullmatch(r"(?:Unknown|none yet)\.?", bodies[name].strip(), re.IGNORECASE)
         for name in SECTIONS[:-1]
     )
-    if not all_unknown_or_none and (not cards or cards_text[: cards[0].start()].strip()):
+    if all_unknown_or_none:
+        # When all fields are Unknown/none yet, Evidence Cards body must be empty
+        if cards_text.strip():
+            raise SystemExit(
+                "Technology/security brief with all Unknown/none yet fields must have empty Evidence Cards"
+            )
+    elif not cards or cards_text[: cards[0].start()].strip():
         raise SystemExit("Technology/security brief needs numbered evidence cards")
     ids = [item.group(1) for item in cards]
     if len(set(ids)) != len(ids):
