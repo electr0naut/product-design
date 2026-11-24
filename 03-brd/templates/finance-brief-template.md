@@ -17,6 +17,9 @@ Draft for human review; not an approval.
 ## Collateralisation Proofs
 [What proofs are needed to show collateralisation to a regulator, with card references or Unknown.]
 
+## Funding
+[Liquidity, capital, and funding cost of the product, with card references or Unknown.]
+
 ## Main Uncertainty
 [The largest accounting or regulatory uncertainty, with card references or Unknown.]
 
