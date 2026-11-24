@@ -92,8 +92,8 @@ the keys. `--workspace worktree --branch harness/<KEY>` for implementer cards, t
   1. `docker exec -u hermes hermes hermes kanban list --assignee reviewer --status ready --json`; stop if empty.
   2. `kanban claim <id> --ttl 1800` (atomic).
   3. Read the card with `kanban context <id>`; check out `harness/<KEY>` in a host worktree.
-  4. Qwen finds defects via the Hermes `reviewer` profile? No: find with Qwen by calling the Alibaba API through a short
-     `hermes chat -q` on the reviewer profile, then refute and prove each finding with
+  4. Find defects with Qwen: a one-shot `hermes chat -q` on the `reviewer` profile (run in the container). Then
+     refute and prove each finding on the host with
      `claude -p --model sonnet --max-turns 10 --output-format json --json-schema <schemas/refutations.json|proof.json>`
      (BUILD_SPEC 6.2 decision rules).
   5. `kanban complete <id> --summary ... --metadata '<findings/refutations/proofs JSON>'`, or
