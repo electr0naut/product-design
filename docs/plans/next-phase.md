@@ -37,6 +37,7 @@ The BRD is the gate document that goes to the Risk Committee — at least one de
 - Legal: claims relied on, with citation and jurisdiction (already done as #32, still valid)
 - Compliance: obligation → control mapping, gaps flagged (not yet specified)
 - Finance: ledger model, billing, activity reflection, report producing, collateralisation proofs (redone as #34)
+- Technology/Security: build options, custody/keys, venue connectivity, security risks, hard blockers (new as correction #3)
 - Risk: how and whether we can model it (not yet specified)
 - Operations: operability — manual steps, cut-offs, volumes, staffing, failure modes (02-analysis already has operations-template.md; generate_brd.py requires all seven analyses)
 

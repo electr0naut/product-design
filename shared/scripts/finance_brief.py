@@ -13,6 +13,7 @@ SECTIONS = (
     "Activity Reflection",
     "Report Producing",
     "Collateralisation Proofs",
+    "Funding",
     "Main Uncertainty",
     "Decision Needed",
     "Evidence Cards",
