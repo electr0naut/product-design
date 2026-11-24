@@ -33,8 +33,8 @@ There are two Hermes installs:
 |---|---|---|
 | Code and data | `~/.local/bin/hermes`, `~/.hermes` | `/opt/hermes`, `/opt/data` |
 | Gateway | runs with `--idle-exit`, so it is not always on | always on: s6-supervised, restart policy set |
-| Fallback chain | `gpt-6-sol` (openai-codex) → `qwen3.7-plus` (alibaba-token-plan) → `deepseek-flash` | `gpt-5.6-terra` → `claude-fable-5.1` (anthropic) → `deepseek-v4-flash`, which appears twice |
-| Profiles | to list | 42 generated on 2026-11-21: 21 roles on DeepSeek then Ollama Qwen, and 21 `-fable` twins on Anthropic |
+| Fallback chain | `gpt-6-sol` (openai-codex) → `qwen3.7-plus` (alibaba-token-plan) → `deepseek-flash` | was `gpt-5.6-terra` → Anthropic Fable → `deepseek-v4-flash` (twice). The user has since removed the Fable models; confirm the current chain in A1 |
+| Profiles | to list | 21 role profiles generated on 2026-11-21, on DeepSeek then Ollama Qwen. The `-fable` twins have been removed; confirm in A1 |
 | Jobs and bots | to list | cron jobs, including the "International Markets Daily Briefing", plus the Telegram and Discord bots |
 
 Known problems:
