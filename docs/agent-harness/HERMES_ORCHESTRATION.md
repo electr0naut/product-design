@@ -44,9 +44,11 @@ Known problems:
 - **The briefing job** uses a custom provider, `gpt-5.5-pro`, whose key is the placeholder `no-key-required`.
 - **Browser cron jobs** can't reach the browser's DevTools port inside the container.
 
-Target: the host install is the only Hermes, running always on as a systemd user service.
+Target (user decision, 2026-11-24, after A1): **the container is the only always-on Hermes.** It is the
+compose project at `/srv/hermes`, with data at `/srv/hermes/data`. The host keeps only the `hermes`
+command for chatting, and runs no gateway.
 
-## Phase A: one always-on Hermes, on the host
+## Phase A: one always-on Hermes, in the container
 
 ### A1. Inventory (read-only)
 
@@ -97,71 +99,78 @@ question for the user. Also report which bot tokens each install has.
 
 ### A2. Back up both installs
 
-`hermes backup` is documented for moving between machines. **Verify** its arguments with
-`hermes backup --help`. As a file-level fallback, copy the data folders:
+Copy the compose project, which includes its data, and the host install. The data contains credentials,
+so keep the copies owner-only:
 
 ```bash
-docker cp hermes:/opt/data ~/hermes-container-backup-$(date +%F)
+sudo cp -a /srv/hermes ~/hermes-srv-backup-$(date +%F) && sudo chown -R ubay: ~/hermes-srv-backup-$(date +%F) && chmod 700 ~/hermes-srv-backup-$(date +%F)
 ```
 
 ```bash
-cp -a ~/.hermes ~/hermes-host-backup-$(date +%F)
+cp -a ~/.hermes ~/hermes-host-backup-$(date +%F) && chmod 700 ~/hermes-host-backup-$(date +%F)
 ```
 
-Archive the 42 container profiles before the container goes away. `hermes profile export` leaves out
-credentials; **verify** its arguments with `--help`.
+### A3. Stop the host gateway (needs the user's OK)
 
-### A3. Make the host gateway always on (needs the user's OK)
-
-Install the gateway as a systemd user service, and let it run while the user is logged out:
+The host gateway, started by hand (PID in A1), has no bot tokens and no cron jobs. Stop it, and check that
+no host gateway service is installed:
 
 ```bash
-hermes gateway install
+hermes gateway stop; hermes gateway status
 ```
+
+Next, decide how to chat from the host terminal.
+
+1. Compare the two versions:
 
 ```bash
-sudo loginctl enable-linger ubay
+hermes --version; docker exec hermes hermes --version
 ```
 
-```bash
-hermes gateway status
-```
+2. Choose based on the result:
+   - **Same version, and `/srv/hermes/data` readable by `ubay`:** chat with
+     `HERMES_HOME=/srv/hermes/data hermes`. Never run `gateway` commands with that setting, because the docs
+     allow only one gateway per data folder.
+   - **Different versions, or the folder is root-only:** chat through the container with
+     `docker exec -it hermes hermes`. Don't loosen permissions on the data folder.
 
-The docs warn that two gateways must never share one data folder or one bot token. Once the host gateway
-holds the Telegram and Discord tokens, the container gateway has to be stopped (A5).
+### A4. Apply the cron decisions (needs the user's OK)
 
-### A4. Recreate the cron jobs to keep (needs the user's OK)
+Apply `reports/A1-decisions.md` with `docker exec hermes hermes cron remove <id>` and
+`docker exec hermes hermes cron pause <id>`. Then:
 
-Recreate only the jobs the user keeps, each pinned to a working model. The documented form:
+- find and report the cause of the nightly backup's exit 128;
+- run `docker exec hermes hermes cron doctor`;
+- show `cron list` as a table.
 
-```bash
-hermes cron create "0 8 * * 1-5" "<prompt>" --name "<name>" --model qwen3.7-plus --provider alibaba-token-plan
-```
+### A5. Codex load (report only)
 
-Use the provider name exactly as `hermes fallback list` prints it.
+All 22 container profiles use Codex `gpt-6-sol` as their primary model. Report:
+- which profiles and agent cron jobs actually run;
+- when Codex's 7-day window resets;
+- a proposal for which profiles should start on `qwen3.7-plus` instead.
 
-- For the briefing job, either use a real OpenAI provider or pin it to Qwen. Never keep the
-  `no-key-required` placeholder.
-- Run `hermes cron doctor`, then trigger each job once with `hermes cron run <id>` and check its output.
-
-### A5. Retire the container (needs the user's explicit OK)
-
-```bash
-docker update --restart=no hermes hermes-dashboard && docker stop hermes hermes-dashboard
-```
-
-If A1 shows a compose project, run `docker compose down` in that folder instead. Keep the stopped
-containers and the backup for a week before removing anything.
+Change nothing without the user's OK.
 
 ### Phase A acceptance
 
-- `hermes gateway status` shows the service running, and it survives a reboot (`sudo reboot`, then check
-  again).
+- `docker ps` shows `hermes` up, and its restart policy is `unless-stopped`.
+- No Hermes gateway runs on the host (`pgrep -af "hermes.*gateway"` lists only container processes).
 - The Telegram bot answers a message.
-- Each kept cron job has one successful run.
-- `docker ps` no longer lists `hermes`.
+- Each kept cron job has one successful run, and the paused jobs show as paused.
 
 ## Phase B: the ticket pipeline on Kanban
+
+All Hermes commands in this phase run inside the container: prefix them with `docker exec hermes`, or
+`docker exec -it hermes` for interactive ones. Profile aliases such as `triage config set` become
+`docker exec hermes hermes -p triage config set ...`.
+
+**Decide before B4:** the reviewer stage calls `claude -p`, and `claude` is not in the container image,
+which the docs describe as immutable. Propose one of these to the user:
+- install the Claude Code native binary and its login under the mounted `/srv/lab`, only if that folder is
+  private to `ubay`;
+- a small host-side service that the reviewer card calls;
+- running the reviewer stage from the host on a timer.
 
 ### B1. Profiles
 

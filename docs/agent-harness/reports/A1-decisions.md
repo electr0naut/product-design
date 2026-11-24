@@ -27,5 +27,5 @@ Commands, run inside the container (`docker exec hermes hermes cron ...`). Use t
 `remove <id>` and `pause <id>`. Afterwards, show `hermes cron list` as a table.
 
 Still open, and not to be applied:
-- the runtime decision: keep the container, or move to the host;
+- the runtime decision: decided, keep the container (see HERMES_ORCHESTRATION.md Phase A);
 - approval of the A2 backups.
