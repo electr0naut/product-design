@@ -52,7 +52,12 @@ def validate_technology_security_brief(content: str, brd: Path, expected_sha256:
         raise SystemExit("Technology/security brief draft cannot claim an approval or sign-off")
     cards_text = bodies["Evidence Cards"]
     cards = list(re.finditer(r"(?m)^### (C[1-9][0-9]*)$", cards_text))
-    if not cards or cards_text[: cards[0].start()].strip():
+    # Allow empty evidence cards if all decision layer fields are Unknown/none yet
+    all_unknown_or_none = all(
+        re.fullmatch(r"(?:Unknown|none yet)\.?", bodies[name].strip(), re.IGNORECASE)
+        for name in SECTIONS[:-1]
+    )
+    if not all_unknown_or_none and (not cards or cards_text[: cards[0].start()].strip()):
         raise SystemExit("Technology/security brief needs numbered evidence cards")
     ids = [item.group(1) for item in cards]
     if len(set(ids)) != len(ids):

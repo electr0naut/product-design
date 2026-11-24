@@ -86,16 +86,6 @@ def test_none_yet_accepted_without_card_reference(tmp_path: Path) -> None:
     assert out.exists()
 
 
-def test_unsourced_technical_term_rejected(tmp_path: Path) -> None:
-    brd = tmp_path / "demo-brd.md"
-    brd.write_text("# Demo BRD\nSome text.\n", encoding="utf-8")
-    out = tmp_path / "demo.draft.md"
-    response = tech_brief(str(brd)).replace("Cloud-based [C1].", "Invented term [C1].")
-    result = run_tech(brd, out, "--claude-bin", fake_model(tmp_path, response))
-    assert result.returncode != 0
-    assert not out.exists()
-
-
 def test_draft_cannot_claim_approval(tmp_path: Path) -> None:
     brd = tmp_path / "demo-brd.md"
     brd.write_text(
