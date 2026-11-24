@@ -39,7 +39,8 @@ There are two Hermes installs:
 
 Known problems:
 
-- **DeepSeek** has no credit left ("no headroom").
+- **DeepSeek:** Hermes reported "no headroom", but the user confirmed on 2026-11-24 that the account has
+  credit, so that report was wrong. Verify agent status claims against the provider before acting on them.
 - **Codex** is rate-limited until 2026-11-26 08:21 CET.
 - **The briefing job** uses a custom provider, `gpt-5.5-pro`, whose key is the placeholder `no-key-required`.
 - **Browser cron jobs** can't reach the browser's DevTools port inside the container.
