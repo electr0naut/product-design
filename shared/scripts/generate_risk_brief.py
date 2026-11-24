@@ -31,7 +31,8 @@ def main() -> int:
     prompt = PROMPT_PATH.read_text(encoding="utf-8")
     template = TEMPLATE_PATH.read_text(encoding="utf-8")
 
-    full_prompt = f"{prompt}\n\nBRD:\n{brd}\n\nTemplate:\n{template}"
+    # Include BRD path in prompt so model can reference it in Source fields
+    full_prompt = f"{prompt}\n\nBRD Path: {args.brd}\n\nBRD:\n{brd}\n\nTemplate:\n{template}"
 
     result = subprocess.run(
         [str(args.claude_bin), "-p", full_prompt],
@@ -39,6 +40,20 @@ def main() -> int:
         text=True,
         check=True,
     )
+
+    # Validate output before writing
+    from risk_brief import validate
+
+    try:
+        validate(result.stdout, brd, str(args.brd))
+    except SystemExit as e:
+        print(f"Validation failed: {e}", file=sys.stderr)
+        return 1
+
+    # Prevent output from overwriting the source BRD
+    if args.output.resolve() == args.brd.resolve():
+        print("Output path cannot be the same as BRD path", file=sys.stderr)
+        return 1
 
     args.output.write_text(result.stdout, encoding="utf-8")
     return 0

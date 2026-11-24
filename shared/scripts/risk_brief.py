@@ -25,7 +25,10 @@ def split_sections(text: str) -> dict[str, str]:
     bodies: dict[str, str] = {}
     for part in parts[1:]:
         name, _, body = part.partition("\n")
-        bodies[name.strip()] = body.strip()
+        name = name.strip()
+        if name in bodies:
+            raise SystemExit(f"Risk brief has duplicate section: {name}")
+        bodies[name] = body.strip()
     return bodies
 
 
@@ -36,11 +39,28 @@ def validate(brief: str, brd: str, brd_path: str) -> None:
     if missing:
         raise SystemExit(f"Risk brief missing sections: {', '.join(missing)}")
 
-    # Check for approval claims
-    approval_pattern = re.compile(r"\b(approved|approved\.|approval|approved for)\b", re.IGNORECASE)
+    # Reject empty decision sections
     for name in SECTIONS[:-1]:
-        if approval_pattern.search(bodies[name]):
+        if not bodies[name]:
+            raise SystemExit(f"Risk brief {name} section is empty")
+
+    # Check for approval claims - distinguish granted approval from obligations
+    # Reject: "Risk approved", "approved for production", "approval granted"
+    # Allow: "approval is required", "approval needed", "not approved yet"
+    approval_granted_pattern = re.compile(
+        r"\b(approved|approved\.|approved for|approval granted|approval received)\b",
+        re.IGNORECASE,
+    )
+    for name in SECTIONS[:-1]:
+        if approval_granted_pattern.search(bodies[name]):
             raise SystemExit(f"Risk brief {name} cannot claim approval in a draft")
+
+    # Check title and preamble for approval claims
+    preamble_end = brief.find("## ")
+    if preamble_end > 0:
+        preamble = brief[:preamble_end]
+        if approval_granted_pattern.search(preamble):
+            raise SystemExit("Risk brief title/preamble cannot claim approval in a draft")
 
     # Check evidence cards structure
     cards_text = bodies["Evidence Cards"]
@@ -81,8 +101,12 @@ def validate(brief: str, brd: str, brd_path: str) -> None:
         if source != brd_path:
             raise SystemExit(f"Risk brief {cid} Source must be {brd_path}")
         quote = next(f[1] for f in fields if f[0] == "Quote")
-        if quote not in brd:
-            raise SystemExit(f"Risk brief {cid} Quote not found in BRD")
+        if not quote:
+            raise SystemExit(f"Risk brief {cid} Quote cannot be empty")
+        # Check quote is a complete line in BRD, not just a substring
+        brd_lines = brd.splitlines()
+        if quote not in brd_lines:
+            raise SystemExit(f"Risk brief {cid} Quote must match a complete BRD line")
 
     # Validate decision layer citations
     for name in SECTIONS[:-1]:
@@ -146,6 +170,9 @@ def main() -> int:
     validate(brief, brd, brd_path)
 
     if args.output:
+        # Prevent output from overwriting the source BRD
+        if args.output.resolve() == args.brd.resolve():
+            raise SystemExit("Output path cannot be the same as BRD path")
         args.output.write_text(brief, encoding="utf-8")
 
     return 0
