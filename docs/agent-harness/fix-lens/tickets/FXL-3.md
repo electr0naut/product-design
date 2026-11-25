@@ -23,4 +23,5 @@ Acceptance criteria
   contains no description text (no field longer than 80 characters).
 - AC5: `lookup` returns `null` for an unknown tag; `enumName` returns `null` for a value missing from the code set,
   and for a BeginString other than `FIX.4.2` or `FIX.4.4`.
-- AC6: `vendor/orchestra/LICENSE` is present and the generated files are listed in `SOURCE.md` as derived from it.
+- AC6: The licence (and any NOTICE) is present in `vendor/orchestra/` and also in `src/dictionary/`, next to the
+  generated files, with a `SOURCE.md` there naming the pinned commit; a test checks they exist.
