@@ -55,3 +55,13 @@ by hand this time.
   score (expected 9/9).
 
 After D4, stop and wait. FIX Lens needs the user's Gate 3 approval first.
+
+## Update: the chown is now in effect
+
+The user has run it again and confirmed it: `root:root 555` on both `.venv-container` and
+`work/js-deps/node_modules`. Do the D0.2 checks with D3.1 and put them in that report:
+- `stat` on one deep file in each folder;
+- as `hermes`, a write and a `chmod u+w` are both refused (this is a check that changes nothing);
+- the gates, a JS proof, the scoring and the container test suite still run.
+
+From now on, any dependency install needs `sudo`, so it's a stop for the user.
