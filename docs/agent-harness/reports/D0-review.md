@@ -51,6 +51,36 @@ These still wait for the user, whatever a review file says:
    - JS scoring reads the runner's JUnit output;
    - FAIL_TO_PASS / PASS_TO_PASS work with JS ids.
 
+## After D0: overnight queue
+
+When D0 is approved, carry on down this list without waiting for the user. Each item goes through the same loop:
+build with tests, report as `D<n>-<name>.md`, comment on PR #47, wait for the `-review.md`, and apply the fixes.
+Start the next item only after the previous one is approved. The standing approval and the hard stops above
+apply to every item. If an item is blocked on a hard stop, write down why and move to the next one.
+
+1. **D1: bounded automatic fix loop.** Today a gate failure or a proven review finding stops the ticket and waits
+   for a human. Instead, send the failing gate fields, or the proven findings with their failing proof tests, back to
+   the implementer **once**. Then run the gates and a fresh review again. A second failure blocks as today.
+   - Unproven findings never trigger a retry.
+   - The retry stays on the same branch and base.
+   - Write a ledger entry per retry.
+
+   Tests:
+   - a pass after the retry completes the ticket;
+   - a second failure blocks;
+   - there is never a third attempt;
+   - unproven findings block without a retry.
+2. **D2: risk tiers.** Use the ticket's touched paths and its labels to choose the review depth. Use
+   `harness.toml` globs for high-risk paths. The low tier skips the Claude refuter only when the finder reports
+   nothing at critical or high. Anything touching a high-risk glob always gets the full review. Test each tier.
+3. **D3: mutation testing on changed lines only**, as a gate field that reports and doesn't block at first.
+   - mutmut for Python and Stryker for JS, limited to the diff's changed lines and with a time cap.
+   - Report the surviving mutants per acceptance criterion.
+   - Test it on both fixtures, with a seeded weak test that lets a mutant survive.
+
+**Switching any of these on in the live pipeline** (timer, runner or board changes) is a reversible change.
+Ask on PR #47 first; don't ask the user.
+
 ## Done means
 
 - `pytest` and `ruff` clean in the kit, with the output in the report.
