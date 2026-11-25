@@ -10,11 +10,17 @@ The user's go for D0 (given in the VM session) covers, without asking again:
 - installing npm dev dependencies **inside a temporary JS fixture repo** used for tests;
 - posting the kit commit on PR #47, waiting for the review, and applying review fixes with tests.
 
-It does **not** cover, so stop and wait for the user if any of these is needed:
-- changes to Hermes config, profiles, cron, services, containers or the gateway;
-- anything written to the trusted repo or `~/.local/state/agent-harness/` by hand;
+**Don't ask before each step inside this scope.** The user has delegated overnight approvals to the reviewing
+session. For anything outside the scope above that is reversible (for example a Hermes profile or config change),
+post the question on PR #47 with what you'd change and how to undo it, then wait for a `-review.md` answer. Don't
+wait for the user.
+
+These still wait for the user, whatever a review file says:
 - secrets, `.env` files, or new network hosts;
-- starting any FIX Lens ticket (that needs PRD Gate 3 and a technical design first).
+- anything written to the trusted repo or `~/.local/state/agent-harness/` by hand;
+- deleting data, containers or volumes;
+- starting any FIX Lens ticket (that needs PRD Gate 3 and a technical design first);
+- `--dangerously-skip-permissions` or Hermes `--yolo`.
 
 ## What to build
 
