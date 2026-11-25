@@ -15,5 +15,7 @@
 | B6 | bug | caught | $0.317 |
 | C1-C4 | clean | no false block | $0 (no findings, Claude not called) |
 
+Proven by a failing test: B1, B2, B4, B6. B3 and B5 were blocking but unproven (the prover could not write a failing test), so they stand as "blocking_unproven".
+
 Recall 6/6 (target >= 5/6). False blocks 0/4 (target 0/4). Total Claude spend about $1.94.
 Caveat: the clean variants produced no Qwen findings, so the refute/prove path was only exercised by the bugged ones.
