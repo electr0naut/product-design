@@ -22,7 +22,8 @@ Acceptance criteria
   thousands separator. `1500` is `1500`, `71.25` is `71.25`, `0.1 + 0.2` is `0.3`, `1234.56789` is `1234.5679`
   and `2 / 3` is `0.6667`. Bought and Sold are `format(filledQty)`. An average is `format(notional / pricedQty)`,
   or `–` (an en dash) when `pricedQty` is zero. Net is `format(buy.filledQty - sell.filledQty)`, with a leading
-  `+` when it is above zero.
+  `+` when the rounded value is above zero. A value that rounds to zero is written `0`, never `-0` or `+0`:
+  bought `0.1 + 0.2` and sold `0.3` give a net of `0`.
 - AC3: For log A of FXL-12 the body rows read, cell by cell:
   - `AZN.L`, `0`, `10`, `–`, `0`, `0`, `–`, `+10`;
   - `BARC.L`, `0`, `0`, `–`, `1`, `50`, `2.5`, `-50`;

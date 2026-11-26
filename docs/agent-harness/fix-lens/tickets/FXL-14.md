@@ -56,7 +56,8 @@ Acceptance criteria
   `@media (prefers-color-scheme: dark) { :root:not(.theme-light) { ... } }`, and again on `:root.theme-dark`, the
   two dark blocks with the same values: `--bg`, `--panel`, `--ink`, `--muted`, `--line`, `--soft`, `--accent`,
   `--accent-ink`, `--ok`, `--warn`, `--warn-bg`, `--bad`, `--bad-bg`, `--order`, `--order-bg`, `--session-bg`.
-  Every colour in the stylesheet is one of them.
+  Each value is a six-digit hex colour (`#rrggbb`). Every colour in the stylesheet is one of these properties:
+  outside the three blocks there is no hex colour and no `rgb(`, `rgba(`, `hsl(` or `hsla(`.
 - AC12: A test reads the three blocks and computes WCAG 2.1 contrast. Each of these pairs is at least 4.5 to 1 in
   the light and in the dark values: `--ink` on `--bg`, `--ink` on `--panel`, `--muted` on `--panel`, `--muted` on
   `--bg`, `--accent-ink` on `--accent`, `--ok` on `--panel`, `--warn` on `--warn-bg`, `--bad` on `--bad-bg`,

@@ -17,10 +17,9 @@ const run = (...msgs) => {
 };
 const names = (evs) => evs.map((e) => e.name);
 
-test("event keys", () => {
+// The exact event keys are checked in acc-events.test.js (v1.2 adds origClOrdId and execRefId).
+test("an event carries its sender, target and message number", () => {
   const [e] = run(m(1, "A"));
-  expect(Object.keys(e).sort()).toEqual(
-    ["clOrdId", "detail", "kind", "name", "number", "orderId", "sendingTime", "sender", "seqNum", "target"].sort());
   expect([e.sender, e.target, e.number]).toEqual(["A", "B", 1]);
 });
 

@@ -42,10 +42,13 @@ test("header order", () => {
   expect(check("8=FIX.4.4|35=0|9=5|10=000|").rule).toBe("header_order");
 });
 
-test("bad tags", () => {
-  for (const t of ["07", "0", "ab"]) {
+// v1.2: with a text delimiter, "|ab=x" is not a field boundary (design section 3, step 4), so only all-digit
+// forms can be bad tags there. With the SOH character every piece is a field.
+test("bad tags: 07 and 0 with a pipe, and a non-number with the SOH character", () => {
+  for (const t of ["07", "0"]) {
     expect(check(`8=FIX.4.4|9=20|35=0|${t}=x|10=000|`).rule).toBe("bad_tag");
   }
+  expect(check("8=FIX.4.4|9=20|35=0|ab=x|10=000|".replaceAll("|", S)).rule).toBe("bad_tag");
 });
 
 test("message numbers count every candidate, valid or not", () => {

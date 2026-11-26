@@ -24,3 +24,39 @@ After FXL-1b, FXL-2b and FXL-3b land, `acc-framing`, `acc-check` and `acc-dictio
 `acc-page.test.js` (added before FXL-7 landed) checks the page independently: one exact CSP meta first in
 <head>, the textarea attributes, no inline script/style/handlers, and no network, storage, logging or unsafe-markup
 API in `src/`. It expects to run from the repo root with `index.html` at the root.
+
+## v1.2 (reviewer, 2026-11-27, for tickets FXL-9 to FXL-16)
+
+Written from PRD v1.2 and technical design v1.2. The fixed messages and the trading-summary figures were computed
+in Python, independently of the product code.
+
+| File | Ticket | Tests |
+|---|---|---|
+| `acc-delimiters.test.js` | FXL-9 | 14 |
+| `acc-events.test.js` | FXL-10 | 11 |
+| `acc-orders.test.js` | FXL-11 | 10 |
+| `acc-summary.test.js` | FXL-12 | 14 |
+| `acc-filters.test.js` | FXL-13 | 8 |
+| `acc-presentation.test.js` | FXL-14 | 20 |
+| `acc-order-story.test.js` | FXL-15 | 11 |
+| `acc-trades.test.js` | FXL-16 | 14 |
+
+**Checked before use.** A second agent built v1.2 from the design alone, without seeing this folder. Against that
+build, 99 of the 102 new tests passed at once. The other three were places where the design is silent and the
+tickets pin the behaviour (no empty `span.order-state`, the size warning as `p.warning`, a net that rounds to
+zero written `0`); with those three behaviours added, all 102 pass. The page files (`acc-presentation`,
+`acc-order-story`, `acc-trades`) run in jsdom from the repo root and also drive `src/main.js` through the page.
+
+**v1.1 tests that v1.2 changes on purpose.** Run against the v1.2 build, 54 of the 59 v1.1 tests still pass. The
+five that do not are retired with the harness's `retire_hidden` decision, never by editing host state by hand:
+
+| Retire before | Test | Why | Replaced by |
+|---|---|---|---|
+| FXL-9 is loaded | `acc-check.test.js` > `bad tags` | with a pipe, `\|ab=x` is no longer a field boundary | the test with the longer title in the same file |
+| FXL-9 is loaded | `acc-timeline.test.js` > `event keys` | events gain `origClOrdId` and `execRefId` | `acc-events.test.js` > `event keys include origClOrdId and execRefId` |
+| FXL-14 is loaded | all five tests of `acc-render.test.js` | they describe the v1.1 page; three fail on the v1.2 page and two depend on its old structure | `acc-presentation.test.js`; the file is then deleted from this folder |
+
+**Order of operations.** Refresh the host copy and retire the first two tests, then load FXL-9 to FXL-13. After
+FXL-13 lands: retire the five `acc-render` tests, delete the file here, refresh, then load FXL-14 to FXL-16. The
+two replaced tests in `acc-check` and `acc-timeline` already pass on the v1.1 code, as do all 59 tests of the
+folder as it stands.
