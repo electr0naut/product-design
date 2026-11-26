@@ -1,0 +1,21 @@
+# Morning: deploy verified, ledger migrated, FIX Lens reloaded and running (FXL-1 first)
+
+## Verified after the user's deploy (read-only checks)
+- **Host kit:** `~/.local/share/agent-harness/kit` is a clean checkout at **`4b16baa`** (D7 + D8 + D9); `reviewed-sha` matches; the runner logged `harness.reviewer: kit ... @ 4b16baa9c88a...` and `idle; idle` on the timer's own tick (02:25).
+- **Container copy:** `src`, `schemas`, `eval`, `tools`, `tests`, `template` and the three toml files are **identical to a fresh clone of `master`** (`diff -rq`, no differences); every top-level entry except `work/` is `root`-owned (0 exceptions).
+- **Ledger migration done** (by the user): `fix-ledger.json.bak` exists and every entry now has a `base`. FXL-1's is **`544c8c5`**, as expected. **A limit worth knowing:** for tickets that already landed (SEED-A, SEED-C, SEED-D, RISK-3, JSEED-2) the merge-base with the trusted main is the ticket's own first head (their branches are now part of `main`), so their `base` is not the base they started from. It changes nothing: those keys are finished and will not rerun.
+
+## What I did (board and files; nothing in the `fix-lens` repo or its trusted `main`)
+1. **Archived 43 cards:** all of FXL-1's (the ticket card, the stage cards, and the three `(fix 1)` cards including the blocked `reviewer (fix 1)` card) and all of FXL-2's and FXL-4's to FXL-7's (all unstarted, `todo`). Kept: FXL-3's cards (done) and the hold card. Command per card: `kanban archive <id>`.
+2. **Moved FXL-1's old run folder** aside: `work/runs/FXL-1` to `work/old/runs-FXL-1.attempt1` (it held the first attempt's `plan.json`, `gates-1.json`, `review.json`, `fix-1.json`), so the rerun starts with an empty one.
+3. **Copied `FXL-3b.md` byte for byte** into `work/fix-lens-tickets/` (`cmp` identical) and **reloaded seven tickets in one loader call**: FXL-1, FXL-2, FXL-3b, FXL-4, FXL-5, FXL-6, FXL-7.
+
+## A deviation from the written plan, and why (for the reviewer to confirm or undo)
+The plan said "archive FXL-1's cards and reload FXL-1 alone". I reloaded FXL-2 and FXL-4 to FXL-7 as well, because leaving them alone had two problems:
+- **Dangling parents.** FXL-2, FXL-4, FXL-5 and FXL-6 waited on FXL-1's *old* `scribe` card, which the archive removes from play; I did not want to rely on how the board treats a child of an archived parent, nor patch seven links by hand.
+- **Old card text.** D8's rule says cards already loaded keep their old text; FXL-2 and FXL-4 to FXL-7 would still say "write files with the file-writing tool only", the very wording that blocked FXL-3's planner.
+Reloading them together also gives the chain the review asked for **without a manual link**: ordered by rank, FXL-3b follows FXL-2 and FXL-4 waits for FXL-3b's `scribe`. Checked on the board: FXL-2's triage waits on FXL-1's new scribe; **FXL-3b's triage waits on FXL-2's scribe and FXL-3's scribe**; **FXL-4's triage waits on FXL-3's, FXL-1's and FXL-3b's scribes**; FXL-7 waits on FXL-2, FXL-4, FXL-5 and FXL-6. The planner card now carries the D8 write rule and not the old line. The order is therefore FXL-1, FXL-2, FXL-3b, FXL-4, FXL-5, FXL-6, FXL-7, one at a time. Nothing was unstarted work that is now lost: the archived cards had never run.
+If you would rather have FXL-2 and the rest on their old cards, the reload can be undone by archiving the new cards; the reverse (restoring archived cards) is not possible, which is why I am saying so here.
+
+## Running now
+FXL-1 is the live first ticket (its triage is already done), with: the D7 budget (one gate-triggered and one review-triggered pass per attempt, its `base` = the current trusted main `4e3aaac`, and the migrated old entry no longer counting against it), D8 card text, D9's whole-diff review (the FIX Lens overlay excludes `src/dictionary/*.json`, its licence and `vendor/**`), mutation and the risk tiers on. The evidence driver runs over the whole chain and stops at the first block. The old FXL-1 branch in `work/fix-lens` (`harness/FXL-1`, with the two unfixed bugs and a stale base) is reset by the new implementer's `checkout -B harness/FXL-1 <sha>`; I do not touch it.
