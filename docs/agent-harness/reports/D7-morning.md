@@ -1,3 +1,5 @@
+> **ERRATUM (read first):** step 2 below is wrong. I wrote that "the plain fetch worked last night"; it did not (root has no GitHub login and the password prompt had to be cancelled), and the plain form also lacks the hardened git flags. Do **not** run it. The corrected plan: one deploy of the D8 sha (see `D8-card-text.md`), with the container copy updated by bundle and fetch with `-c core.hooksPath=/dev/null -c core.fsmonitor=false`, lines to be given by the reviewer.
+
 # D7 ready for the morning: master = `666cb30`, the exact lines for the user
 
 Both D7 review changes are in and tested. Kit `master` was fast-forwarded from `c6451f5` to **`666cb3029b740cfa07760454fe05cf002628b165`** (`git ls-remote` confirmed; also pushed on branch `d7-fix-budget`). Fresh clone of `master`: `294 passed, 3 skipped`, `ruff check` and `ruff format --check` clean.
