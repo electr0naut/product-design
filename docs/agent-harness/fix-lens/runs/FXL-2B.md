@@ -52,3 +52,9 @@ Hidden acceptance suite on trusted main `356ab44656`: **19/42** pass.
 | acc-timeline.test.js | 0 | 9 | module did not import (feature not built yet?) |
 
 Newly passing: 4. No regressions.
+
+## Implementer, finder and Codex use
+- **Implementer: `gpt-6-sol` (openai-codex), first pass and fix pass. No fallback.** Codex use: implementer 2 sessions, 38 calls, 91,673 in / 8,939 out; planner 1 session, 11 calls, 27,460 in / 3,540 out. No rate-limit or fallback line in the implementer, planner or reviewer logs.
+- **Finder: `deepseek-flash`**, one session, no fallback.
+- **Against the Qwen tickets:** gates on the first attempt **failed** (AC0, AC1, AC4 had no valid test); fix passes 1 (gates), no review pass; spec-pass blocking findings 0 (one note, F1); hidden suite after landing 19/42, `acc-check` 9/9 and `acc-framing` 9/9, the other failures in features not built or not yet fixed (`acc-dictionary` 1/4), no regressions. FXL-1 to FXL-3 on Qwen had no spec pass or hidden suite (see the table in FXL-1B.md).
+- A person approved one fix-pass edit to `test/helpers.test.js` (FXL-2B-review2.md; evidence in FXL-2B-block.md).
