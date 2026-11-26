@@ -114,3 +114,10 @@ Backlog D16: (1) the loader writes the worker-readable path of each spec documen
 
 Backlog **D16** also: a review finding rated high must not become a note only because its confidence is under the threshold; send it to the refuter and prover like the others, or block as unproven.
 Backlog **D17:** a real-browser smoke gate for web deliverables (serve the worktree, load the page under its real CSP, fail on any console error, foreign request or empty result). Needs Chromium in the container (an install the user approves). Until then the reviewer runs `fix-lens/browser-check/check.js` on every page ticket.
+
+## Implementer fallback to qwen4-max (FALLBACK-review.md)
+Done while FXL-8 was blocked at its reviewer; no implementer card running.
+- **Old chain:** `gpt-6-sol` → `qwen3.7-plus` (alibaba-token-plan) → `deepseek-flash`. **New:** `gpt-6-sol` → `qwen4-max` (alibaba-token-plan) → `deepseek-flash`. A diff against the backup shows one changed line.
+- **Backup:** `/opt/data/profiles/implementer/config.yaml.bak-20261126-231511`. **Undo:** copy it back over `config.yaml`.
+- **Checks:** `qwen4-max` answered through the configured provider on a throwaway profile with no fallbacks (`state.db`: `qwen4-max`, `alibaba-token-plan`; profile deleted). A tiny implementer call then answered on `gpt-6-sol` (`openai-codex`). The fallback itself was not triggered, so it is untested in a live failover. No restart.
+- **Not changed:** the profile's `delegation` settings (still `qwen3.7-plus`, with `deepseek-flash` behind it).
