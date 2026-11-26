@@ -69,3 +69,11 @@ No implementer card was running (FXL-1B blocked, the rest waiting).
 3. **Reset** (host kit, `tools/reset_attempt.py FXL-1B --reason "two review failures on the Qwen implementer; rerun on the Codex implementer (user approved)"`), written 18:32:50.
 4. **Archived** the 51 cards of FXL-1B, FXL-2B, FXL-3B, FXL-4..7 (FXL-1..3 untouched); run folder moved to `work/old/runs-FXL-1B.attempt2`; the attempt-2 report is `fix-lens/runs/FXL-1B-attempt2.md`.
 5. **Reloaded** all seven in one call from the host (`work/fixlens6-load.log`), driver restarted (start file `work/fxl1B3.start`, log `~/driver-fxl1B4.log`).
+
+## Finder on DeepSeek (FXL-1B-review4.md)
+
+No reviewer card was running (FXL-1B's was blocked). 
+1. **Profile change** (`reviewer`, the finder): backup `/opt/data/profiles/reviewer/config.yaml.bak-20261126-190204`. Old: `model.default qwen3.7-plus` (alibaba-token-plan, Qwen `base_url`), fallback `[deepseek-flash]`. New (`hermes -p reviewer config set ...`): provider `deepseek`, default `deepseek-flash`, `base_url https://api.deepseek.com`, fallback `[qwen3.7-plus (alibaba-token-plan)]`. **Undo:** copy the backup back over `config.yaml`.
+2. **Check:** a tiny `hermes -p reviewer chat` call answered; `state.db` shows `deepseek-flash` / `deepseek`, no fallback. No restart needed (a fresh process per card).
+3. **Retry:** FXL-1B's reviewer card `t_ba094ad9` removed from `reviewer-attempts.json` and unblocked once (a transient retry, not a fix pass). The block report is kept as `fix-lens/runs/FXL-1B-attempt3-block.md`. Evidence driver restarted (`~/driver-fxl1B5.log`).
+4. Each `FXL-<n>.md` from now on records the finder model.
