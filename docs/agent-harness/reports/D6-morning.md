@@ -60,3 +60,12 @@ Kit checked first: host kit and container copy both `0ae59d0`, the new alert scr
 3. **Run folder:** `work/runs/FXL-1B` moved to `work/old/runs-FXL-1B.attempt1`. The first attempt's report is kept as `fix-lens/runs/FXL-1B-attempt1.md`.
 4. **Reloaded in one call, on the host:** `PYTHONPATH=src python3 tools/load_tickets.py --repo /srv/lab/agent-harness/work/fix-lens <work/fix-lens-tickets/>FXL-1B.md FXL-2B.md FXL-3B.md FXL-4.md ... FXL-7.md` (log `work/fixlens5-load.log`); host-only ticket text re-recorded.
 5. **Driver restarted** with start file `work/fxl1B2.start`. The first runner pass after the load printed `idle; idle`, service not failed.
+
+## FXL-1B attempt 3: implementer on Codex (FXL-1B-review3.md, CODEX-implementer-review.md)
+
+No implementer card was running (FXL-1B blocked, the rest waiting). 
+1. **Profile change** (`implementer`): backup `/opt/data/profiles/implementer/config.yaml.bak-20261126-183213`. Old: `model.default qwen3.7-plus`, provider `alibaba-token-plan`, `model.base_url` the Qwen endpoint, fallbacks `[deepseek-flash]`. New: `hermes -p implementer config set model.provider openai-codex`, `... model.default gpt-6-sol` (this cleared `model.base_url`), and `... fallback_providers '[qwen3.7-plus (alibaba-token-plan), deepseek-flash]'`. **Undo:** copy the `.bak-20261126-183213` file back over `config.yaml`.
+2. **Check:** one tiny `hermes -p implementer chat -q` call answered; `state.db` shows `gpt-6-sol`, `openai-codex`, no fallback row. Each card starts a fresh process that reads the profile, so no gateway restart was needed or done.
+3. **Reset** (host kit, `tools/reset_attempt.py FXL-1B --reason "two review failures on the Qwen implementer; rerun on the Codex implementer (user approved)"`), written 18:32:50.
+4. **Archived** the 51 cards of FXL-1B, FXL-2B, FXL-3B, FXL-4..7 (FXL-1..3 untouched); run folder moved to `work/old/runs-FXL-1B.attempt2`; the attempt-2 report is `fix-lens/runs/FXL-1B-attempt2.md`.
+5. **Reloaded** all seven in one call from the host (`work/fixlens6-load.log`), driver restarted (start file `work/fxl1B3.start`, log `~/driver-fxl1B4.log`).

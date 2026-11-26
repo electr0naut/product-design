@@ -1,5 +1,7 @@
 # FXL-1B: BLOCKED for a human
 
+Attempt 2 (Qwen implementer, review card budget 5.0): review 1 proved findings; the one review-triggered fix pass ran; review 2 proved F1 and F3 again, so the ticket blocked (second review failure). Reviewer decision: FXL-1B-review3.md. Attempt 3 reruns on the Codex implementer.
+
 ## FXL-1B · reviewer (fix 2) (t_2d6d9207) is blocked
 ```
   [2026-11-26 18:17] [run 305] heartbeat {'note': 'review running'}
