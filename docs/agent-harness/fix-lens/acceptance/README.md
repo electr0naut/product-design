@@ -20,3 +20,7 @@ helper.
 - `acc-decode`, `acc-timeline`, `acc-limits`, `acc-analyse`: not built yet.
 
 After FXL-1b, FXL-2b and FXL-3b land, `acc-framing`, `acc-check` and `acc-dictionary` should pass in full.
+
+`acc-page.test.js` (added before FXL-7 landed) checks the page independently: one exact CSP meta first in
+<head>, the textarea attributes, no inline script/style/handlers, and no network, storage, logging or unsafe-markup
+API in `src/`. It expects to run from the repo root with `index.html` at the root.
