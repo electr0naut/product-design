@@ -4,7 +4,16 @@ import { join } from "node:path";
 
 const CSP = "default-src 'self'; connect-src 'none'; form-action 'none'";
 const html = () => readFileSync("index.html", "utf8");
-const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:\\])\/\/.*$/gm, "$1").replace(/<!--[\s\S]*?-->/g, "");
+// Removes comments before scanning. Repeated until stable so nested fragments such as "<!<!---->--" cannot
+// leave a comment opener behind (CodeQL js/incomplete-multi-character-sanitization).
+function stripComments(s) {
+  let prev;
+  do {
+    prev = s;
+    s = s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:\\])\/\/.*$/gm, "$1").replace(/<!--[\s\S]*?-->/g, "");
+  } while (s !== prev);
+  return s;
+}
 function srcFiles(dir = "src") {
   return readdirSync(dir).flatMap((n) => {
     const p = join(dir, n);
