@@ -1,0 +1,7 @@
+{
+  "id": "D-20261126-1",
+  "action": "unblock_once",
+  "key": "FXL-7",
+  "card": "t_a2096e57",
+  "reason": "FXL-7-review: the technical design is now readable by the implementer (verified); retry the implementer once"
+}
