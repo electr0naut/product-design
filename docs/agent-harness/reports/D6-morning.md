@@ -121,3 +121,30 @@ Done while FXL-8 was blocked at its reviewer; no implementer card running.
 - **Backup:** `/opt/data/profiles/implementer/config.yaml.bak-20261126-231511`. **Undo:** copy it back over `config.yaml`.
 - **Checks:** `qwen4-max` answered through the configured provider on a throwaway profile with no fallbacks (`state.db`: `qwen4-max`, `alibaba-token-plan`; profile deleted). A tiny implementer call then answered on `gpt-6-sol` (`openai-codex`). The fallback itself was not triggered, so it is untested in a live failover. No restart.
 - **Not changed:** the profile's `delegation` settings (still `qwen3.7-plus`, with `deepseek-flash` behind it).
+
+## Model availability check (MODELS-review.md; read-only)
+One tiny call each on a throwaway profile with no fallbacks; all four profiles deleted afterwards.
+
+| model asked | provider | result | recorded in `state.db` |
+|---|---|---|---|
+| `gpt-6.2-sol` | openai-codex | answered | `gpt-6.2-sol`, `openai-codex` (billing `subscription_included`) |
+| `gpt-6.1-sol` | openai-codex | answered | `gpt-6.1-sol`, `openai-codex` |
+| `deepseek-v4.1-flash-1017` | alibaba-token-plan | answered | `deepseek-v4.1-flash-1017`, `alibaba-token-plan` |
+| `deepseek-flash` | deepseek | answered | `deepseek-flash`, `deepseek` |
+
+- **What `deepseek-flash` resolves to:** called once more through Hermes's own provider client, the response's `model` field is just **`deepseek-flash`** (`api.deepseek.com`). The provider's model list is `deepseek-flash`, `deepseek-v4-pro`. So the provider does not say which version is behind the name.
+- One note on `gpt-6.2-sol`: the helper call that titles a session sent `reasoning.effort = none`, which this model rejects (400; allowed: low to max). Hermes retried without the field and it worked. The main call was not affected.
+
+## Planner and implementer to `gpt-6.2-sol` (MODELS-review2.md; `gpt-6.2-sol` answered, so applied)
+No planner or implementer card was ready or running (FXL-8 blocked at its reviewer).
+
+| profile | old default | new default | backup (in `/opt/data/profiles/<profile>/`) |
+|---|---|---|---|
+| planner | `gpt-6-sol` | `gpt-6.2-sol` | `config.yaml.bak-20261126-pre62` |
+| implementer | `gpt-6-sol` | `gpt-6.2-sol` | `config.yaml.bak-20261126-pre62` |
+
+- **Each diff against its backup is one line** (line 2). **Deviation in method:** `hermes config set` also re-indented the planner's two fallback lists, so its diff was not one line. I copied the backup back and changed only line 2 with `sed`; `config get model.default` reads the new value.
+- **Checks:** one tiny call per profile; `state.db` shows `gpt-6.2-sol` on `openai-codex` for both; no `Fallback activated` line. No restart (each card starts a fresh process). Fallback lists, delegation and other profiles unchanged.
+- **Undo:** copy each backup over its `config.yaml`.
+- Bake-off round 2 keeps its own profiles; its Codex reference stays `gpt-6-sol`.
+- **Left behind for you:** two harmless probe scripts, `/tmp/dsprobe.py` on the host and in the container (no secrets). A built-in safety check refused a command that included removing them, and I did not retry the removal.
