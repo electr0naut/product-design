@@ -33,3 +33,13 @@ Acceptance criteria
   expected number to its 34 + 1.
 - AC10: A Logon with 141=Y resets the direction's expected number to 1 before its own check: a Logon with 141=Y and
   34=1 after message 34=7 gives no gap.
+- AC11: A message with 34 missing or not a number is never checked and changes nothing, including a Logon with
+  141=Y: after 34=7, a Logon 141=Y with no 34, then 34=10 gives `expected 8, received 10`.
+- AC12: A SequenceReset whose 36 is not a positive integer (`0`, `-1`, `abc`, missing) sets the expected number to
+  its 34 + 1: after 34=1, a Reset with 34=5 and 36=0, then 34=6 gives no gap.
+- AC13: A missing 49 or 56 counts as the empty string in the direction key: a message with no 49 and 56=SELL,
+  34=1, then one with `49=` (empty), 56=SELL, 34=5 gives `expected 2, received 5`.
+- AC14: Event `kind` is exactly `session` for session events (SequenceGap included) and `order` for NewOrder and
+  ExecutionReport; no other value.
+- AC15: A GapFill (35=4 with 123=Y) whose 34 is above the expected number gives a SequenceGap before it: after
+  34=1, a GapFill with 34=5 and 36=10 gives `expected 2, received 5`, then GapFill, then the expected number is 10.

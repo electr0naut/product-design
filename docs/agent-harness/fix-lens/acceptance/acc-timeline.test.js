@@ -70,3 +70,30 @@ test("ExecutionReport mapping per version, and order fields", () => {
   expect([e.kind, e.clOrdId, e.orderId]).toEqual(["order", "C1", "O1"]);
   expect(run(m(1, "D", [[11, "C1"]]))[0].name).toBe("NewOrder");
 });
+
+test("a message without a usable 34 changes nothing, even a Logon with 141=Y", () => {
+  const noSeq = fixmsg("FIX.4.4", [[35, "A"], [49, "A"], [56, "B"], [141, "Y"]]);
+  const evs = run(m(7, "0"), noSeq, m(10, "0"));
+  expect(evs.find((e) => e.name === "SequenceGap").detail).toBe("expected 8, received 10");
+});
+
+test("a NewSeqNo that is not a positive integer falls back to 34 + 1", () => {
+  expect(names(run(m(1, "0"), m(5, "4", [[36, "0"]]), m(6, "0")))).not.toContain("SequenceGap");
+});
+
+test("a missing 49 and an empty 49 are the same direction", () => {
+  const a = fixmsg("FIX.4.4", [[35, "0"], [56, "SELL"], [34, "1"]]);
+  const b = fixmsg("FIX.4.4", [[35, "0"], [49, ""], [56, "SELL"], [34, "5"]]);
+  expect(run(a, b).find((e) => e.name === "SequenceGap").detail).toBe("expected 2, received 5");
+});
+
+test("event kinds are session or order only", () => {
+  const evs = run(m(1, "0"), m(3, "D", [[11, "C1"]]));
+  expect(evs.map((e) => e.kind)).toEqual(["session", "session", "order"]);
+});
+
+test("a GapFill above the expected number is preceded by a SequenceGap", () => {
+  const evs = run(m(1, "0"), m(5, "4", [[123, "Y"], [36, "10"]]), m(10, "0"));
+  expect(names(evs)).toEqual(["Heartbeat", "SequenceGap", "GapFill", "Heartbeat"]);
+  expect(evs[1].detail).toBe("expected 2, received 5");
+});
