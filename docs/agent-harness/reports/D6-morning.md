@@ -31,3 +31,11 @@ Done while FXL-2 was running (its implementer was still working, so nothing that
    - the AC0 criteria are in the ticket cards (FXL-4's card carries them).
    The order is now **FXL-2, FXL-1b, FXL-3b, FXL-4, FXL-5, FXL-6, FXL-7**. No manual `kanban link` or `unlink` was needed.
 4. The evidence driver was restarted with that order.
+
+## Third reload: FXL-2b (approved in `FXL-2-landed-review.md`)
+FXL-1b had already started (triage done, planner done, implementer running), so it was not touched. Done at about 09:40:
+1. **Archived the unstarted cards** of FXL-3b and FXL-4 to FXL-7: 35 cards, each `hermes kanban archive <id>` (checked first: all were `todo`, or the `done` ticket-text cards; none running or blocked).
+2. **Copied `FXL-2b.md` byte for byte** into `work/fix-lens-tickets/` (`cmp` identical; the other five were already identical).
+3. **Reloaded six tickets in one loader call, on the host:** `PYTHONPATH=src python3 tools/load_tickets.py --repo /srv/lab/agent-harness/work/fix-lens <work/fix-lens-tickets/>FXL-2b.md FXL-3b.md FXL-4.md FXL-5.md FXL-6.md FXL-7.md`. (Two earlier tries inside the container failed before creating anything: a relative `--repo` path, then the container user's trusted-repo path having no `main`. The loader belongs on the host, which holds the trusted repos.) FXL-2b's triage waits on FXL-2's scribe and FXL-1b's; FXL-3b, FXL-4, FXL-5, FXL-6 and FXL-7 follow in a chain, with no manual `link` or `unlink`.
+4. **Evidence driver restarted** for `FXL-1b,FXL-2b,FXL-3b,FXL-4,FXL-5,FXL-6,FXL-7` (usage window from FXL-2's scribe completion).
+Order now: FXL-1b (running), FXL-2b, FXL-3b, FXL-4, FXL-5, FXL-6, FXL-7.
