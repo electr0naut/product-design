@@ -33,3 +33,7 @@ Fix feedback trigger: gates
 **Change 1 (09:25):** `/opt/data/profiles/reviewer/config.yaml` `model:` block. Old: `default: qwen3.7-plus`, `provider: alibaba-token-plan`, `base_url: https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1`. New: `default: deepseek-flash`, `provider: deepseek`, `base_url: https://api.deepseek.com` (the profile's own fallback entry). Backup: `config.yaml.bak-20261126-fxl2`. A pong call confirmed `model=deepseek-flash`; no restart needed.
 **Then:** removed `t_4d479ff8` from `reviewer-attempts.json` and ran `hermes kanban unblock t_4d479ff8` once. Refuter and prover stay on Claude.
 **Revert:** pending, to `qwen3.7-plus` right after this review finishes (any result).
+
+## Result of the DeepSeek review and the revert
+
+Run 265 (finder on **deepseek-flash**, refuter/prover on Claude) completed at 09:29 in 222 s: 0 proven, 0 blocking-unproven, 2 notes, $0.6898. **Revert done at 09:29:48:** `config.yaml` restored from `config.yaml.bak-20261126-fxl2`; `model.default` is `qwen3.7-plus` (alibaba-token-plan) again, confirmed by reading the file. The finder for this card ran on deepseek-flash; every other review keeps qwen3.7-plus.
