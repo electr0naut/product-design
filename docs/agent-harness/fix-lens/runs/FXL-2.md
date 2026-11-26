@@ -38,3 +38,13 @@ Fix feedback trigger: gates
 1. **Retry the review once:** remove the card's entry from `work/reviewer-attempts.json` and unblock the card (one attempt more for the same head, no fix pass spent). I will not edit the attempt record by hand without an instruction.
 2. **Reload FXL-2 from scratch** on the current base: archive its cards and reload, which also spends no fix budget (a new attempt on a changed base only if the base moved; FXL-2's base is `8057bbf`, so the same-base rule would give no new passes).
 3. **A harness change (D10), which I recommend either way:** a transient failure of the finder call (empty or "not processed" reply, no API call made) should be retried once automatically, with a short pause, before the card blocks; only a second failure blocks. The finder is free (Qwen), the card is not a ticket failure, and today a single provider hiccup holds the whole queue for a human. A bounded retry keeps "never silently approve" intact (the finder still has to return a valid answer).
+
+## Block cause and the one retry (per FXL-2-review.md)
+
+**Cause (read-only):** the provider was not down. The reviewer session (03:39:09, qwen3.7-plus, alibaba-token-plan) made **1 API call**, not 0 as written above, and the stream was cut at 03:47:54 by Hermes: "Stream cut: the reasoning turned into a runaway repetition loop". It returned a 309-char notice after 524.5 s. No quota or rate-limit error is in the profile's logs.
+**Provider check:** one tiny `reviewer` call at 09:02 answered `pong` in 13 s (qwen3.7-plus, 1 API call).
+**Action at 09:05 (as the review instructs):** removed only `t_4d479ff8` from `work/reviewer-attempts.json` (other entry kept; backup in the scratchpad), then `hermes kanban unblock t_4d479ff8`, once. The fix ledger was not touched.
+
+## Model per stage (FXL-2)
+
+Planner: **qwen3.7-plus** (fallback; Hermes logged "Fallback activated: gpt-6-sol → qwen3.7-plus" at 02:30 and 03:13). Triage, implementer, finder: qwen3.7-plus. A planner check call at 09:03 answered on **gpt-6-sol** (openai-codex), no fallback, state.db session model gpt-6-sol. From now on each FXL-<n>.md lists the model per stage.
