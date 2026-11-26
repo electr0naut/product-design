@@ -34,3 +34,10 @@ Fix pass: none
 1. **Card text (a kit change, needs a review and a deploy, so not tonight's running system):** replace the "file-writing tool only" line with the real rule: "`write_file` is limited to `/opt/data`; to create a file in the work folder, write a short Python script under `/opt/data/profiles/<your profile>/cache/scratch/` with `write_file` and run it with the terminal tool; never use `execute_code`".
 2. **A wider write root for workers:** add `/srv/lab/agent-harness/work` to `HERMES_WRITE_SAFE_ROOT`. That is a Hermes/container environment change (a stop for the user), and it widens what a worker's file tool can write; the workers already write there through the terminal tool, so it is mostly honest bookkeeping, but it is the user's call.
 3. **For FXL-3 itself:** it needs a human decision. Unblocking the planner card lets it retry (a worker may or may not find the workaround again); archiving and reloading FXL-3 alone does the same from scratch. I will do neither without a review file or the user.
+
+## Unblocked once, as approved in `FXL-3-decision-review.md`
+The only board command run for this (at about 02:08 on 2026-11-26), nothing else touched:
+```
+kanban unblock t_702a1690        # FXL-3 · planner
+```
+Approved because the card never completed its stage. If it blocks again for the same reason it stays blocked until the morning; no other card is unblocked. The planner returned to `ready` and was dispatched; the result is below (or in the next evidence commit). The evidence driver for FXL-3 was started again for this run.
