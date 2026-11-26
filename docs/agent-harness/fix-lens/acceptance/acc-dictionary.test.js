@@ -26,3 +26,10 @@ test("unknown tag, unknown value and unsupported version give null", () => {
   expect(enumName("FIX.4.4", 54, "Z")).toBeNull();
   expect(lookup("FIX.5.0", 35)).toBeNull();
 });
+
+test("lookups ignore Object.prototype built-ins", () => {
+  for (const v of ["constructor", "toString", "__proto__", "hasOwnProperty"]) {
+    expect(enumName("FIX.4.4", 54, v)).toBeNull();
+  }
+  expect(lookup("FIX.4.4", "constructor")).toBeNull();
+});

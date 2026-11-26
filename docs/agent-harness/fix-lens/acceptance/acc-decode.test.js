@@ -37,3 +37,9 @@ test("unsupported version", () => {
   expect(d.supported).toBe(false);
   expect(d.label).toBe("Message 1: unsupported version FIX.4.1");
 });
+
+test("enum values that name JavaScript built-ins are unknown values", () => {
+  const t = "8=FIX.4.4|9=35|35=0|34=1|49=A|56=B|54=constructor|10=240|";
+  const f = dec(t).fields.find((x) => x.tag === 54);
+  expect([f.value, f.enumName]).toEqual(["constructor", "unknown value"]);
+});
