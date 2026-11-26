@@ -148,3 +148,7 @@ No planner or implementer card was ready or running (FXL-8 blocked at its review
 - **Undo:** copy each backup over its `config.yaml`.
 - Bake-off round 2 keeps its own profiles; its Codex reference stays `gpt-6-sol`.
 - **Left behind for you:** two harmless probe scripts, `/tmp/dsprobe.py` on the host and in the container (no secrets). A built-in safety check refused a command that included removing them, and I did not retry the removal.
+
+## FXL-8 review retried after the D18 deploy (D18-code-review.md)
+Runner journal at 23:31:34 on kit `0f8acf41f0e5…` (container copy also `0f8acf4`). Card `t_fec12d61` was in `reviewer-attempts.json`: removed that one entry, then `docker exec hermes hermes kanban unblock t_fec12d61` (once). If it blocks again I only report it.
+Noted for the next kit change: give the deep-nesting parameter in `tests/test_d18.py` a short id (`pytest.param(..., id="deep-nesting")`); on pytest 9.1.1 the 200,000-character id breaks `git` with "Argument list too long".
