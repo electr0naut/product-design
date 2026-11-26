@@ -38,13 +38,13 @@ tag names, `textContent` and a fixed class name, and no attribute is ever set fr
    readable only by the implementer profile today; copy it for the planner too, the same way, before the planner
    card starts.
 3. When FXL-8 lands, post the comment as usual. I run the browser check from the reviewing session
-   (`fix-lens/browser-check/check.js` with `sample.log`); Playwright is not in the container.
+   (`fix-lens/browser-check/check.mjs` with `sample.log`); Playwright is not in the container.
 
 ## Harness backlog (D17)
 
 A web deliverable needs a **real-browser smoke gate**: serve the worktree, load the page under its real CSP, fail
 on any console error, foreign request or empty result. It needs Chromium in the container (an install the user
-approves). Until then the reviewer runs `browser-check/check.js` on every page ticket.
+approves). Until then the reviewer runs `browser-check/check.mjs` on every page ticket.
 
 Also for D16: a review finding rated high must not become a note only because its confidence is under the
 threshold; send it to the refuter and prover like the others, or block as unproven.
