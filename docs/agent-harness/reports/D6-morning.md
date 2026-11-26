@@ -19,3 +19,15 @@ If you would rather have FXL-2 and the rest on their old cards, the reload can b
 
 ## Running now
 FXL-1 is the live first ticket (its triage is already done), with: the D7 budget (one gate-triggered and one review-triggered pass per attempt, its `base` = the current trusted main `4e3aaac`, and the migrated old entry no longer counting against it), D8 card text, D9's whole-diff review (the FIX Lens overlay excludes `src/dictionary/*.json`, its licence and `vendor/**`), mutation and the risk tiers on. The evidence driver runs over the whole chain and stops at the first block. The old FXL-1 branch in `work/fix-lens` (`harness/FXL-1`, with the two unfixed bugs and a stale base) is reset by the new implementer's `checkout -B harness/FXL-1 <sha>`; I do not touch it.
+
+## Second reload: the AC0 interface criteria and FXL-1b (approved in `FXL-1-landed-review.md`)
+Done while FXL-2 was running (its implementer was still working, so nothing that had started was touched; FXL-2 and FXL-1's cards are as they were).
+1. **Archived the unstarted cards** of FXL-3b and FXL-4 to FXL-7: 35 cards, each `kanban archive <id>`, all `todo` or `done` ticket-text cards (checked: none was running or blocked).
+2. **Copied the changed and new ticket files byte for byte** from `docs/agent-harness/fix-lens/tickets/` into `work/fix-lens-tickets/` (`cmp` identical for `FXL-1b`, `FXL-3b`, `FXL-4`, `FXL-5`, `FXL-6`, `FXL-7`).
+3. **Reloaded six tickets in one loader call:** `load_tickets.py --repo work/fix-lens FXL-1b FXL-3b FXL-4 FXL-5 FXL-6 FXL-7`. Checked on the board:
+   - `FXL-1b` triage waits on **FXL-2's scribe** and FXL-1's;
+   - `FXL-3b` triage waits on **FXL-1b's scribe** and FXL-3's;
+   - `FXL-4` waits on FXL-3b's, FXL-1's and FXL-3's scribes; `FXL-5` on FXL-4's; `FXL-6` on FXL-5's; `FXL-7` on FXL-2's, 4's, 5's and 6's. So FXL-4, FXL-5 and FXL-6 all wait on FXL-1b's scribe transitively, through the one-ticket-at-a-time chain, without a manual link;
+   - the AC0 criteria are in the ticket cards (FXL-4's card carries them).
+   The order is now **FXL-2, FXL-1b, FXL-3b, FXL-4, FXL-5, FXL-6, FXL-7**. No manual `kanban link` or `unlink` was needed.
+4. The evidence driver was restarted with that order.
