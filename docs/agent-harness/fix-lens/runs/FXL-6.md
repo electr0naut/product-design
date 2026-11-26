@@ -55,3 +55,8 @@ Newly passing: 4. No regressions.
 Failing hidden tests, by name:
 
 - `test/acc-analyse.test.js > <collection>` (error)
+
+## Implementer, finder and Codex use
+- **Implementer: `gpt-6-sol` (openai-codex). No fallback.** Codex use: implementer 1 session, 18 calls, 34,188 in / 3,461 out; planner 1 session, 13 calls, 38,349 in / 3,188 out. No rate-limit or fallback line seen.
+- **Finder: `deepseek-flash`**, one session.
+- **Against the Qwen tickets:** gates passed first time, no fix pass, no findings; hidden suite 45/49 (`acc-limits` 3/3, `acc-timeline` 14/14), only `acc-analyse` left (not built until FXL-7), no regressions.
