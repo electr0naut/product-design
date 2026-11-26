@@ -1,68 +1,54 @@
-# FXL-2B: BLOCKED for a human
+# FXL-2B: evidence
 
-## FXL-2B · gatekeeper (fix 1) (t_936736a8) is blocked
+Patch: `FXL-2B.patch` (`git format-patch 7f47748..main` of the trusted repo; commits below).
 ```
-Comments (1):
-  [2026-11-26 20:13] default: BLOCKED: FXL-2B: the fix pass edited or deleted tests that exist on base (test/helpers.test.js); a person must decide
-
-Events (6):
-  [2026-11-26 20:09] created {'assignee': 'gatekeeper', 'status': 'todo', 'parents': ['t_834114ea'], 'creator_task_id': None, 'tenant': None, 'workspace_kind': 'dir', 'workspace_path': '/srv/lab/agent-harness/work/fix-lens', 'branch_name': None, 'project_id': None, 'skills': None, 'goal_mode': None, 'model_override': None, 'provider_override': None}
-  [2026-11-26 20:09] dependency_wait {'reason': 'parent_not_done', 'parent': 't_834114ea'}
-  [2026-11-26 20:12] promoted
-  [2026-11-26 20:12] [run 329] claimed {'lock': 'ailab:391847', 'expires': 1795722179, 'run_id': 329}
-  [2026-11-26 20:13] commented {'author': 'default', 'len': 117}
-  [2026-11-26 20:13] [run 329] blocked {'reason': 'FXL-2B: the fix pass edited or deleted tests that exist on base (test/helpers.test.js); a person must decide', 'kind': 'needs_input', 'recurrences': 1, 'source_status': 'ready'}
-
-Runs (1):
-  #329 blocked      @gatekeeper  9s  2026-11-26 20:12
-        → FXL-2B: the fix pass edited or deleted tests that exist on base (test/helpers.test.js); a person must decide
+356ab44 Strengthen checksum regressions against base and delimiter mutant
+b36354c Compute FIX CheckSum over SOH-normalized bytes
 ```
 
-Run files: base.txt, fix-1.json, gates-1.json, gates.json, implement.json, plan.json, readiness.json, repo.txt
+## Models and cost (sessions started while this ticket ran)
+| profile | model | provider | sessions | api calls | input tok | output tok | cost USD |
+|---|---|---|---|---|---|---|---|
+| implementer | gpt-6-sol | openai-codex | 2 | 38 | 91673 | 8939 | 0.0000 |
+| planner | gpt-6-sol | openai-codex | 1 | 11 | 27460 | 3540 | 0.0000 |
+| reviewer | deepseek-flash | deepseek | 1 | 11 | 74704 | 28540 | 0.0296 |
+| scribe | deepseek-flash | deepseek | 1 | 32 | 40852 | 14193 | 0.0195 |
+| triage | qwen3.7-plus | alibaba-token-plan | 1 | 11 | 34490 | 4166 | 0.0000 |
 
-## Run summary
-Fix pass: pass 1 triggered by gates
-- First attempt's gates: {"passed": false, "missing_acs": ["AC0", "AC1", "AC4"]}; lint True; pass_to_pass True
-- Latest gates: {"passed": true}; lint True; pass_to_pass True
+Claude (refuter and prover) on the review(s): **$0.5855**.
 
-Fix feedback trigger: gates
+## Tier, gates, mutation
+- Tier: **high** (the diff edits or deletes the existing test test/framing.test.js); refuter skipped: False
+- Gates: passed **True**; valid tests 4; lint True; pass_to_pass True
+- Mutation (stryker): killed 6, survived 0, timeout 0, no tests 0, unrun 0, 1.9 s; incomplete: False; warning: None; error: None
+- Survivors (up to 12):
+none
 
-## Evidence requested by FXL-2B-review.md (read-only; nothing changed, nothing unblocked)
+## Reviews that led to a fix pass (none)
 
-Implementer: **`gpt-6-sol` (openai-codex), first pass and gate fix pass, no fallback.** Codex use so far: implementer 2 sessions, 38 calls, 91,673 in / 8,939 out; planner 1 session, 11 calls, 27,460 in / 3,540 out. No rate-limit or fallback line in either log during this ticket. No review has run yet (no finder).
+## Findings and proofs (final review)
+Findings:
+- F1 [medium, conf 85] test/helpers/fix.js:49 The helper converts the delimiter to SOH only when it is `|`. It accepts any `opts.delim`, and for any other non-SOH delimiter it still computes CheckSum over t
 
-First head `b36354c6995743212027c29a6f593aa3370873bb` (gates failed: AC0, AC1, AC4 without a valid test), fix head `356ab44656876d55e36d763c8d4f56e89faf361c` (child of the first head; gates passed). Base `7f47748`.
+Proofs:
+none
 
-### 1. `test/helpers.test.js`, first head to fix head (in full)
-```diff
-@@ -1,6 +1,6 @@
- import { describe, it, expect } from "vitest";
- import { buildMessage } from "./helpers/fix.js";
--import { splitMessages } from "../src/framing.js";
-+import { checkMessage, splitMessages } from "../src/framing.js";
- 
- describe("buildMessage helper", () => {
-   it("test_buildMessage_both_delimiters_match_fixed_checksum_vectors", () => {
-@@ -8,9 +8,11 @@ describe("buildMessage helper", () => {
-     expect(buildMessage(fields, { delim: "\x01" })).toBe(
-       "8=FIX.4.4\x019=20\x0135=0\x0134=1\x0149=A\x0156=B\x0110=125\x01"
-     );
--    expect(buildMessage(fields, { delim: "|" })).toBe(
-+    const pipe = buildMessage(fields, { delim: "|" });
-+    expect(pipe).toBe(
-       "8=FIX.4.4|9=20|35=0|34=1|49=A|56=B|10=125|"
-     );
-+    expect(checkMessage(splitMessages(pipe)[0], pipe)).toBeNull();
-   });
- 
-   it("builds a message with pipe delimiter by default", () => {
-```
-Facts for the decision: no expected value changes in this diff; it adds one assertion (`checkMessage` of the pipe vector is `null`). The test it edits did **not** exist on the base: the ticket's first pass added it. The file did exist, and the rule is per file.
+Decision: {'blocking': [], 'blocking_unproven': [], 'notes': ['F1']}
 
-**Your expected edit is in the first pass, not the fix pass.** For context, base `7f47748` to first head `b36354c` on the same file: it adds that fixed-vector test, and in an existing test changes `new TextEncoder().encode(msgBefore)` to `new TextEncoder().encode(msgBefore.replaceAll("|", "\x01"))`, so the old assertion of a pipe-byte CheckSum now expects the SOH-byte one.
+## Fix pass
+pass 1 (gates)
 
-### 2. Fix head `vitest run` in the container
-`git archive` of `356ab44` into a scratch folder (removed afterwards), run as `hermes`: **7 files passed, 65 of 65 tests passed.**
+## Hidden acceptance suite
+Hidden acceptance suite on trusted main `356ab44656`: **19/42** pass.
 
-### 3. Hidden suite on the fix head (scratch trusted root)
-A bare clone with `main` = `356ab44`, its own history file; the live trusted repo and history are untouched. `acc-check` **9/9**, `acc-framing` 9/9, `acc-dictionary` 1/4, the other four files don't import (features not built); 19/42. On the trusted `main` after FXL-1B it was 15/42 with `acc-check` 5/9. Run while no bake-off implementer was running.
+| file | passed | total | note |
+|---|---|---|---|
+| acc-analyse.test.js | 0 | 4 | module did not import (feature not built yet?) |
+| acc-check.test.js | 9 | 9 |  |
+| acc-decode.test.js | 0 | 4 | module did not import (feature not built yet?) |
+| acc-dictionary.test.js | 1 | 4 |  |
+| acc-framing.test.js | 9 | 9 |  |
+| acc-limits.test.js | 0 | 3 | module did not import (feature not built yet?) |
+| acc-timeline.test.js | 0 | 9 | module did not import (feature not built yet?) |
+
+Newly passing: 4. No regressions.
