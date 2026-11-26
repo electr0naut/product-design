@@ -53,3 +53,8 @@ Hidden acceptance suite on trusted main `e4aef93e56`: **26/42** pass.
 | acc-timeline.test.js | 0 | 9 | module did not import (feature not built yet?) |
 
 Newly passing: 4. No regressions.
+
+## Implementer, finder and Codex use
+- **Implementer: `gpt-6-sol` (openai-codex). No fallback.** Codex use: implementer 1 session, 24 calls, 36,949 in / 5,419 out; planner 1 session, 10 calls, 27,953 in / 3,663 out. No rate-limit or fallback line in the implementer, planner or reviewer logs.
+- **Finder: `deepseek-flash`**, one session.
+- **Against the Qwen tickets:** gates **passed** on the first attempt; **no fix pass**; no blocking finding (note F1, medium, unproven: an enum value such as `constructor` or `__proto__` may not be reported as unknown); hidden suite after landing 26/42, `acc-decode` 4/4, the rest of the failures in features not built yet, no regressions.

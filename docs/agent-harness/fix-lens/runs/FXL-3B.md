@@ -72,3 +72,15 @@ Newly passing: 3. No regressions.
 - **Against the Qwen tickets:** first-attempt gates failed (AC4), one gate fix pass, no review pass; no blocking finding (notes F1, F3, F4); hidden suite after landing 22/42, `acc-dictionary` 4/4, no regressions.
 - **Operator note:** the mutation line (killed 0, survived 83, in 1.5 s) says nothing about test quality either way; the mutated file is the build script, and I have not checked why no mutant is killed. **F1 (high, a note, unproven)** is about the dictionary build's field regex also scanning inside `<codeSet>` blocks; worth a look although the hidden dictionary tests pass.
 - A person-approved fix-pass edit to `test/dictionary.test.js`: see FXL-3B-block.md.
+
+## Independent check of F1 (FXL-3B-landed-review.md)
+A Python standard-library extractor using `xml.etree` (only the `field` children of `repository/fields`, only the `codeSet` children of `repository/codeSets`), run on the vendored XML and compared with the committed JSON, all read with `git show` from the trusted `main` (`e4aef93`, which is after FXL-4; scratch folder outside the repo, read-only).
+
+| version | fields, independent / committed | fields with enums | enum entries | only on one side | tags with a different name, type or enums |
+|---|---|---|---|---|---|
+| FIX 4.2 | 405 / 405 | 111 / 111 | 654 / 654 | none | **0** |
+| FIX 4.4 | 912 / 912 | 274 / 274 | 2371 / 2371 | none | **0** |
+
+**Identical: F1 is a false alarm on these files.** The regex is still not a parser (a differently shaped XML file could break it), but the committed dictionary is right. No duplicate field ids or code-set names.
+**Timing:** the review arrived after FXL-4 had already run and landed, so no hold was placed.
+**Mutation:** I did not test your `execSync` explanation.
