@@ -65,3 +65,10 @@ Hidden acceptance suite on trusted main `0acbcbff61`: **22/42** pass.
 | acc-timeline.test.js | 0 | 9 | module did not import (feature not built yet?) |
 
 Newly passing: 3. No regressions.
+
+## Implementer, finder and Codex use
+- **Implementer: `gpt-6-sol` (openai-codex), first pass and fix pass. No fallback.** Codex use: implementer 2 sessions, 49 calls, 102,144 in / 12,561 out; planner 1 session, 10 calls, 37,005 in / 3,720 out. No rate-limit message seen.
+- **Finder: `deepseek-flash`**, one session.
+- **Against the Qwen tickets:** first-attempt gates failed (AC4), one gate fix pass, no review pass; no blocking finding (notes F1, F3, F4); hidden suite after landing 22/42, `acc-dictionary` 4/4, no regressions.
+- **Operator note:** the mutation line (killed 0, survived 83, in 1.5 s) says nothing about test quality either way; the mutated file is the build script, and I have not checked why no mutant is killed. **F1 (high, a note, unproven)** is about the dictionary build's field regex also scanning inside `<codeSet>` blocks; worth a look although the hidden dictionary tests pass.
+- A person-approved fix-pass edit to `test/dictionary.test.js`: see FXL-3B-block.md.
