@@ -81,3 +81,9 @@ No reviewer card was running (FXL-1B's was blocked).
 ## FXL-1B: approved test edit applied (FXL-1B-review6.md, after the D13 deploy)
 Host kit and container copy both `8f9f21f`. 1. `approve_test_edit.py FXL-1B --head 7f47748347ef82ec10c4e5eaba5274a534744abd --files test/framing-f1.test.js test/framing.test.js --reason "FXL-1B-review6: ..."` (entry written 19:56:27, base `f36221c`). 2. Gatekeeper card `t_11abf68b` was not listed in the attempts file, so nothing to clear. 3. Unblocked it once; evidence driver restarted (`~/driver-fxl1B6.log`). The gatekeeper passed on the retry; the fix-3 reviewer is running.
 Correction to the review-5 evidence: `gates-3.json` is the report from before fix pass 3, not a mislabelled file.
+
+## D15 approved, driver keeps polling, FXL-4B loaded (D15-code-review.md, FXL-4-landed-review.md)
+- agent-harness `master` fast-forwarded to `3a0ec24`. Not deployed.
+- **Driver** (`d6-driver`): a block no longer ends it; it writes and publishes the evidence once per block (identified by card and its count of block events, so a re-block is new) and keeps polling. Block reports are also kept as `FXL-<n>-block-<card>-<n>.md`. After a hidden-suite regression it places `hold before <next KEY>` (releasable by a D15 `release`) and keeps watching. Checked with a fake board only. Restarted once (`~/driver-fxl5.log`).
+- **Hidden suite:** the new `acc-decode.test.js` and `acc-dictionary.test.js` copied to the host-only folder.
+- **FXL-4B:** archived the unstarted cards of FXL-6 and FXL-7 (their ticket text unchanged). Loaded FXL-4B, FXL-6, FXL-7 in one call **with `--hold`** (`work/fixlens7-load.log`), because FXL-4B's only listed blocker (FXL-4) was done and it would otherwise have started beside FXL-5. Then `kanban link t_4168d18c (FXL-5 scribe) t_3ecccf8e (FXL-4B triage)` and completed the hold `t_dad337cf`. FXL-6 triage waits on FXL-4B's scribe `t_dade1a32`. FXL-5 was not touched.
