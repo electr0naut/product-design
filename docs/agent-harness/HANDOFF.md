@@ -47,7 +47,9 @@ Read `RULES.md` first. This file holds only what the repositories don't. No secr
 - **No throwaway Hermes profiles remain.** Round 2 session databases were copied to `~/.local/state/agent-harness-bake/audit/sessions/` before deletion (round 1's were not kept). Do the same before deleting any profile whose records may matter. The name prefix `bake-` keeps a profile out of the driver's model tables. `audit/` also holds the audit scripts and raw results; `work/bake/` is deleted.
 - Host `/tmp`: `dsprobe.py`, `bake_setup.sh`, `bake_cfg.sh`, `fxl5orig.md`, `fxl8add.md`. Container `/tmp/dsprobe.py`. Both `dsprobe.py` files are my probe for the provider's model name (no secrets); a safety check refused a command that removed them, and I did not retry. Other files in those `/tmp` folders I have not identified as mine.
 
-**Models now** (default; fallbacks): triage `qwen3.7-plus`; `deepseek-flash` · planner `gpt-6.2-sol`; `qwen3.7-plus`, `deepseek-flash` · implementer `gpt-6.2-sol`; `qwen4-max`, `deepseek-flash` (its `delegation` still names `qwen3.7-plus`) · gatekeeper, reviewer, scribe `deepseek-flash`; `qwen3.7-plus`. Profile backups sit beside each `config.yaml` as `config.yaml.bak-*`; undos are in `D6-morning.md`.
+**Models now** (default; fallbacks): triage `qwen3.7-plus`; `deepseek-flash` · planner `gpt-6.2-sol`; `qwen3.7-plus`, `deepseek-flash` · implementer `gpt-6.2-sol`; `deepseek-v4.1-flash-1017`, `qwen4-max`, `deepseek-flash` (its `delegation` still names `qwen3.7-plus`) · gatekeeper, reviewer, scribe `deepseek-flash`; `qwen3.7-plus`. Profile backups sit beside each `config.yaml` as `config.yaml.bak-*`; undos are in `D6-morning.md`.
+
+**Last model change (FALLBACK2-review, 2026-11-27 00:4x; Ubay: "agreed on all points", 2026-11-26), `implementer` fallbacks only.** Old: `qwen4-max`, `deepseek-flash`. New: `deepseek-v4.1-flash-1017` (alibaba-token-plan), `qwen4-max`, `deepseek-flash`. Default unchanged. Backup `/opt/data/profiles/implementer/config.yaml.bak-20261127-fallback2`; **undo:** copy it over `config.yaml`. The diff against it is three added lines in the fallback list. One call afterwards answered on `gpt-6.2-sol` (`openai-codex`), with no `Fallback activated` line. A live failover is untested.
 
 ## 3. Work in flight
 
@@ -61,7 +63,7 @@ Read `RULES.md` first. This file holds only what the repositories don't. No secr
 | **D6 "Done means"** (D6-review.md) | all tickets are on the trusted main. **Still owed: `D6-fixlens.md`** (per-ticket table and totals) and the container run of the full Vitest suite on the final main (FXL-8's fix head ran 123/123). The browser check was done by the reviewer. |
 | Backlog without its own file | D16 (spec paths in cards and copied at deploy; spec_ref notes into fix feedback; a high finding under the confidence threshold is not just a note), D17 (browser smoke gate; needs Chromium, a user-approved install), finder retry on the next model, transient block retries once, triage check for computation ACs without fixed values, `vendor/*` in high-risk globs, runner sends its own "failed 5 times" alert. |
 | Done, no action | all other `*-review.md` files up to FXL-8-landed-review, including MODELS-review/2, FALLBACK-review, D18-code-review. |
-| Waiting on others | PRD v1.2 draft is for Gate 3; **load no new tickets** (FXL-8-landed-review). |
+| Waiting on others | PRD v1.2 and technical design v1.2 are now approved in the repo. The host and worker copies of the design are still **v1.1**: do not copy by hand (RULES §3); D19's `refresh_copies` does it. **load no new tickets** (FXL-8-landed-review). |
 
 ## 4. Recurring jobs, as commands
 
