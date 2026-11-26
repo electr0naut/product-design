@@ -1,8 +1,8 @@
 +++
-key = "FXL-2b"
+key = "FXL-2B"
 title = "Compute CheckSum on SOH, not on the pipe character, with fixed reference vectors"
 rank = 2
-blocked_by = ["FXL-2", "FXL-1b"]
+blocked_by = ["FXL-2", "FXL-1B"]
 labels = []
 +++
 TR-002 says a `|` delimiter is treated as SOH (0x01) **before** any length or checksum calculation. Today both

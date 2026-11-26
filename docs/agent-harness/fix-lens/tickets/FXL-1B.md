@@ -1,5 +1,5 @@
 +++
-key = "FXL-1b"
+key = "FXL-1B"
 title = "Make splitMessages match FXL-1's interface and the design's boundary rules"
 rank = 2
 blocked_by = ["FXL-1", "FXL-2"]

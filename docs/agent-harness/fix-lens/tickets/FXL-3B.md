@@ -1,5 +1,5 @@
 +++
-key = "FXL-3b"
+key = "FXL-3B"
 title = "Bring the dictionary API, build script and tests in line with FXL-3's spec"
 rank = 3
 blocked_by = ["FXL-3"]
