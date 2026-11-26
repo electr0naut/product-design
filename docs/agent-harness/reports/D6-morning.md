@@ -106,3 +106,11 @@ Backlog (D16): on a review-triggered fix pass, include in the fix feedback every
 - Nothing unblocked: `t_a2096e57` waits for the reviewer's decision file. The driver is still watching.
 
 Backlog D16: (1) the loader writes the worker-readable path of each spec document into every stage card, and the planner and implementer cards say to read the named sections before planning or coding, with a test; (2) the deploy copies the spec documents there every time; (3) a fix pass's feedback includes any note with a verbatim `spec_ref`.
+
+## FXL-7 landed; FXL-8 loaded (FXL-7-landed-review.md)
+1. Hidden `acc-render.test.js` (new) and the updated `acc-page.test.js` copied to the host-only folder (9 files, all match the repo).
+2. Design copied for the **planner's** `~` too (`/opt/data/.hermes/profiles/planner/home/.local/state/agent-harness/specs/fix-lens/`), checked with a tiny `hermes -p planner` read of section 8, before the load.
+3. FXL-8 loaded alone (`work/fixlens9-load.log`; label `security` recorded host-only); driver started for it (`~/driver-fxl8.log`). The ticket expects edits to three base test files: if a **fix pass** touches them, it will block for a person.
+
+Backlog **D16** also: a review finding rated high must not become a note only because its confidence is under the threshold; send it to the refuter and prover like the others, or block as unproven.
+Backlog **D17:** a real-browser smoke gate for web deliverables (serve the worktree, load the page under its real CSP, fail on any console error, foreign request or empty result). Needs Chromium in the container (an install the user approves). Until then the reviewer runs `fix-lens/browser-check/check.js` on every page ticket.

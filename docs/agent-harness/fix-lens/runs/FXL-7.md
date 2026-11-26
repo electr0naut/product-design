@@ -66,3 +66,9 @@ Newly passing: 8. No regressions.
 Failing hidden tests, by name:
 
 - none
+
+## Implementer, finder and Codex use
+- **Implementer: `gpt-6-sol` (openai-codex). No fallback.** The table's 4 implementer sessions are **2 for the ticket** (the first stopped because the design was unreadable; the second ran after decision D-20261126-1) **and 2 tiny operator calls** I made to find the worker's `~` and check it could read the design. Planner 1 session. No rate-limit line seen.
+- **Finder: `deepseek-flash`**, one session.
+- **Result:** gates passed, no fix pass, nothing blocking (notes F1 to F4); hidden suite 53/53 at landing, no regressions; `acc-page` collected normally.
+- **But the landed page does not work in a real browser** (FXL-7-landed-review.md): its own CSP blocks the JSON module imports. Follow-up: FXL-8.
