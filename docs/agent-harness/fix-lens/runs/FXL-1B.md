@@ -37,3 +37,25 @@ Fix pass: none
 - proof F2: proven=None (budget); test `None`
 - proof F3: proven=None (budget); test `None`
 - proof F4: proven=None (budget); test `None`
+
+## What happened in this attempt (after the D11 reset)
+- **Gates passed this time** (`gates.json` `passed: true`; the whole test list was collected, so the old truncation is gone). No fix pass ran: the ledger's `reset` entry cleared the first attempt's pass, and this attempt needed none. Tier **high**, reason: the diff edits the existing test `test/framing-f2.test.js` (the `offset` to `position` rename, which AC0 requires).
+- **Models per stage** (usage table for this attempt):
+
+| stage | model | provider | calls | tokens in / out | cost |
+|---|---|---|---|---|---|
+| planner | gpt-6-sol | openai-codex | 1 | 42058 / 3718 | $0 |
+| triage | qwen3.7-plus | alibaba-token-plan | 1 | 29955 / 3645 | $0 |
+| implementer | qwen3.7-plus | alibaba-token-plan | 1 | 81953 / 5966 | $0 |
+| reviewer (finder) | qwen3.7-plus | alibaba-token-plan | 1 | 16882 / 21844 | $0 |
+| spec pass, refuter, prover | Claude (`claude -p`) | | | | **$2.3768** in total |
+
+  No fallback row for any profile.
+- **Review (`review.json`):** diff 1 chunk, spec pass ran against the host-only design copy (nothing dropped by the quote check). 4 findings:
+  - **F1** (finder, high, `src/framing.js:51`): the delimiter-adjacent `8=FIX` check does not verify what follows `8=FIX`. Refuter: stands. **Proven** by a failing test.
+  - **F2** (spec, critical, `src/framing.js:203`): `checkMessage` now stops at any empty piece (`if (fieldText === "") break;`), so `||` is no longer reported as `field_without_equals` and the pieces after it skip rules 1 and 2. The ticket said to keep what FXL-2 added. Refuter: stands. **Not proven: the proof step was skipped for budget.**
+  - **F3** (spec, high, `src/framing.js:371`): `findMessageStart` only starts a candidate when `8=FIX` is followed by `.`, a delimiter, a line end or the text end; the design has no such condition, so BeginStrings such as `FIXT.1.1` are dropped. Refuter: stands. **Not proven (budget).**
+  - **F4** (spec, high, `src/framing.js:394`): a prefix containing `=` that matches `\b\d+=` still hides the message although the line before `8=FIX` has no delimiter and the preceding character is not a digit; AC1 allows no such exception. Refuter: stands. **Not proven (budget).**
+- **Decision:** 1 proven, 3 blocking-unproven, 0 notes, `skipped_budget: []`. A mixed result blocks (`needs_input`), by the rules: unproven findings never start a fix pass. No fix pass was requested.
+- **Mutation:** see the gates (report-only). **Hidden acceptance suite:** not run (the ticket did not complete).
+- **Question for the reviewer:** the three spec findings were refuted as standing but their proofs were skipped with the note `budget`. The review cost $2.3768 up to that point (spec pass, four refuters, one proof). Was the card budget or the per-call limit what skipped them? If it was the card budget, FIX Lens tickets of this size may need a higher `max_usd_per_card`, or the spec pass a lower share of it. Nothing was unblocked; nothing was changed.
