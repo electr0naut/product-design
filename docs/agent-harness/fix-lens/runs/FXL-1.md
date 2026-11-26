@@ -39,13 +39,21 @@ Fix feedback trigger: gates
 ## Models and cost so far (everything since the hold was released; only FXL-1 has run)
 | profile | model | provider | sessions | api calls | input tok | output tok | cost USD |
 |---|---|---|---|---|---|---|---|
-| implementer | qwen3.7-plus | alibaba-token-plan | 2 | 69 | 237476 | 39053.0000 |
-| planner | qwen3.7-plus | alibaba-token-plan | 1 | 26 | 139050 | 13500.0000 |
-| reviewer | qwen3.7-plus | alibaba-token-plan | 1 | 2 | 47350 | 34612.0000 |
-| triage | qwen3.7-plus | alibaba-token-plan | 1 | 8 | 30594 | 4278.0000 |
+| implementer | qwen3.7-plus | alibaba-token-plan | 2 | 69 | 237476 | 39053 | 0.0000 |
+| planner | qwen3.7-plus | alibaba-token-plan | 1 | 26 | 139050 | 13500 | 0.0000 |
+| reviewer | qwen3.7-plus | alibaba-token-plan | 1 | 2 | 47350 | 34612 | 0.0000 |
+| triage | qwen3.7-plus | alibaba-token-plan | 1 | 8 | 30594 | 4278 | 0.0000 |
 
 Claude (refuter and prover) on the retry's review: $1.153 (`review.json`).
 
 ## What this means
 Nothing here is a harness failure: the queue is holding exactly as designed. The first attempt failed the gates (AC8: the `test/helpers/fix.js` BodyLength/CheckSum example had no test), the one automatic fix pass added it and passed the gates, and then the retry's review found **two proven bugs in `src/framing.js`**, each with a failing test the prover wrote (`test/framing-boundary.test.js` for AC3, `test/framing-crlf.test.js` for AC5). A second failure blocks for a human, so the card `FXL-1 · reviewer (fix 1)` is `needs_input`. I have **not** unblocked it, edited the repository, or touched the trusted main (still the operator's initial commit `544c8c5`). FXL-2 to FXL-7 wait behind it.
 The patch is not written: nothing from FXL-1 reached the trusted `main`. The branch `harness/FXL-1` (with the unfixed bugs) is in `work/fix-lens` for inspection.
+
+## Board changes made after the review (FXL-3 runs ahead; FXL-1 left blocked)
+Approved in `FXL-1-review.md`; both commands run at 01:5x on 2026-11-26, and nothing else on the board or in `work/fix-lens` was touched:
+```
+kanban unlink t_008971f9 t_fbc93c92     # FXL-2 · scribe  ->  FXL-3 · triage
+kanban link   t_e8d1c378 t_fbc93c92     # HOLD card (done)  ->  FXL-3 · triage
+```
+FXL-3's triage now waits only on the (completed) hold card and its ticket card, so it started at once against the current trusted `main` (`544c8c5`). The card `FXL-1 · reviewer (fix 1)` is still `blocked` (`needs_input`). FXL-2 and FXL-4 to FXL-7 are unchanged and wait as before. (The model table above was corrected: it had lost the cost column and shifted the token columns by one.)
