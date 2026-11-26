@@ -74,3 +74,16 @@ Hidden acceptance suite on trusted main `7f47748347`: **15/42** pass.
 | acc-timeline.test.js | 0 | 9 | module did not import (feature not built yet?) |
 
 Newly passing: 15. No regressions.
+
+## Implementer, finder and Codex use (CODEX-implementer-review.md, FXL-1B-review4.md)
+- **Implementer: `gpt-6-sol` (openai-codex), first pass and fix pass. No fallback.** Codex use this attempt: implementer 2 sessions, 38 calls, 135,664 in / 12,255 out; planner 1 session, 13 calls, 42,480 in / 4,191 out. No rate-limit message in the implementer or planner logs during this attempt (the last ones are from 01:53 to 03:13 on 2026-11-26, before the switch).
+- **Finder: `deepseek-flash`** on the reviews that finished. The `qwen3.7-plus` reviewer row (0 calls) is the finder call that timed out before the switch (FXL-1B-review4).
+
+| ticket | implementer | gates on first attempt | fix passes | spec-pass findings | hidden-suite failures after landing |
+|---|---|---|---|---|---|
+| FXL-1B attempt 1 | qwen3.7-plus | blocked (gates saw a truncated list, a harness bug: D11) | gates pass used | n/a (blocked at gates) | not run |
+| FXL-1B attempt 2 | qwen3.7-plus | passed (`gates-2.json`, the report before the fix pass) | 1 (review), then blocked on 2 proven bugs | 3 in review 1 | not run (did not land) |
+| FXL-1B attempt 3 | gpt-6-sol | **passed** | 1 (review); one base-test edit approved by a person | 3 (F2, F3, F4 of review-3) | 27 of 42, of which 20 are in files whose module does not exist yet; acc-framing 9/9, acc-check 5/9 |
+| FXL-1 | qwen3.7-plus | passed on the run that landed (an earlier run failed a gate, FXL-1-review.md) | 1 (review) | no spec pass then | suite not in use then |
+| FXL-2 | qwen3.7-plus | failed (gates fix pass) | 1 (gates) | no spec pass then | suite not in use then |
+| FXL-3 | qwen3.7-plus | passed | 0 | no spec pass then | suite not in use then |
