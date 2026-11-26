@@ -20,7 +20,7 @@ const names = (evs) => evs.map((e) => e.name);
 test("event keys", () => {
   const [e] = run(m(1, "A"));
   expect(Object.keys(e).sort()).toEqual(
-    ["clOrdId", "detail", "kind", "name", "number", "orderId", "sendingTime", "sender", "seqNum", "target"]);
+    ["clOrdId", "detail", "kind", "name", "number", "orderId", "sendingTime", "sender", "seqNum", "target"].sort());
   expect([e.sender, e.target, e.number]).toEqual(["A", "B", 1]);
 });
 
