@@ -26,3 +26,10 @@ Fix pass: pass 1 triggered by gates
 - Latest gates: {"passed": true}; lint True; pass_to_pass True
 
 Fix feedback trigger: gates
+
+## Second block and the finder switch (per FXL-2-retry-review.md)
+
+**Run 263 error (read-only):** the retry (09:06) died as a subprocess timeout of the Qwen `reviewer` call: "Command ['docker','exec',... '-p','reviewer','chat',...] timed out after 900 seconds" (the finder prompt, not a harness exception). Run 264 then blocked by the one-attempt rule (`needs_input`).
+**Change 1 (09:25):** `/opt/data/profiles/reviewer/config.yaml` `model:` block. Old: `default: qwen3.7-plus`, `provider: alibaba-token-plan`, `base_url: https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1`. New: `default: deepseek-flash`, `provider: deepseek`, `base_url: https://api.deepseek.com` (the profile's own fallback entry). Backup: `config.yaml.bak-20261126-fxl2`. A pong call confirmed `model=deepseek-flash`; no restart needed.
+**Then:** removed `t_4d479ff8` from `reviewer-attempts.json` and ran `hermes kanban unblock t_4d479ff8` once. Refuter and prover stay on Claude.
+**Revert:** pending, to `qwen3.7-plus` right after this review finishes (any result).
