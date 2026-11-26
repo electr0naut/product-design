@@ -96,3 +96,13 @@ Correction to the review-5 evidence: `gates-3.json` is the report from before fi
 5. **Driver** restarted (`~/driver-fxl5b.log`, start file `work/fxl5b.start`).
 
 Backlog (D16): on a review-triggered fix pass, include in the fix feedback every note that carries a verbatim `spec_ref`, with its quote.
+
+## FXL-7 blocked: worker-readable copies of the technical design (FXL-7-review.md)
+- The repo's `fix-lens/technical-design.md` and the host-only spec copy are identical (sha256 `0bea8ed13fed0552…`).
+- Copied as `hermes` (reading copies only; no code change) to: **the implementer's `~`**, which is not the user's home: `$HOME` for that worker is `/opt/data/.hermes/profiles/implementer/home` (= `/opt/data/profiles/implementer/home`), then `.local/state/agent-harness/specs/fix-lens/`; the `hermes` user's home `/opt/data/.local/state/agent-harness/specs/fix-lens/`; and `/srv/lab/agent-harness/work/specs/fix-lens/`. All three have the same sha256.
+- **Checked** with a tiny `hermes -p implementer` call: through `~/...` it reads 227 lines and finds section 8. That one small session will appear in FXL-7's implementer row in the model table.
+- **Only the implementer's `~` has a copy.** Other profiles (planner, finder) have their own `~` and do not; they can read the `work/specs` path only if told it. D16 item 1 (the path in every stage card) fixes that.
+- A bake-off run may still be going; its prompt tells it not to read other folders under `work/`, and `BAKEOFF.md` will say if any run opened the design.
+- Nothing unblocked: `t_a2096e57` waits for the reviewer's decision file. The driver is still watching.
+
+Backlog D16: (1) the loader writes the worker-readable path of each spec document into every stage card, and the planner and implementer cards say to read the named sections before planning or coding, with a test; (2) the deploy copies the spec documents there every time; (3) a fix pass's feedback includes any note with a verbatim `spec_ref`.
