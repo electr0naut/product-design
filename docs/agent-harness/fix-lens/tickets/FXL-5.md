@@ -9,6 +9,9 @@ Add `src/timeline.js`, following technical design section 7: `timeline(messages)
 order (each with its `number` and fields) and returns the events.
 
 Acceptance criteria
+- AC0: A test imports `timeline` from `src/timeline.js`, calls `timeline(messages)` with candidates from
+  `splitMessages`, and checks each event has exactly the keys `number`, `kind`, `name`, `sendingTime`, `sender`,
+  `target`, `seqNum`, `clOrdId`, `orderId`, `detail` (technical design section 2).
 - AC1: Events are in log order, never re-sorted by SendingTime.
 - AC2: Event names come from the design's fixed table, not the dictionary: A, 5, 0, 1, 2, 3, j give Logon,
   Logout, Heartbeat, TestRequest, ResendRequest, SessionReject, BusinessReject; 35=4 gives GapFill when 123=Y and

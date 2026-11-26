@@ -9,6 +9,9 @@ Add `src/decode.js`, following technical design section 6: `decode(message, text
 `{ number, label, beginString, supported, fields }`, with `fields` as `{ tag, name, value, enumName, known }`.
 
 Acceptance criteria
+- AC0: A test imports `decode` from `src/decode.js`, calls `decode(message, text)` on a candidate from
+  `splitMessages`, and checks the result has exactly the keys `number`, `label`, `beginString`, `supported`,
+  `fields`, and each field exactly `tag`, `name`, `value`, `enumName`, `known`.
 - AC1: Fields come out in message order, including repeated tags; an empty value (`58=`) is shown as empty.
 - AC2: A known tag gets its dictionary name; an unknown tag gets the name `Unknown tag X` (X the tag number) and
   `known: false`, with its raw value.

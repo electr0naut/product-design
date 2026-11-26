@@ -9,6 +9,8 @@ FXL-3 landed with four deviations from its ticket and technical design section 5
 generated dictionary content.
 
 Acceptance criteria
+- AC0: A test imports `lookup` and `enumName` from `src/dictionary.js` and calls them with exactly these
+  argument orders: `lookup("FIX.4.4", 35)` and `enumName("FIX.4.4", 35, "A")`.
 - AC1: `src/dictionary.js` exports `lookup(beginString, tag)` and `enumName(beginString, tag, value)`, in that
   argument order, as the FXL-3 ticket specifies; the existing behaviour (null for an unknown tag, a missing enum
   value, or an unsupported BeginString) is unchanged and tested with the new order.

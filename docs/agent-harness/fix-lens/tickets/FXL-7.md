@@ -10,6 +10,8 @@ decode and timeline, as `{ ok, limit, messages, errors, decoded, timeline }`), a
 `test/static-checks.test.js`.
 
 Acceptance criteria
+- AC0: A test imports `analyse` from `src/analyse.js` and checks its result has exactly the keys `ok`, `limit`,
+  `messages`, `errors`, `decoded`, `timeline`.
 - AC1: `index.html` has, first in `<head>`, exactly one CSP meta tag with exactly `default-src 'self'; connect-src
   'none'; form-action 'none'`, a `<textarea autocomplete="off" spellcheck="false" autocapitalize="off"
   autocorrect="off" translate="no">`, a Decode button, and separate "Decode" and "Timeline" sections; it loads
