@@ -87,3 +87,12 @@ Correction to the review-5 evidence: `gates-3.json` is the report from before fi
 - **Driver** (`d6-driver`): a block no longer ends it; it writes and publishes the evidence once per block (identified by card and its count of block events, so a re-block is new) and keeps polling. Block reports are also kept as `FXL-<n>-block-<card>-<n>.md`. After a hidden-suite regression it places `hold before <next KEY>` (releasable by a D15 `release`) and keeps watching. Checked with a fake board only. Restarted once (`~/driver-fxl5.log`).
 - **Hidden suite:** the new `acc-decode.test.js` and `acc-dictionary.test.js` copied to the host-only folder.
 - **FXL-4B:** archived the unstarted cards of FXL-6 and FXL-7 (their ticket text unchanged). Loaded FXL-4B, FXL-6, FXL-7 in one call **with `--hold`** (`work/fixlens7-load.log`), because FXL-4B's only listed blocker (FXL-4) was done and it would otherwise have started beside FXL-5. Then `kanban link t_4168d18c (FXL-5 scribe) t_3ecccf8e (FXL-4B triage)` and completed the hold `t_dad337cf`. FXL-6 triage waits on FXL-4B's scribe `t_dade1a32`. FXL-5 was not touched.
+
+## D15 deployed; FXL-5 reset and reload (FXL-5-review.md)
+1. **D15 deploy checked:** host kit and container at `3a0ec24`; the 21:41:59 pass logged that sha, `idle; idle`, no `decisions skipped` line, runner status ok; `decisions.git` holds the review branch at `25a216c`. No decision file exists yet, so applying one is untested live.
+2. Updated hidden `acc-timeline.test.js` copied to the host-only folder; updated `FXL-5.md` copied to `work/fix-lens-tickets/` (the host-only ticket text now has AC11 to AC15).
+3. **Reset** FXL-5 with the review's reason (base `e4aef93`, 21:42:11). **Archived** 32 cards: FXL-5, FXL-4B, FXL-6, FXL-7 and `HOLD: D15 deploy`. Run folder moved to `work/old/runs-FXL-5.attempt1`; report kept as `FXL-5-attempt1.md`.
+4. **Reload in one call** (`work/fixlens8-load.log`). FXL-5 and FXL-4B are both rank 5, so the loader orders FXL-4B first (by key). I did not edit the tickets: loaded with `--hold`, re-linked (each new wait added before the old one was removed) to FXL-5 → FXL-4B → FXL-6 → FXL-7, rewrote the host-only `queue.json` in that order with `queue.write_queue`, then completed the hold `t_4e886658`.
+5. **Driver** restarted (`~/driver-fxl5b.log`, start file `work/fxl5b.start`).
+
+Backlog (D16): on a review-triggered fix pass, include in the fix feedback every note that carries a verbatim `spec_ref`, with its quote.
