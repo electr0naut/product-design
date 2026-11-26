@@ -19,3 +19,6 @@ Acceptance criteria
   the `field` and `codeSet`/`code` elements' attributes. Its output is byte-identical to the committed
   `FIX42.json` and `FIX44.json`.
 - AC4: Tests in `test/dictionary.test.js` are top-level `test()` calls (technical design section 9).
+- AC5: The generated files are named `src/dictionary/fix42.json` and `src/dictionary/fix44.json` (lower case, as
+  the FXL-3 ticket and technical design section 5 name them); no upper-case copies remain, and every import and
+  test uses the lower-case names.
