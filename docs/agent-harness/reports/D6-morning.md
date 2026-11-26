@@ -77,3 +77,7 @@ No reviewer card was running (FXL-1B's was blocked).
 2. **Check:** a tiny `hermes -p reviewer chat` call answered; `state.db` shows `deepseek-flash` / `deepseek`, no fallback. No restart needed (a fresh process per card).
 3. **Retry:** FXL-1B's reviewer card `t_ba094ad9` removed from `reviewer-attempts.json` and unblocked once (a transient retry, not a fix pass). The block report is kept as `fix-lens/runs/FXL-1B-attempt3-block.md`. Evidence driver restarted (`~/driver-fxl1B5.log`).
 4. Each `FXL-<n>.md` from now on records the finder model.
+
+## FXL-1B: approved test edit applied (FXL-1B-review6.md, after the D13 deploy)
+Host kit and container copy both `8f9f21f`. 1. `approve_test_edit.py FXL-1B --head 7f47748347ef82ec10c4e5eaba5274a534744abd --files test/framing-f1.test.js test/framing.test.js --reason "FXL-1B-review6: ..."` (entry written 19:56:27, base `f36221c`). 2. Gatekeeper card `t_11abf68b` was not listed in the attempts file, so nothing to clear. 3. Unblocked it once; evidence driver restarted (`~/driver-fxl1B6.log`). The gatekeeper passed on the retry; the fix-3 reviewer is running.
+Correction to the review-5 evidence: `gates-3.json` is the report from before fix pass 3, not a mislabelled file.

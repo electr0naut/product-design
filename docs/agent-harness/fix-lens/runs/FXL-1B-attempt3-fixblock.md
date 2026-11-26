@@ -28,7 +28,7 @@ Fix pass: pass 3 triggered by review
 
 Models this attempt: planner `gpt-6-sol` (openai-codex); **implementer `gpt-6-sol` (openai-codex), both the first pass and the fix pass, no fallback seen**; finder `deepseek-flash`; spec pass, refuter and prover on Claude. Review cost $3.6803 (card budget 5.0, no proofs skipped).
 
-Heads (by git): first head `3bb9a7e` (gates passed first time, no fix pass needed for the gates), fix head `7f47748` (child of the first head). The `head` field in `gates.json` and `gates-3.json` is labelled the other way round; the commit order above is from `git merge-base --is-ancestor`.
+Heads: first head `3bb9a7e` (gates passed first time), fix head `7f47748` (child of the first head). `gates-3.json` is the archived report from before fix pass 3 (first head) and `gates.json` is the fix head's report. (Corrected: an earlier version of this line said the two files were labelled the wrong way round. That was my misreading of the `-3` suffix.)
 
 ### 1. The review that triggered the pass (`review-3.json`)
 Decision: blocking F1, F2, F3, F4; blocking_unproven none; all four proven.
