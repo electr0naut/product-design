@@ -1,0 +1,297 @@
+From 8db74fca82977ec415a37076b5ec48d5b3ac9168 Mon Sep 17 00:00:00 2001
+From: Hermes Agent <hermes@agent.local>
+Date: Thu, 26 Nov 2026 22:39:11 +0100
+Subject: [PATCH] Build local FIX Lens page and privacy checks
+
+---
+ index.html                 |  3 +++
+ src/analyse.js             | 17 ++++++++++++
+ src/main.js                |  7 +++++
+ src/render.js              | 30 +++++++++++++++++++++
+ styles.css                 |  5 ++++
+ test/analyse.test.js       | 26 +++++++++++++++++++
+ test/page.test.js          | 41 +++++++++++++++++++++++++++++
+ test/render.test.js        | 32 +++++++++++++++++++++++
+ test/static-checks.test.js | 53 ++++++++++++++++++++++++++++++++++++++
+ 9 files changed, 214 insertions(+)
+ create mode 100644 index.html
+ create mode 100644 src/analyse.js
+ create mode 100644 src/main.js
+ create mode 100644 src/render.js
+ create mode 100644 styles.css
+ create mode 100644 test/analyse.test.js
+ create mode 100644 test/page.test.js
+ create mode 100644 test/render.test.js
+ create mode 100644 test/static-checks.test.js
+
+diff --git a/index.html b/index.html
+new file mode 100644
+index 0000000..3500b1c
+--- /dev/null
++++ b/index.html
+@@ -0,0 +1,3 @@
++<!doctype html>
++<html lang="en"><head><meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'none'; form-action 'none'"><meta charset="utf-8"><title>FIX Lens</title><link rel="stylesheet" href="styles.css"></head>
++<body><main><h1>FIX Lens</h1><label for="paste">Paste FIX log</label><textarea id="paste" autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" translate="no"></textarea><button id="decode-button" type="button">Decode</button><section id="decode"><h2>Decode</h2></section><section id="timeline"><h2>Timeline</h2></section></main><script type="module" src="src/main.js"></script></body></html>
+diff --git a/src/analyse.js b/src/analyse.js
+new file mode 100644
+index 0000000..735cf10
+--- /dev/null
++++ b/src/analyse.js
+@@ -0,0 +1,17 @@
++import { checkLimits } from './limits.js';
++import { splitMessages, checkMessage } from './framing.js';
++import { decode } from './decode.js';
++import { timeline } from './timeline.js';
++
++export function analyse(text) {
++  const limit = checkLimits(text);
++  if (!limit.ok) return { ok: false, limit, messages: [], errors: [], decoded: [], timeline: [] };
++  const messages = [];
++  const errors = [];
++  for (const candidate of splitMessages(text)) {
++    const error = checkMessage(candidate, text);
++    if (error) errors.push(error);
++    else messages.push(candidate);
++  }
++  return { ok: true, limit, messages, errors, decoded: messages.map(message => decode(message, text)), timeline: timeline(messages) };
++}
+diff --git a/src/main.js b/src/main.js
+new file mode 100644
+index 0000000..c993dd6
+--- /dev/null
++++ b/src/main.js
+@@ -0,0 +1,7 @@
++import { analyse } from './analyse.js';
++import { render } from './render.js';
++
++const input = document.querySelector('#paste');
++document.querySelector('#decode-button').addEventListener('click', () => {
++  render(analyse(input.value));
++});
+diff --git a/src/render.js b/src/render.js
+new file mode 100644
+index 0000000..dba9ec9
+--- /dev/null
++++ b/src/render.js
+@@ -0,0 +1,30 @@
++/** Render local analysis into the only two output sections. */
++export function render(result) {
++  const decodeSection = document.querySelector('#decode');
++  const timelineSection = document.querySelector('#timeline');
++  for (const section of [decodeSection, timelineSection]) {
++    section.replaceChildren(section.querySelector('h2'));
++  }
++  const add = (parent, tag, text, className) => {
++    const node = document.createElement(tag);
++    if (className) node.className = className;
++    node.textContent = text;
++    parent.append(node);
++    return node;
++  };
++  if (!result.ok) {
++    add(decodeSection, 'p', result.limit.warning);
++    return;
++  }
++  for (const message of result.decoded) {
++    const card = add(decodeSection, 'article', '');
++    add(card, 'h3', message.label);
++    for (const field of message.fields) {
++      add(card, 'div', `${field.tag} ${field.name}: ${field.value}${field.enumName === null ? '' : ` (${field.enumName})`}`, 'field');
++    }
++  }
++  for (const error of result.errors) add(decodeSection, 'p', error.text);
++  for (const event of result.timeline) {
++    add(timelineSection, 'p', `Message ${event.number}: ${event.name}${event.detail ? ` — ${event.detail}` : ''}`);
++  }
++}
+diff --git a/styles.css b/styles.css
+new file mode 100644
+index 0000000..2e25308
+--- /dev/null
++++ b/styles.css
+@@ -0,0 +1,5 @@
++body { font-family: system-ui, sans-serif; max-width: 68rem; margin: 2rem auto; padding: 0 1rem; color: #192438; background: #f8fafc; }
++textarea { display: block; box-sizing: border-box; width: 100%; min-height: 12rem; margin: 1rem 0; font: inherit; }
++button { padding: .6rem 1.2rem; cursor: pointer; }
++section { margin-top: 2rem; } article { background: white; border: 1px solid #d8e0e8; padding: 1rem; margin: .7rem 0; overflow-wrap: anywhere; }
++.field { border-top: 1px solid #eee; padding: .3rem 0; white-space: pre-wrap; }
+diff --git a/test/analyse.test.js b/test/analyse.test.js
+new file mode 100644
+index 0000000..bf30cc0
+--- /dev/null
++++ b/test/analyse.test.js
+@@ -0,0 +1,26 @@
++import { test, expect } from 'vitest';
++import { analyse } from '../src/analyse.js';
++import { checkLimits } from '../src/limits.js';
++import { buildMessage } from './helpers/fix.js';
++
++const valid = seq => buildMessage([[8, 'FIX.4.4'], [35, 'A'], [34, seq], [49, 'A'], [56, 'B']]);
++
++test('test_analyse_result_has_exact_public_keys', () => {
++  expect(Object.keys(analyse(valid(1))).sort()).toEqual(['decoded', 'errors', 'limit', 'messages', 'ok', 'timeline']);
++});
++
++test('test_analyse_over_limit_returns_warning_without_decoding', () => {
++  const text = valid(1) + 'x'.repeat(1048577);
++  expect(analyse(text)).toEqual({ ok: false, limit: checkLimits(text), messages: [], errors: [], decoded: [], timeline: [] });
++});
++
++test('test_analyse_malformed_between_valid_messages_skips_decode_and_event', () => {
++  const malformed = valid(2).replace('35=A', '35=Z');
++  const result = analyse(valid(1) + malformed + valid(3));
++  expect(result.ok).toBe(true);
++  expect(result.messages.map(m => m.number)).toEqual([1, 3]);
++  expect(result.errors).toMatchObject([{ number: 2, rule: 'checksum' }]);
++  expect(result.decoded.map(m => m.number)).toEqual([1, 3]);
++  expect(result.timeline.filter(e => e.name === 'Logon').map(e => e.number)).toEqual([1, 3]);
++  expect(result.timeline.some(e => e.number === 2)).toBe(false);
++});
+diff --git a/test/page.test.js b/test/page.test.js
+new file mode 100644
+index 0000000..040e1f2
+--- /dev/null
++++ b/test/page.test.js
+@@ -0,0 +1,41 @@
++// @vitest-environment jsdom
++import { test, expect } from 'vitest';
++import { readFileSync } from 'node:fs';
++import { JSDOM } from 'jsdom';
++import { buildMessage } from './helpers/fix.js';
++
++const html = readFileSync('index.html', 'utf8');
++test('test_page_markup_has_csp_input_sections_and_external_assets', () => {
++  const doc = new JSDOM(html).window.document;
++  const head = doc.head;
++  expect(head.firstElementChild.outerHTML).toContain('Content-Security-Policy');
++  const csp = head.querySelectorAll('meta[http-equiv="Content-Security-Policy"]');
++  expect(csp).toHaveLength(1);
++  expect(csp[0].getAttribute('content')).toBe("default-src 'self'; connect-src 'none'; form-action 'none'");
++  const input = doc.querySelector('textarea');
++  for (const [key, value] of Object.entries({ autocomplete: 'off', spellcheck: 'false', autocapitalize: 'off', autocorrect: 'off', translate: 'no' })) expect(input.getAttribute(key)).toBe(value);
++  expect(doc.querySelector('button').textContent).toMatch(/Decode/);
++  expect([...doc.querySelectorAll('section > h2')].map(h => h.textContent)).toEqual(['Decode', 'Timeline']);
++  expect(head.querySelector('link[rel="stylesheet"]').getAttribute('href')).toBe('styles.css');
++  expect(doc.querySelector('script[type="module"]').getAttribute('src')).toBe('src/main.js');
++  expect(doc.querySelectorAll('script:not([src]), style, [style]')).toHaveLength(0);
++});
++
++test('test_page_second_decode_replaces_output_without_retaining_paste', async () => {
++  document.documentElement.innerHTML = new JSDOM(html).window.document.documentElement.innerHTML;
++  await import('../src/main.js');
++  const input = document.querySelector('textarea');
++  const button = document.querySelector('button');
++  const first = buildMessage([[8, 'FIX.4.4'], [35, 'A'], [34, '1'], [58, 'FIRSTSECRET']]);
++  const second = buildMessage([[8, 'FIX.4.4'], [35, '0'], [34, '2'], [58, 'SECONDSECRET']]);
++  input.value = first; button.click();
++  expect(document.querySelector('#decode').textContent).toContain('FIRSTSECRET');
++  input.value = second; button.click();
++  expect(document.querySelector('#decode').textContent).toContain('SECONDSECRET');
++  expect(document.querySelector('#decode').textContent).not.toContain('FIRSTSECRET');
++  expect(document.querySelector('#timeline').textContent).not.toContain('FIRSTSECRET');
++  expect(document.body.textContent).not.toContain('FIRSTSECRET');
++  expect(document.body.textContent).not.toContain(second);
++  expect(localStorage.length).toBe(0);
++  expect(sessionStorage.length).toBe(0);
++});
+diff --git a/test/render.test.js b/test/render.test.js
+new file mode 100644
+index 0000000..c7a2668
+--- /dev/null
++++ b/test/render.test.js
+@@ -0,0 +1,32 @@
++// @vitest-environment jsdom
++import { test, expect } from 'vitest';
++import { render } from '../src/render.js';
++
++function setup() { document.body.innerHTML = '<section id="decode"><h2>Decode</h2></section><section id="timeline"><h2>Timeline</h2></section>'; }
++const result = { ok: true, limit: { ok: true }, decoded: [{ number: 1, label: 'Message 1: Logon', fields: [{ tag: 35, name: 'MsgType', value: 'A', enumName: 'Logon', known: true }] }], errors: [{ number: 2, text: 'Message 2: bad checksum' }], timeline: [{ number: 1, name: 'Logon', kind: 'session', detail: null }] };
++
++test('test_render_valid_result_shows_cards_fields_errors_and_timeline', () => {
++  setup(); render(result);
++  expect(document.querySelectorAll('#decode article')).toHaveLength(1);
++  expect(document.querySelector('#decode article').textContent).toContain('Message 1: Logon');
++  expect(document.querySelectorAll('#decode article .field')).toHaveLength(1);
++  expect(document.querySelector('#decode').textContent).toContain('MsgType');
++  expect(document.querySelector('#decode').textContent).toContain('bad checksum');
++  expect(document.querySelector('#timeline').textContent).toContain('Logon');
++  expect(document.querySelector('#timeline').textContent).not.toContain('bad checksum');
++});
++
++test('test_render_limit_refusal_shows_only_warning', () => {
++  setup(); render(result);
++  render({ ok: false, limit: { warning: 'Log too large; split the log' }, decoded: [], errors: [], timeline: [] });
++  expect(document.querySelector('#decode').textContent).toContain('Log too large; split the log');
++  expect(document.querySelector('#decode').textContent).not.toContain('Message 1');
++  expect(document.querySelector('#timeline').textContent).toBe('Timeline');
++  expect(document.querySelectorAll('article, .field')).toHaveLength(0);
++});
++
++test('test_render_html_field_value_stays_literal_without_element', () => {
++  setup(); render({ ...result, errors: [], timeline: [], decoded: [{ ...result.decoded[0], fields: [{ tag: 58, name: 'Text', value: '<img src=x onerror=alert(1)>', enumName: null }] }] });
++  expect(document.querySelector('#decode').textContent).toContain('<img src=x onerror=alert(1)>');
++  expect(document.querySelectorAll('img')).toHaveLength(0);
++});
+diff --git a/test/static-checks.test.js b/test/static-checks.test.js
+new file mode 100644
+index 0000000..7724ca9
+--- /dev/null
++++ b/test/static-checks.test.js
+@@ -0,0 +1,53 @@
++import { test, expect } from 'vitest';
++import { readFileSync, readdirSync } from 'node:fs';
++import { JSDOM } from 'jsdom';
++
++const forbidden = [
++  /\bfetch\b/, /\bXMLHttpRequest\b/, /\bWebSocket\b/, /\bsendBeacon\b/, /\bEventSource\b/,
++  /\bwindow\s*\.\s*open\b/, /(?:\blocation\b|\.\s*href)\s*=(?!=)/, /\bsetAttribute\s*\(/,
++  /\blocalStorage\b/, /\bsessionStorage\b/, /\bindexedDB\b/, /\bdocument\s*\.\s*cookie\b/,
++  /\bcookieStore\b/, /\bcaches\b/, /\bopenDatabase\b/, /\bnavigator\s*\.\s*storage\b/,
++  /\bserviceWorker\b/, /\bWorker\s*\(/, /\bSharedWorker\b/,
++  /\bconsole\b/, /\binnerHTML\b/, /\bouterHTML\b/, /\binsertAdjacentHTML\b/,
++  /\bdocument\s*\.\s*write\b/, /\bDOMParser\b/, /\bcreateContextualFragment\b/,
++  /\bsetHTMLUnsafe\b/, /\bsrcdoc\b/, /\beval\b/, /\bnew\s+Function\b/,
++];
++const cspValue = "default-src 'self'; connect-src 'none'; form-action 'none'";
++function stripComments(source) { return source.replace(/<!--[^]*?-->|\/\*[^]*?\*\/|(^|[^:])\/\/[^\r\n]*/gm, (match, prefix) => prefix || ''); }
++function auditSource(source) { return forbidden.filter(pattern => pattern.test(stripComments(source))).map(String); }
++function auditPage(source) {
++  const doc = new JSDOM(source).window.document;
++  const tags = [...doc.querySelectorAll('meta[http-equiv]')].filter(tag => tag.getAttribute('http-equiv').toLowerCase() === 'content-security-policy');
++  return tags.length === 1 && doc.head.firstElementChild === tags[0] && tags[0].getAttribute('content') === cspValue &&
++    doc.querySelectorAll('script:not([src]), style, [style]').length === 0;
++}
++function sources(dir) {
++  return readdirSync(dir, { withFileTypes: true }).flatMap(entry => entry.isDirectory() ? sources(`${dir}/${entry.name}`) : entry.name.endsWith('.js') ? [`${dir}/${entry.name}`] : []);
++}
++
++test('test_static_checks_reject_whitespace_separated_forbidden_apis', () => {
++  for (const source of ['window.fetch ("x")', 'console .log("x")', ...[
++    'XMLHttpRequest', 'WebSocket', 'sendBeacon', 'EventSource', 'window.open', 'location = x', 'node.href = x', 'setAttribute(',
++    'localStorage', 'sessionStorage', 'indexedDB', 'document.cookie', 'cookieStore', 'caches', 'openDatabase', 'navigator.storage', 'serviceWorker', 'Worker(', 'SharedWorker',
++    'innerHTML', 'outerHTML', 'insertAdjacentHTML', 'document.write', 'DOMParser', 'createContextualFragment', 'setHTMLUnsafe', 'srcdoc', 'eval', 'new Function',
++  ]]) expect(auditSource(source), source).not.toHaveLength(0);
++  expect(auditSource('prefetch and myconsole and worker and location == x')).toHaveLength(0);
++});
++
++test('test_static_checks_reject_duplicate_or_invalid_csp', () => {
++  const good = `<html><head><meta http-equiv="Content-Security-Policy" content="${cspValue}"><title>x</title></head><body></body></html>`;
++  expect(auditPage(good)).toBe(true);
++  expect(auditPage(good.replace('<title>', '<meta http-equiv="Content-Security-Policy" content="x"><title>'))).toBe(false);
++  expect(auditPage(good.replace(cspValue, 'default-src *'))).toBe(false);
++  expect(auditPage(good.replace('<head>', '<head><title>before</title>'))).toBe(false);
++});
++
++test('test_static_checks_ignore_comments_and_pass_delivered_sources', () => {
++  expect(auditSource('// fetch console\n/* localStorage */\nconst safe = 1')).toHaveLength(0);
++  expect(auditSource('<!-- console -->')).toHaveLength(0);
++  expect(auditPage(readFileSync('index.html', 'utf8'))).toBe(true);
++  expect(auditSource(readFileSync('index.html', 'utf8'))).toHaveLength(0);
++  const files = sources('src');
++  expect(files.length).toBeGreaterThan(0);
++  for (const file of files) expect(auditSource(readFileSync(file, 'utf8')), file).toHaveLength(0);
++});
+-- 
+2.43.0
+
