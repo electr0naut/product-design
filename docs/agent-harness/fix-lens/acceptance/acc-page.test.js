@@ -59,3 +59,10 @@ test("no network, storage, logging or unsafe-markup API anywhere in src", () => 
     for (const re of banned) expect([f, re.test(code)]).toEqual([f, false]);
   }
 });
+
+test("no JSON module imports: browsers block them under connect-src 'none'", () => {
+  for (const f of srcFiles()) {
+    const code = stripComments(readFileSync(f, "utf8"));
+    expect([f, /\bfrom\s+["'][^"']+\.json["']/.test(code) || /\bimport\s*\(\s*["'][^"']+\.json["']/.test(code)]).toEqual([f, false]);
+  }
+});
