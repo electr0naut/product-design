@@ -51,3 +51,12 @@ Board check: `hermes kanban list | grep -E "FXL-(1b|2b|3b|4|5|6|7)|HOLD: D10"` s
 FXL-1b's run folder: `mv work/runs/FXL-1b work/old/runs-FXL-1b`. The branch is left for the new implementer to reset.
 Runner: the next timer pass printed `idle; idle`, and the service is no longer failed.
 Nothing reloaded, nothing deployed. Waiting for the user's D10 deploy (`386315c`).
+
+## FXL-1B reset and reload after D11 (D11-review.md)
+
+Kit checked first: host kit and container copy both `0ae59d0`, the new alert script is in the container, runner status file written.
+1. **Reset (host kit):** `tools/reset_attempt.py FXL-1B --reason "gates saw truncated test list (D11 item 1)" --base f36221cfc647c8981d3b190ced10a95c97d63baf` wrote a `reset` entry to `fix-ledger.json` (15:17:43, the base is the trusted `main`, unchanged). The old pass entry stays in the ledger.
+2. **Archived 50 cards** with `hermes kanban archive <id>`: every card of FXL-1B (first attempt and fix 1), FXL-2B, FXL-3B and FXL-4 to FXL-7 (none had started). The board shows none of them.
+3. **Run folder:** `work/runs/FXL-1B` moved to `work/old/runs-FXL-1B.attempt1`. The first attempt's report is kept as `fix-lens/runs/FXL-1B-attempt1.md`.
+4. **Reloaded in one call, on the host:** `PYTHONPATH=src python3 tools/load_tickets.py --repo /srv/lab/agent-harness/work/fix-lens <work/fix-lens-tickets/>FXL-1B.md FXL-2B.md FXL-3B.md FXL-4.md ... FXL-7.md` (log `work/fixlens5-load.log`); host-only ticket text re-recorded.
+5. **Driver restarted** with start file `work/fxl1B2.start`. The first runner pass after the load printed `idle; idle`, service not failed.
