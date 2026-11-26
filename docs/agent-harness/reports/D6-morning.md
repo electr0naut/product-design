@@ -39,3 +39,15 @@ FXL-1b had already started (triage done, planner done, implementer running), so 
 3. **Reloaded six tickets in one loader call, on the host:** `PYTHONPATH=src python3 tools/load_tickets.py --repo /srv/lab/agent-harness/work/fix-lens <work/fix-lens-tickets/>FXL-2b.md FXL-3b.md FXL-4.md FXL-5.md FXL-6.md FXL-7.md`. (Two earlier tries inside the container failed before creating anything: a relative `--repo` path, then the container user's trusted-repo path having no `main`. The loader belongs on the host, which holds the trusted repos.) FXL-2b's triage waits on FXL-2's scribe and FXL-1b's; FXL-3b, FXL-4, FXL-5, FXL-6 and FXL-7 follow in a chain, with no manual `link` or `unlink`.
 4. **Evidence driver restarted** for `FXL-1b,FXL-2b,FXL-3b,FXL-4,FXL-5,FXL-6,FXL-7` (usage window from FXL-2's scribe completion).
 Order now: FXL-1b (running), FXL-2b, FXL-3b, FXL-4, FXL-5, FXL-6, FXL-7.
+
+## Stall clean-up (FXL-1b-stall-review.md, step 1)
+
+Driver stopped first (`kill` of the evidence driver; no card was running). Then, in the container as `hermes`:
+
+    hermes kanban archive <id>      # 50 cards: every card of FXL-1b, FXL-2b, FXL-3b (parents, stages, done ones included),
+                                    # all seven cards of each of FXL-4..FXL-7 (none had started), and hold t_01fb15de
+
+Board check: `hermes kanban list | grep -E "FXL-(1b|2b|3b|4|5|6|7)|HOLD: D10"` shows 0 rows. FXL-1..3 stay done.
+FXL-1b's run folder: `mv work/runs/FXL-1b work/old/runs-FXL-1b`. The branch is left for the new implementer to reset.
+Runner: the next timer pass printed `idle; idle`, and the service is no longer failed.
+Nothing reloaded, nothing deployed. Waiting for the user's D10 deploy (`386315c`).
