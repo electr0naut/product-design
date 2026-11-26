@@ -1,5 +1,7 @@
-/** Render local analysis into the summary strip and the two output sections. Text nodes only. */
+/** Render local analysis into the overview and the two output sections. Text nodes only. */
 import { orderGroups, findOrder } from './orders.js';
+import { tradeSummary } from './summary.js';
+import { FILTERS, filterOptions, applyFilters } from './filters.js';
 
 const el = (parent, tag, text, className) => {
   const node = document.createElement(tag);
@@ -12,6 +14,9 @@ const field = (message, tag) => message.fields.find(f => f.tag === tag) ?? null;
 const value = (message, tag) => field(message, tag)?.value ?? null;
 const meaning = (message, tag) => { const f = field(message, tag); return f ? (f.enumName && f.enumName !== 'unknown value' ? f.enumName : f.value) : null; };
 const clock = stamp => (stamp && stamp.includes('-') ? stamp.slice(stamp.indexOf('-') + 1) : stamp);
+const qty = n => (Math.round(n * 10000) / 10000).toLocaleString('en-GB', { maximumFractionDigits: 4 });
+const px = n => n.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 const eventClass = event => {
   if (event.name === 'SequenceGap') return 'gap';
   if (event.name === 'SessionReject' || event.name === 'BusinessReject') return 'reject';
@@ -27,29 +32,76 @@ function orderId(parent, id, prefix, pick) {
   return button;
 }
 
-function renderSummary(root, result, order, clear) {
-  root.replaceChildren();
-  if (!result.ok) return;
-  if (order) {
-    const box = el(root, 'div', undefined, 'order-story');
-    el(box, 'span', 'Order', 'order-kicker');
-    el(box, 'strong', [...order.group.clOrdIds, ...order.group.orderIds].join(' · '));
-    if (order.terms) el(box, 'span', order.terms, 'order-terms');
-    if (order.state) el(box, 'span', order.state, 'stat ok');
-    el(box, 'span', `${order.group.numbers.length} message${order.group.numbers.length === 1 ? '' : 's'}`, 'stat');
-    const all = el(box, 'button', 'Show all messages', 'ghost');
-    all.type = 'button';
-    all.addEventListener('click', clear);
-    return;
-  }
-  const gaps = result.timeline.filter(e => e.name === 'SequenceGap').length;
+function renderStats(root, result, shown, events, filtered) {
+  const row = el(root, 'div', undefined, 'stats');
+  const gaps = events.filter(e => e.name === 'SequenceGap').length;
   const total = result.decoded.length + result.errors.length;
-  const orders = orderGroups(result.decoded).length;
-  el(root, 'span', `${total} message${total === 1 ? '' : 's'}`, 'stat');
-  el(root, 'span', `${result.decoded.length} valid`, 'stat ok');
-  el(root, 'span', `${result.errors.length} malformed`, result.errors.length ? 'stat bad' : 'stat');
-  el(root, 'span', `${gaps} sequence gap${gaps === 1 ? '' : 's'}`, gaps ? 'stat warn' : 'stat');
-  el(root, 'span', `${orders} order${orders === 1 ? '' : 's'}`, 'stat');
+  el(row, 'span', filtered ? `${shown.length} of ${plural(total, 'message')}` : plural(total, 'message'), 'stat');
+  if (!filtered) {
+    el(row, 'span', `${result.decoded.length} valid`, 'stat ok');
+    el(row, 'span', `${result.errors.length} malformed`, result.errors.length ? 'stat bad' : 'stat');
+  }
+  el(row, 'span', plural(gaps, 'sequence gap'), gaps ? 'stat warn' : 'stat');
+  el(row, 'span', plural(orderGroups(shown).length, 'order'), 'stat');
+}
+
+function renderFilters(root, result, chosen, setFilter) {
+  const options = filterOptions(result.decoded);
+  const bar = el(root, 'div', undefined, 'filters');
+  el(bar, 'span', 'Filter', 'filters-label');
+  for (const { key, label } of FILTERS) {
+    const values = options[key];
+    const wrap = el(bar, 'label', undefined, 'filter');
+    el(wrap, 'span', label);
+    const select = el(wrap, 'select');
+    el(select, 'option', 'All');
+    // Option values are positions in the list, never the pasted text itself.
+    values.forEach(v => el(select, 'option', v));
+    select.disabled = values.length === 0;
+    select.selectedIndex = chosen[key] === null || chosen[key] === undefined ? 0 : values.indexOf(chosen[key]) + 1;
+    select.addEventListener('change', () => setFilter(key, select.selectedIndex === 0 ? null : values[select.selectedIndex - 1]));
+  }
+  if (FILTERS.some(f => chosen[f.key])) {
+    const clear = el(bar, 'button', 'Clear filters', 'ghost');
+    clear.type = 'button';
+    clear.addEventListener('click', () => setFilter(null, null));
+  }
+}
+
+function renderTrades(root, shown) {
+  const rows = tradeSummary(shown);
+  const box = el(root, 'div', undefined, 'trades');
+  el(box, 'h2', 'Buys, sells and net by symbol');
+  if (!rows.length) { el(box, 'p', 'No orders or fills in the messages shown.', 'empty'); return; }
+  const table = el(box, 'table', undefined, 'trade-table');
+  const head = el(el(table, 'thead'), 'tr');
+  for (const [text, cls] of [['Symbol', ''], ['Buy orders', 'n'], ['Bought', 'n buy'], ['Avg buy', 'n'], ['Sell orders', 'n'], ['Sold', 'n sell'], ['Avg sell', 'n'], ['Net', 'n']]) el(head, 'th', text, cls);
+  const body = el(table, 'tbody');
+  for (const r of rows) {
+    const net = r.buy.filledQty - r.sell.filledQty;
+    const tr = el(body, 'tr');
+    el(tr, 'td', r.symbol, 'symbol');
+    el(tr, 'td', String(r.buy.orders), 'n');
+    el(tr, 'td', qty(r.buy.filledQty), 'n buy');
+    el(tr, 'td', r.buy.filledQty ? px(r.buy.notional / r.buy.filledQty) : '', 'n');
+    el(tr, 'td', String(r.sell.orders), 'n');
+    el(tr, 'td', qty(r.sell.filledQty), 'n sell');
+    el(tr, 'td', r.sell.filledQty ? px(r.sell.notional / r.sell.filledQty) : '', 'n');
+    el(tr, 'td', `${net > 0 ? '+' : ''}${qty(net)}`, net > 0 ? 'n net buy' : net < 0 ? 'n net sell' : 'n net');
+  }
+  el(box, 'p', 'Bought and sold are filled quantities from execution reports, counted once per ExecID. Net is bought minus sold.', 'note');
+}
+
+function renderOrderBanner(root, order, clear) {
+  const box = el(root, 'div', undefined, 'order-story');
+  el(box, 'span', 'Order', 'order-kicker');
+  el(box, 'strong', [...order.group.clOrdIds, ...order.group.orderIds].join(' · '));
+  if (order.terms) el(box, 'span', order.terms, 'order-terms');
+  if (order.state) el(box, 'span', order.state, 'stat ok');
+  el(box, 'span', plural(order.group.numbers.length, 'message'), 'stat');
+  const all = el(box, 'button', 'Back to all messages', 'ghost');
+  all.type = 'button';
+  all.addEventListener('click', clear);
 }
 
 function renderTimeline(section, events, pick) {
@@ -106,30 +158,41 @@ function describe(group, decoded) {
 }
 
 /**
- * render(result, selectedOrderId?, handlers?)
- * With a selected order id, only that order's messages and events are shown.
+ * render(result, view?, handlers?)
+ * view: { orderId, filters }. With an order id, only that order's messages and events are shown.
+ * handlers: { pick(orderId), clear(), setFilter(key, value) }.
  */
-export function render(result, selectedOrderId = null, handlers = {}) {
+export function render(result, view = {}, handlers = {}) {
   const pick = handlers.pick ?? (() => {});
   const clear = handlers.clear ?? (() => {});
+  const setFilter = handlers.setFilter ?? (() => {});
+  const chosen = view.filters ?? {};
   const decodeSection = document.querySelector('#decode');
   const timelineSection = document.querySelector('#timeline');
   for (const section of [decodeSection, timelineSection]) section.replaceChildren(section.querySelector('h2'));
-  const summary = document.querySelector('#summary');
-  if (!result.ok) {
-    if (summary) summary.replaceChildren();
-    el(decodeSection, 'p', result.limit.warning, 'callout bad');
-    return;
+  const overview = document.querySelector('#summary');
+  if (overview) overview.replaceChildren();
+  if (!result.ok) { el(decodeSection, 'p', result.limit.warning, 'callout bad'); return; }
+
+  const filtered = FILTERS.some(f => chosen[f.key]);
+  const passing = applyFilters(result.decoded, chosen);
+  const group = view.orderId ? findOrder(orderGroups(result.decoded), view.orderId) : null;
+  const shown = group ? passing.filter(m => group.numbers.includes(m.number)) : passing;
+  const numbers = new Set(shown.map(m => m.number));
+  const events = result.timeline.filter(e => numbers.has(e.number));
+
+  if (overview) {
+    if (group) renderOrderBanner(overview, { group, ...describe(group, result.decoded) }, clear);
+    renderStats(overview, result, shown, events, filtered || Boolean(group));
+    renderTrades(overview, shown);
+    renderFilters(overview, result, chosen, setFilter);
   }
-  const group = selectedOrderId ? findOrder(orderGroups(result.decoded), selectedOrderId) : null;
-  const inView = number => !group || group.numbers.includes(number);
-  if (summary) renderSummary(summary, result, group ? { group, ...describe(group, result.decoded) } : null, clear);
-  renderTimeline(timelineSection, result.timeline.filter(e => inView(e.number)), pick);
+  renderTimeline(timelineSection, events, pick);
   const items = [
-    ...result.decoded.filter(m => inView(m.number)).map(message => ({ number: message.number, message })),
-    ...(group ? [] : result.errors.map(error => ({ number: error.number, error }))),
+    ...shown.map(message => ({ number: message.number, message })),
+    ...(group || filtered ? [] : result.errors.map(error => ({ number: error.number, error }))),
   ].sort((a, b) => a.number - b.number);
-  if (!items.length) el(decodeSection, 'p', 'No FIX messages found in the pasted text.', 'empty');
+  if (!items.length) el(decodeSection, 'p', filtered || group ? 'No messages match the current filters.' : 'No FIX messages found in the pasted text.', 'empty');
   for (const item of items) {
     if (item.message) renderMessage(decodeSection, item.message, pick);
     else {

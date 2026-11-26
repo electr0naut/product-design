@@ -33,7 +33,9 @@ textarea:focus, button:focus-visible { outline: 2px solid var(--accent); outline
 button { font: 600 14px var(--sans); padding: .55rem 1.3rem; color: var(--accent-ink); background: var(--accent); border: 0; border-radius: 6px; cursor: pointer; }
 button:hover { filter: brightness(1.08); }
 .hint { color: var(--muted); font-size: .85rem; }
-.summary { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1.2rem 0 0; min-height: 1px; }
+.overview { display: grid; gap: .8rem; margin: 1.2rem 0 0; }
+.overview:empty { display: none; }
+.stats { display: flex; flex-wrap: wrap; gap: .5rem; }
 .stat { font-size: .82rem; font-weight: 600; padding: .25rem .65rem; border-radius: 999px; background: var(--soft); color: var(--muted); }
 .stat.ok { color: var(--ok); } .stat.warn { color: var(--warn); background: var(--warn-bg); } .stat.bad { color: var(--bad); background: var(--bad-bg); }
 .results { display: grid; grid-template-columns: minmax(300px, 420px) minmax(0, 1fr); gap: 1.5rem; align-items: start; margin-top: 1rem; }
@@ -83,3 +85,19 @@ section h2 { margin: 0 0 .6rem; font-size: .78rem; font-weight: 700; letter-spac
 .order-story strong { font-family: var(--mono); }
 .order-terms { color: var(--ink); }
 .order-story .ghost { margin-left: auto; font-weight: 500; font-size: .82rem; padding: .3rem .8rem; color: var(--ink); background: var(--panel); border: 1px solid var(--line); }
+.filters { display: flex; flex-wrap: wrap; align-items: end; gap: .6rem 1rem; padding: .7rem .9rem; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+.filters-label { font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); align-self: center; }
+.filter { display: grid; gap: .15rem; font-size: .75rem; color: var(--muted); }
+.filter select { font: 13px var(--mono); min-width: 9.5rem; padding: .3rem .4rem; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; }
+.filter select:disabled { opacity: .5; }
+.filters .ghost { margin-left: auto; font-weight: 500; font-size: .82rem; padding: .3rem .8rem; color: var(--ink); background: transparent; border: 1px solid var(--line); }
+.trades { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: .7rem .9rem .5rem; }
+.trades h2 { margin-bottom: .4rem; }
+.trade-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.trade-table th { text-align: left; font-size: .72rem; font-weight: 600; color: var(--muted); padding: .25rem .6rem; border-bottom: 1px solid var(--line); }
+.trade-table td { padding: .3rem .6rem; border-top: 1px solid var(--soft); font-family: var(--mono); }
+.trade-table .n { text-align: right; }
+.trade-table .symbol { font-weight: 600; }
+.trade-table td.buy { color: var(--ok); } .trade-table td.sell { color: var(--bad); }
+.trade-table td.net { font-weight: 700; }
+.trades .note { margin: .45rem .6rem .2rem; font-size: .75rem; color: var(--muted); }

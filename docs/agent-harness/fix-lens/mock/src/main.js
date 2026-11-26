@@ -2,12 +2,23 @@ import { analyse } from './analyse.js';
 import { render } from './render.js';
 
 const input = document.querySelector('#paste');
-// The last analysis and the selected order live in memory only.
+// The last analysis, the selected order and the chosen filters live in memory only.
 let result = null;
-const show = orderId => render(result, orderId, { pick: show, clear: () => show(null) });
+const view = { orderId: null, filters: {} };
+const handlers = {
+  pick: orderId => { view.orderId = orderId; show(); },
+  clear: () => { view.orderId = null; show(); },
+  setFilter: (key, value) => {
+    if (key === null) view.filters = {}; else view.filters[key] = value;
+    show();
+  },
+};
+function show() { render(result, view, handlers); }
 document.querySelector('#decode-button').addEventListener('click', () => {
   result = analyse(input.value);
-  show(null);
+  view.orderId = null;
+  view.filters = {};
+  show();
 });
 
 // Theme: follows the system setting until the button is used. The choice is kept in memory only
