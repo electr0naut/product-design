@@ -1,21 +1,25 @@
 # FIX Lens PRD v1.2: changes from v1.1
 
-**Status: draft for Gate 3. Not approved.** On approval, these changes are merged into the Confluence PRD
-(page 557109) as v1.2. Everything in v1.1 that is not mentioned here stays as it is.
+**Status: draft for Gate 3, second revision. Not approved.** On approval, these changes are merged into the
+Confluence PRD (page 557109) as v1.2. Everything in v1.1 that is not mentioned here stays as it is.
 
 **Source:** Ubay's feedback on the landed v1.1 page and the presentation mock he approved on 2026-11-26
-(`docs/agent-harness/fix-lens/mock/`), plus two defects found by running v1.1 in a real browser.
+(`docs/agent-harness/fix-lens/mock/`), two defects found by running v1.1 in a real browser, and his decision of
+2026-11-26 that cancel and replace requests, trade cancels and corrections, and delimiter characters inside
+values are all in scope, because they are part of the protocol.
 
 ## Summary of changes
 
 | # | Change | Kind |
 |---|---|---|
 | 1 | Logs that show the delimiter as `^A` or `<SOH>` are accepted | Fix to TR-002 |
-| 2 | A page that was not opened through a web server says so | New AC under US-001 |
-| 3 | A designed presentation, with a light and a dark theme | New story US-006 |
-| 4 | The whole story of one order, from any of its ids | New story US-007 |
-| 5 | Buys, sells and net per symbol | New story US-008 |
-| 6 | Filters by account and by the four comp and sub ids | New story US-009 |
+| 2 | A delimiter character inside a field value no longer breaks the message | Fix to TR-002 |
+| 3 | A page that was not opened through a web server says so | New AC under US-001 |
+| 4 | Cancel and replace requests, trade cancels, trade corrections and order status reports are timeline events | Extension of US-002 and TR-003 |
+| 5 | A designed presentation, with a light and a dark theme | New story US-006 |
+| 6 | The whole story of one order, from any of its ids | New story US-007 |
+| 7 | Buys, sells and net per symbol, after trade cancels and corrections | New story US-008 |
+| 8 | Filters by account and by the four comp and sub ids | New story US-009 |
 
 ## Scope changes
 
@@ -25,8 +29,8 @@
 - **Delivery** adds: the page is served over HTTP or HTTPS. Opening the file from disk is not supported, and
   the page says so (AC-024).
 - **Out of scope, added:**
-  - Applying trade cancels and trade corrections to the trading summary. Fills are counted as reported.
-  - A `|` inside a field value in a log that uses `|` as its delimiter. Such a message is reported as malformed.
+  - Length-prefixed data fields (for example RawData 95/96 and XmlData 212/213) whose content contains a
+    delimiter. Pasted text cannot carry binary content reliably. Such a field is read like any other value.
   - Remembering the theme, the filters or the selected order between visits (US-005 forbids storage).
 
 ## Changes to existing stories
@@ -42,11 +46,10 @@
 - **AC-009 (extended):** the order lifecycle events also include:
   - CancelRequest (35=F);
   - ReplaceRequest (35=G);
-  - CancelReject (35=9).
-
-  *This is not in the mock. It is here because an order's story is incomplete without the requests that
-  changed it. Strike it at Gate 3 if you don't want it.*
-- **AC-010 (extended):** order events also show OrigClOrdID (41) when present.
+  - CancelReject (35=9);
+  - TradeCancel, TradeCorrect and OrderStatus, which are ExecutionReports mapped as in TR-003.
+- **AC-010 (extended):** order events also show OrigClOrdID (41) when present. TradeCancel and TradeCorrect
+  events also show ExecRefID (19).
 
 ## New stories
 
@@ -113,16 +116,24 @@ whole log
 - AC-039: After a decode, a table has one row per Symbol (55), sorted by symbol, with: buy orders, bought,
   average buy price, sell orders, sold, average sell price, net.
 - AC-040: Buy orders and sell orders count NewOrderSingle messages (35=D) by Side (54).
-- AC-041: Bought and sold are the sum of LastQty (32) over ExecutionReports (35=8) whose LastQty is above zero.
-  A report is counted once per OrderID (37) and ExecID (17) pair, so a resent report is not counted twice.
-- AC-042: The average price is the sum of LastQty times LastPx (31) divided by the sum of LastQty, shown to at
-  most 4 decimal places. A side with no fills shows a dash.
-- AC-043: Net is bought minus sold.
-- AC-044: Side 1 (Buy) and 3 (Buy minus) are buys. Side 2 (Sell), 4 (Sell plus), 5 (Sell short) and 6 (Sell
+- AC-041: Bought and sold are sums over executions as they stand at the end of the log. An execution is an
+  ExecutionReport that is a Fill (TR-003) with LastQty (32) above zero. It is identified by its OrderID (37)
+  and ExecID (17), and counted once, so a resent report is not counted twice.
+- AC-042: A TradeCancel removes the execution that its ExecRefID (19) names.
+- AC-043: A TradeCorrect replaces the quantity and price of the execution that its ExecRefID (19) names with
+  its own LastQty (32) and LastPx (31). A later TradeCancel or TradeCorrect may name the original ExecID or the
+  ExecID of an earlier correction of the same execution.
+- AC-044: When the execution a report names is not in the log, a TradeCorrect counts as an execution with its
+  own quantity and price, and a TradeCancel changes nothing. The table's note says how many such reports there
+  were.
+- AC-045: The average price is the sum of quantity times price over the side's executions, divided by the sum
+  of their quantities, shown to at most 4 decimal places. A side with no executions shows a dash.
+- AC-046: Net is bought minus sold.
+- AC-047: Side 1 (Buy) and 3 (Buy minus) are buys. Side 2 (Sell), 4 (Sell plus), 5 (Sell short) and 6 (Sell
   short exempt) are sells. Messages with any other side, or with no Symbol, are not counted.
-- AC-045: A note under the table says: "Bought and sold are filled quantities from execution reports in this
-  log, counted once per ExecID. Trade cancels and corrections are not applied."
-- AC-046: The table follows the filters (US-009) and the selected order (US-007).
+- AC-048: A note under the table says: "Bought and sold are filled quantities from execution reports in this
+  log, counted once per ExecID, after trade cancels and corrections."
+- AC-049: The table follows the filters (US-009) and the selected order (US-007).
 
 ### US-009: Filter the Log
 
@@ -132,19 +143,19 @@ whole log
 
 **Acceptance Criteria:**
 
-- AC-047: Five filters are offered: Account (1), SenderCompID (49), SenderSubID (50), TargetCompID (56) and
+- AC-050: Five filters are offered: Account (1), SenderCompID (49), SenderSubID (50), TargetCompID (56) and
   TargetSubID (57). Each is a list of the distinct values present in the log, sorted, with "All" first. A
   filter with no values in the log is shown disabled.
-- AC-048: The Account filter keeps every message of every order (AC-035) that has at least one message with
+- AC-051: The Account filter keeps every message of every order (AC-035) that has at least one message with
   that Account. The other four keep the messages whose own field has the chosen value.
-- AC-049: Filters combine: a message is shown only if it passes every filter that is set.
-- AC-050: The timeline, the message cards and the trading summary all show the filtered log. While a filter is
+- AC-052: Filters combine: a message is shown only if it passes every filter that is set.
+- AC-053: The timeline, the message cards and the trading summary all show the filtered log. While a filter is
   set or an order is selected, the summary strip shows "N of M messages" and the sequence gaps and orders among
   the messages shown, and leaves out the valid and malformed counts.
-- AC-051: While a filter is set or an order is selected, malformed messages are not shown.
-- AC-052: A "Clear filters" button resets all five. Decoding again also resets them.
-- AC-053: Filtering never changes a result. Sequence gaps, message numbers and order grouping are computed on
-  the full log (AC-038).
+- AC-054: While a filter is set or an order is selected, malformed messages are not shown.
+- AC-055: A "Clear filters" button resets all five. Decoding again also resets them.
+- AC-056: Filtering never changes a result. Sequence gaps, message numbers, order grouping and the effect of
+  trade cancels and corrections are computed on the full log (AC-038).
 
 ## Changes to technical requirements
 
@@ -152,10 +163,28 @@ whole log
 
 - **Delimiters (replaces the first bullet):** fields are separated by SOH (0x01), `|`, the text `^A` or the
   text `<SOH>`. The delimiter is chosen per message: it is whichever of the four follows the BeginString value
-  of that message. Only that delimiter separates fields in that message. Before any length or checksum
-  calculation, each delimiter occurrence counts as the single byte 0x01.
+  of that message. Only that delimiter separates fields in that message.
+- **A delimiter inside a value (new):** when the delimiter is one of the three text forms, an occurrence of it
+  separates fields only if a tag and `=` follow it (one or more digits, then `=`), or if it ends the CheckSum
+  field. Any other occurrence is part of the value of the field it is in. With the SOH byte itself, every
+  occurrence separates fields, as the protocol requires.
+- **Byte counts (replaces "treated as SOH"):** in length and checksum calculations, each occurrence that
+  separates fields counts as the single byte 0x01. An occurrence that is part of a value counts as its own
+  bytes.
+- **The one case that text cannot settle:** a value that contains the delimiter followed by digits and `=` reads
+  as a new field. BodyLength still matches and CheckSum does not, so the message is reported with a CheckSum
+  error.
 - **Positions:** character positions in error messages (AC-012) are positions in the pasted text, whatever the
   delimiter.
+
+### TR-003: Session Behaviour Detection
+
+- **ExecutionReport mapping (extended).** These are checked before the v1.1 mapping by ExecType:
+  - **FIX 4.2**, by ExecTransType (20): `1` is TradeCancel, `2` is TradeCorrect, `3` is OrderStatus. `0`, or
+    no tag 20, falls through to the ExecType mapping.
+  - **FIX 4.4**, by ExecType (150): `H` is TradeCancel, `G` is TradeCorrect, `I` is OrderStatus.
+- **Consequence:** a FIX 4.2 report with ExecType `1` or `2` is a Fill only when its ExecTransType is `0` or
+  absent.
 
 ### TR-004: User Interface
 
@@ -177,14 +206,14 @@ whole log
 
 | # | Ticket | Depends on |
 |---|---|---|
-| 9 | `^A` and `<SOH>` delimiters (TR-002) | |
-| 10 | CancelRequest, ReplaceRequest and CancelReject timeline events (AC-009, AC-010) | |
+| 9 | `^A` and `<SOH>` delimiters, and a delimiter inside a value (TR-002) | |
+| 10 | CancelRequest, ReplaceRequest, CancelReject, TradeCancel, TradeCorrect and OrderStatus events (AC-009, AC-010, TR-003) | |
 | 11 | Order grouping module (AC-035) | |
-| 12 | Trading summary module (AC-039 to AC-045) | |
-| 13 | Filter module (AC-047 to AC-049, AC-053) | 11 |
+| 12 | Trading summary module, with trade cancels and corrections (AC-039 to AC-048) | 10 |
+| 13 | Filter module (AC-050 to AC-052, AC-056) | 11 |
 | 14 | The presentation: layout, cards, timeline rows, summary strip, themes, the not-started message (US-006, AC-024) | 9, 10 |
 | 15 | The order story on the page (US-007) | 11, 14 |
-| 16 | The trading summary and the filters on the page (AC-046, AC-050 to AC-052) | 12, 13, 15 |
+| 16 | The trading summary and the filters on the page (AC-049, AC-053 to AC-055) | 12, 13, 15 |
 
 Ticket 8 was the v1.1 browser fix (dictionaries as JavaScript modules).
 
@@ -193,8 +222,9 @@ Ticket 8 was the v1.1 browser fix (dictionaries as JavaScript modules).
 ### Risk 4: The trading summary is read as a position report
 
 - **Risk:** a technician treats the net figure as the client's position.
-- **Mitigation:** the note of AC-045 under the table; the figures cover this log only and ignore trade cancels
-  and corrections.
+- **Mitigation:** the note of AC-048 under the table. The figures cover the executions in this log only, and a
+  log that starts mid-session is missing earlier ones (AC-044 reports the cancels and corrections that point
+  outside the log).
 
 ### Risk 5: Hidden tests tied to the old page structure
 
