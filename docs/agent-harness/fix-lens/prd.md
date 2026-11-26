@@ -333,7 +333,7 @@ Deployment to the internal web server follows after the user has tested with rea
 
 ## Approvals
 
-- **BRD:** Approved by Risk Committee (2026-11-24)
+- **BRD:** Approved by Risk Committee (2026-11-24). Refreshed for the extended functionality of v1.2; the refresh was approved on 2026-11-26.
 - **PRD:** v1.2 approved by Ubay Gonzalez (2026-11-26). v1.1 approved by Ubay Gonzalez (2026-11-25).
-- **Technical Design:** v1.1 approved under delegation from Ubay Gonzalez (2026-11-25), to be confirmed (see the child page FIX Lens - Technical Design). The v1.2 extension is pending.
+- **Technical Design:** v1.2 approved by Ubay Gonzalez (2026-11-26) (see the child page FIX Lens - Technical Design). It replaces v1.1, which was approved under delegation on 2026-11-25.
 - **Implementation:** v1.1 is built: tickets 1 to 8 are on the trusted main (2026-11-26). It has not yet been tested with real logs or deployed. v1.2 is pending.
