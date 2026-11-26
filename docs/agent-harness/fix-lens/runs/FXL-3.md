@@ -1,5 +1,7 @@
 # FXL-3: evidence
 
+> **Superseded in part by FXL-3b** (see `fix-lens/tickets/FXL-3b.md` and `reports/FXL-3-landed-review.md`): four deviations from the ticket and the design landed here; the evidence below is kept as it was.
+
 Patch: `FXL-3.patch` (`git format-patch 544c8c5..main` of the trusted repo; commits below).
 ```
 4e3aaac FXL-3: Generate FIX 4.2 and 4.4 dictionaries from Orchestra files
