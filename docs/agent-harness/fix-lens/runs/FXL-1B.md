@@ -1,67 +1,39 @@
 # FXL-1B: BLOCKED for a human
 
-## FXL-1B · gatekeeper (fix 1) (t_ccbe9210) is blocked
+## FXL-1B · reviewer (t_a012b041) is blocked
 ```
-  [2026-11-26 15:01] default: BLOCKED: FXL-1B: gates failed: base="f36221cfc647c8981d3b190ced10a95c97d63baf", head="f68ca73113ed41e07ac14f023ed898a18c072b73", base_ids=35, head_ids=35, new_ids=["test/framing-f1b.test.js > FXL-1b: splitMessages interface and boundary rules > test_splitMessages_end_uses_text_lengt, removed_ids=["test/framing-f1.test.js > AC3: 8=FIX inside another field > does not start a message at 8=FIX inside tag 448 value on , valid_tests=["test/framing-f1b.test.js > FXL-1b: splitMessages interface and boundary rules > test_splitMessages_end_uses_text_lengt, missing_acs=["AC0", "AC1", "AC2", "AC3"]
-
-Events (7):
-  [2026-11-26 14:50] created {'assignee': 'gatekeeper', 'status': 'todo', 'parents': ['t_8927f6a0'], 'creator_task_id': None, 'tenant': None, 'workspace_kind': 'dir', 'workspace_path': '/srv/lab/agent-harness/work/fix-lens', 'branch_name': None, 'project_id': None, 'skills': None, 'goal_mode': None, 'model_override': None, 'provider_override': None}
-  [2026-11-26 14:50] dependency_wait {'reason': 'parent_not_done', 'parent': 't_8927f6a0'}
-  [2026-11-26 15:00] promoted
-  [2026-11-26 15:00] skipped_nonspawnable {'assignee': 'gatekeeper'}
-  [2026-11-26 15:01] [run 289] claimed {'lock': 'ailab:355128', 'expires': 1795703463, 'run_id': 289}
-  [2026-11-26 15:01] commented {'author': 'default', 'len': 593}
-  [2026-11-26 15:01] [run 289] blocked {'reason': 'FXL-1B: gates failed: base="f36221cfc647c8981d3b190ced10a95c97d63baf", head="f68ca73113ed41e07ac14f023ed898a18c072b73", base_ids=35, head_ids=35, new_ids=["test/framing-f1b.test.js > FXL-1b: splitMessages interface and boundary rules > test_splitMessages_end_uses_text_lengt, removed_ids=["test/framing-f1.test.js > AC3: 8=FIX inside another field > does not start a message at 8=FIX inside tag 448 value on , valid_tests=["test/framing-f1b.test.js > FXL-1b: splitMessages interface and boundary rules > test_splitMessages_end_uses_text_lengt, missing_acs=["AC0", "AC1", "AC2", "AC3"]', 'kind': 'needs_input', 'recurrences': 1, 'source_status': 'ready'}
+  [2026-11-26 15:27] [run 301] claimed {'lock': 'ailab:361504', 'expires': 1795705045, 'run_id': 301}
+  [2026-11-26 15:28] [run 301] heartbeat {'note': 'review running'}
+  [2026-11-26 15:29] [run 301] heartbeat {'note': 'review running'}
+  [2026-11-26 15:30] [run 301] heartbeat {'note': 'review running'}
+  [2026-11-26 15:31] [run 301] heartbeat {'note': 'review running'}
+  [2026-11-26 15:32] [run 301] heartbeat {'note': 'review running'}
+  [2026-11-26 15:33] [run 301] heartbeat {'note': 'review running'}
+  [2026-11-26 15:34] [run 301] heartbeat {'note': 'review running'}
+  [2026-11-26 15:34] commented {'author': 'default', 'len': 104}
+  [2026-11-26 15:34] [run 301] blocked {'reason': 'FXL-1B: 1 proven, 3 blocking-unproven, 0 notes, 0 skipped for budget; $2.3768 (see review.json)', 'kind': 'needs_input', 'recurrences': 1, 'source_status': 'ready'}
 
 Runs (1):
-  #289 blocked      @gatekeeper  15s  2026-11-26 15:01
-        → FXL-1B: gates failed: base="f36221cfc647c8981d3b190ced10a95c97d63baf", head="f68ca73113ed41e07ac14f023ed898a18c072b73", base_ids=35, head_ids=35, new_ids=["test
+  #301 blocked      @reviewer  444s  2026-11-26 15:27
+        → FXL-1B: 1 proven, 3 blocking-unproven, 0 notes, 0 skipped for budget; $2.3768 (see review.json)
 ```
 
-Run files: base.txt, fix-1.json, gates-1.json, gates.json, implement.json, plan.json, readiness.json, repo.txt
+Run files: base.txt, find-raw-1.txt, findings.json, gates.json, implement.json, plan.json, proofs.json, readiness.json, refutations.json, repo.txt, review.json
 
 ## Run summary
-Fix pass: pass 1 triggered by gates
-- First attempt's gates: {"passed": false, "missing_acs": ["AC0", "AC1", "AC2"], "unmapped": ["t/framing-f1b.test.js > FXL-1b: splitMessages interface and boundary rules > test_splitMessages_missing_checksum_at_line_end_returns_candidate", "test/framing.test.js > AC6: field structure > records tag as number, value as string, and position of tag start"]}; lint True; pass_to_pass True
-- Latest gates: {"passed": false, "missing_acs": ["AC0", "AC1", "AC2", "AC3"], "unmapped": ["test/framing.test.js > AC6: field structure > records tag as number, value as string, and position of tag start"]}; lint True; pass_to_pass True
+Fix pass: none
+- Latest gates: {"passed": true, "unmapped": ["test/framing.test.js > AC6: field structure > records tag as number, value as string, and position of tag start"]}; lint True; pass_to_pass True
 
-Fix feedback trigger: gates
-
-## Review check (FXL-1B-review.md), read-only
-
-**The cause is not the id format. It is a harness bug: the gate's test collection is silently cut to its last 4000 characters.**
-`gates.run_cmd` returns `(proc.stdout + proc.stderr)[-4000:]`, and `collect_ids` reads the test ids from that string.
-`vitest list` prints 60 ids (about 9 KB) on the head, so the gate only saw the tail.
-
-Evidence:
-- The ids in `implement.json`'s `ac_tests` match `vitest list` on the head **exactly**. I ran `vitest list` on a clean
-  archive of `harness/FXL-1B` (f68ca73): all seven `test/framing-f1b.test.js` ids are there, including the four AC0 to AC3
-  ids, character for character.
-- The gate's counts are not the real ones: `base_ids=35` and `head_ids=35`. Run directly (same command, in a clean
-  archive) the base `f36221c` has 53 ids and the head has 60, each file once: dictionary 17, framing-f1b 7, framing-f1 3,
-  framing-f2 12, framing 14, helpers 7. Repeated 4 times, always 60.
-- The cut lands inside a line. Attempt 1's `unmapped` has the id `t/framing-f1b.test.js > ...`, with the start of
-  `test/` cut off. That is the 4000-character boundary.
-- So `new_ids` and `removed_ids` are artefacts. The head file and the base file are cut at different places, and the ids
-  in front of the cut vanish from each side. That is why `framing-f1.test.js > AC3 ...` shows up as "removed" while
-  `git diff f36221c harness/FXL-1B -- test/framing-f1.test.js` is empty: that file is untouched.
-- AC0 to AC3 are "missing" because their test ids (file `framing-f1b`, listed early in the output) were in the cut-off
-  part of the head's list.
-
-**Models per stage (this attempt):** planner `gpt-6-sol` (openai-codex), 1 call, no fallback row; triage and implementer
-(both attempts) `qwen3.7-plus` (alibaba-token-plan). Nothing else has run yet: the reviewer and the spec pass never started,
-because the gates blocked first.
-
-**Base tests changed by the fix pass (question 3):** no deletion and no FXL-1 test file change. The implementer *edited*
-existing tests, and says so in `modified_existing_tests`: in `test/framing.test.js` and `test/framing-f2.test.js` it
-changed `offset` to `position` in field assertions and in hand-built candidate fields, to match the interface the
-ticket asks for (AC0 names the `position` key). One test was **renamed** with it:
-`... and offset of tag start` became `... and position of tag start` (`framing.test.js`, AC6). That is a base test
-changed, so the gate flags `existing_tests_touched`. The change follows from the ticket, but it is the reviewer's call.
-
-**Cost of the bug:** it would hit every ticket whose suite lists more than about 25 ids. FXL-1B is only the first one
-that got there, since the suite grew with FXL-1b, FXL-2 and FXL-3. Suggest D11 gets: raise the collect output limit (or
-do not cut `collect` output at all, only the tail kept for reports), and block with a clear reason if a collect output
-looks cut (for example, if no line was dropped by the regex but the output length equals the limit).
-
-Nothing was unblocked or changed. The driver stopped on the block, as designed. The `*-review.md` watcher is running.
+### Latest review: tier high, cost $2.3768, decision {'blocking': ['F1'], 'blocking_unproven': ['F2', 'F3', 'F4'], 'notes': []}
+- F1 [high, conf 92] src/framing.js:51 The delimiter-adjacent 8=FIX check does not verify that the '8=FIX' is followed by a valid message-start character (delimiter, '.', line end, or text end).
+  failure: Input '8=FIX.4.4|9=5|35=0|8=FIXCLIENT|10=123|' ends the first candidate at the '8=FIXCLIENT' position (because text.substring matches '8=FIX' and prev is '|'), then findMessageStart rejects '8=FIXCLIENT' (next char 'C' is invalid). Result: one candidate with fields [8,9,35] and the trailing '10=123'
+- F2 [critical, conf 99] src/framing.js:203 The change makes checkMessage stop at any empty piece (`if (fieldText === "") break;`) and removes FXL-2's handling of an empty piece between delimiters. `||` is no longer reported as field_without_equals, and the pieces after it are no longer checked by rules 1 and 2. The ticket required keeping wh
+  failure: Take `8=FIX.4.4|9=5||35=0|10=NNN|`, where BodyLength matches the bytes after `9=5|` (here `|35=0|` is 6, so use `9=6`) and NNN is the correct checksum. splitMessages skips the empty piece, so fields are 8, 9, 35, 10. rawFields stops at the `||`, and checkMessage returns null, so the message is accep
+- F3 [high, conf 97] src/framing.js:371 The new filter in findMessageStart starts a candidate only if `8=FIX` is followed by `.`, a delimiter, a line end or the end of the text. The design has no such condition, so BeginStrings such as FIXT.1.1 are silently dropped.
+  failure: splitMessages("8=FIXT.1.1|9=5|35=0|10=123|") returns [] because the character after `8=FIX` is `T`. It should return one candidate, which is later labelled unsupported version FIXT.1.1. The message vanishes with no decode and no error, and it is also left out of the message count.
+- F4 [high, conf 92] src/framing.js:394 A prefix containing `=` still hides the message when it matches `\b\d+=`, even though the line before `8=FIX` has no delimiter and the preceding character is not a digit. AC1 allows no such exception.
+  failure: For `thread 1=main 8=FIX.4.4|9=5|35=0|10=123|`, the character before `8=FIX` is a space and the prefix has no `|` or SOH. The regex matches `1=`, so splitMessages returns []. It should return one candidate starting at offset 14. A prefix such as `10.0.0.1=gw 8=FIX.4.4|...` is hidden in the same way.
+- proof F1: proven=True (AssertionError: assertion failed); test `test/f1-invalid-start.test.js > F1: delimiter-adjacent 8=FIX that is not a message start > does not end the current candidate at 8=FIXCLIENT`
+- proof F2: proven=None (budget); test `None`
+- proof F3: proven=None (budget); test `None`
+- proof F4: proven=None (budget); test `None`
