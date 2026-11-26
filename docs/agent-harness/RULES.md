@@ -1,6 +1,6 @@
 # Harness operating rules
 
-**Status: draft for Ubay's approval. Not in force until this line says approved, with a date.**
+**Status: approved by Ubay Gonzalez on 2026-11-26. In force.**
 
 These rules bind every agent session that works on the harness: jobs on the VM and the reviewing session. A
 session starts by reading this file and the current state (`HANDOFF.md` until the runner writes a state file).
