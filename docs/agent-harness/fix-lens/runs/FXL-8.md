@@ -66,3 +66,8 @@ Newly passing: 6. No regressions.
 Failing hidden tests, by name:
 
 - none
+
+## Implementer, finder and Codex use
+- **Implementer: `gpt-6-sol` (openai-codex), first pass and gate fix pass. No fallback seen.** The table's `gpt-6.2-sol` rows (1 implementer, 1 planner call) are **my verification calls** after the model switch; the ticket did not run on it. Codex use for the ticket: implementer 3 sessions, 44 calls, 85,052 in / 11,297 out; planner 1 session, 12 calls, 30,109 in / 4,906 out. The 3 implementer sessions include sessions from my earlier tiny checks if any fell in the ticket's window; I did not separate them.
+- **Finder: `deepseek-flash`**, one session.
+- **Against the Qwen tickets:** first-attempt gates failed (AC2); one gate fix pass; one person-approved test edit; one review block for a harness config gap (fixed by D18); nothing blocking in review (note F1); hidden suite 59/59, no regressions. Mutation gave no result (`stryker wrote no report`), to be looked at in D19. Accepted in a real browser (FXL-8-landed-review).
