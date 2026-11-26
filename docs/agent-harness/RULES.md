@@ -1,6 +1,6 @@
 # Harness operating rules
 
-**Status: approved by Ubay Gonzalez on 2026-11-26. In force.**
+**Status: approved by Ubay Gonzalez on 2026-11-26. In force. The deletion exception in section 3 was approved the same day.**
 
 These rules bind every agent session that works on the harness: jobs on the VM and the reviewing session. A
 session starts by reading this file and the current state (`HANDOFF.md` until the runner writes a state file).
@@ -28,7 +28,8 @@ Nothing a session remembers from an earlier conversation overrides this file.
 - `sudo`, and anything written by hand to the trusted repositories or to `~/.local/state/agent-harness/`. The
   kit's own tools and the runner's decision actions are not "by hand".
 - Deploying the harness (`harness-deploy <sha>`), and installing or changing system services.
-- Deleting data, containers or volumes.
+- Deleting data, containers or volumes. One exception: a job may delete what it created itself in the same
+  job (throwaway profiles, scratch folders), and lists what it deleted in its report.
 - Changing which model a live profile uses, or its fallback list.
 - Approving a PRD or a technical design, or changing an approved one.
 - Anything sent outside: email, Confluence, a new pull request, a comment on any pull request other than #47.
