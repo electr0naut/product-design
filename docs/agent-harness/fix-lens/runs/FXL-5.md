@@ -62,3 +62,19 @@ Hidden acceptance suite on trusted main `533f8ac4eb`: **39/49** pass.
 | acc-timeline.test.js | 13 | 14 |  |
 
 Newly passing: 13. No regressions.
+
+## The failing hidden timeline test (FXL-5-landed-review.md)
+Reproduced on the trusted `main` `533f8ac` in a throwaway container (no network; only a host-only scratch export plus the read-only dependencies mounted), so the hidden test was never on disk where workers could see it. Nothing in the repo or board was changed.
+
+- **Name:** `test/acc-timeline.test.js > event keys` (13 of 14 pass).
+- **Assertion:** `AssertionError: expected [ 'clOrdId', 'detail', 'kind', …(7) ] to deeply equal [ 'clOrdId', 'detail', 'kind', …(7) ]` at line 22. The only difference in the diff: expected has `"sendingTime"` before `"sender"`; received has `"sender"` before `"sendingTime"`.
+- **Actual events** for the test's input `run(m(1, "A"))`:
+```json
+[{"number":1,"sendingTime":null,"sender":"A","target":"B","seqNum":"1","clOrdId":null,"orderId":null,"kind":"session","name":"Logon","detail":null}]
+```
+- **Verdict: the test is wrong, not the timeline.** The test sorts the received keys with `.sort()` and compares them with a hand-written list that is not in `.sort()` order: `"sender"` sorts before `"sendingTime"` (`e` before `i`). The two key sets are identical. With the expected list sorted too, and with the test's second assertion (`sender`, `target`, `number` = `A`, `B`, `1`), which never ran because the first one failed, both pass in a probe. Fix: sort the expected list as well, or swap those two entries. I have not edited the hidden test.
+
+## Implementer, finder and Codex use
+- **Implementer: `gpt-6-sol` (openai-codex). No fallback.** Codex use: implementer 1 session, 19 calls, 44,304 in / 7,323 out; planner 1 session, 10 calls, 28,392 in / 5,874 out. No rate-limit or fallback line seen.
+- **Finder: `deepseek-flash`**, one session.
+- **Against the Qwen tickets:** gates passed first time, no fix pass, nothing blocking (note F1, medium, unproven: a direction counts as seen only once it has a stored expected number); Claude $0.64; hidden suite 39/49, no regressions.
