@@ -57,3 +57,8 @@ Failing hidden tests, by name:
 - `test/acc-analyse.test.js > <collection>` (error)
 - `test/acc-limits.test.js > <collection>` (error)
 - `test/acc-timeline.test.js > event keys` (fail)
+
+## Implementer, finder and Codex use
+- **Implementer: `gpt-6-sol` (openai-codex). No fallback.** Codex use: implementer 1 session, 23 calls, 37,044 in / 3,937 out; planner 1 session, 10 calls, 38,137 in / 3,145 out. No rate-limit or fallback line seen.
+- **Finder: `deepseek-flash`**, one session.
+- **Against the Qwen tickets:** gates passed first time, no fix pass, no findings; hidden suite 41/49 with `acc-decode` 5/5 and `acc-dictionary` 5/5 (the two new tests now pass), no regressions. The one other non-import failure, `acc-timeline > event keys`, is the test's own key-order mistake, fixed in the hidden suite after this run (FXL-5-test-fix-review.md).
