@@ -1,10 +1,10 @@
 # Harness state
 
-Written by the runner at 2026-11-27T15:56:37+0100. Host-only copy: `state.json`.
-Kit: `b20b702746f76fc19bedab2d7989714738f6f86a`
+Written by the runner at 2026-11-27T15:58:40+0100. Host-only copy: `state.json`.
+Kit: `5b6c863f6cb4b61d41333d79b32e40276820238a`
 
 ## What changed
-- finished: FXL-16
+- kit commit is now 5b6c863f6cb4b61d41333d79b32e40276820238a
 
 ## Tickets
 - **SMK-1** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
