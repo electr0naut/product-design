@@ -110,7 +110,52 @@ A watcher polling every 3 s recorded the same order.
 
 ### `pipeline.json` at the end (as loaded, both had `result`, `finished` and `scribe_done_at` null)
 ```json
-
+[
+ {
+  "key": "SMK-1",
+  "repo": "fixture-repo",
+  "loaded_at": 1795743200.2182124,
+  "triage": "t_d7d1845f",
+  "scribe": "t_03213b76",
+  "gate": "t_f68afde6",
+  "result": {
+   "enabled": false,
+   "regressions": [],
+   "failing": [],
+   "markdown": "Hidden acceptance suite: not enabled for this repository.",
+   "gate_was_open": false,
+   "ran_beside": []
+  },
+  "held": false,
+  "finished": 1795743716.7846909,
+  "dropped": false,
+  "errors": 0,
+  "blocks": [],
+  "scribe_done_at": 1795743695
+ },
+ {
+  "key": "SMK-2",
+  "repo": "fixture-repo",
+  "loaded_at": 1795743217.9309988,
+  "triage": "t_9c8f3cc6",
+  "scribe": "t_eb90bc9e",
+  "gate": "t_5e2371ae",
+  "result": {
+   "enabled": false,
+   "regressions": [],
+   "failing": [],
+   "markdown": "Hidden acceptance suite: not enabled for this repository.",
+   "gate_was_open": false,
+   "ran_beside": []
+  },
+  "held": false,
+  "finished": 1795744171.7717743,
+  "dropped": false,
+  "errors": 0,
+  "blocks": [],
+  "scribe_done_at": 1795744166
+ }
+]
 ```
 
 ### The rest of the run
