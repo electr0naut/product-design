@@ -1,0 +1,1764 @@
+[
+ {
+  "id": "DS-lifecycle-42-01",
+  "feature": "Counts: messages, valid, malformed, sequence gaps, orders",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/lifecycle-42.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": {
+   "messages": 321,
+   "valid": 321,
+   "malformed": 0,
+   "gaps": 2,
+   "orders": 45
+  },
+  "actual": {
+   "messages": 321,
+   "valid": 321,
+   "malformed": 0,
+   "gaps": 2,
+   "orders": 45
+  }
+ },
+ {
+  "id": "DS-lifecycle-42-02",
+  "feature": "Every timeline event, in log order",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/lifecycle-42.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "323 items, first: [\"1:Logon\",\"2:Logon\",\"3:NewOrder\"]",
+  "actual": "323 items, first: [\"1:Logon\",\"2:Logon\",\"3:NewOrder\"]"
+ },
+ {
+  "id": "DS-lifecycle-42-03",
+  "feature": "Sequence gaps: message, expected and received numbers",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/lifecycle-42.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": [
+   [
+    125,
+    86,
+    87
+   ],
+   [
+    225,
+    63,
+    64
+   ]
+  ],
+  "actual": [
+   [
+    125,
+    86,
+    87
+   ],
+   [
+    225,
+    63,
+    64
+   ]
+  ]
+ },
+ {
+  "id": "DS-lifecycle-42-04",
+  "feature": "Order grouping: each logical order (with its amendment chain) is one group",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/lifecycle-42.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "45 items, first: [[3,30,34,38,44,65,71,72,79,100,104],[4,26,60,70,73,82,85,103,106],[5,24,29,41,56,61,78,88]]",
+  "actual": "45 items, first: [[3,30,34,38,44,65,71,72,79,100,104],[4,26,60,70,73,82,85,103,106],[5,24,29,41,56,61,78,88]]"
+ },
+ {
+  "id": "DS-lifecycle-42-05",
+  "feature": "Trading summary per symbol against decimal ground truth",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/lifecycle-42.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": {
+   "ACME": {
+    "buyOrders": "9",
+    "bought": [
+     "5100"
+    ],
+    "avgBuy": [
+     "434.8459"
+    ],
+    "sellOrders": "2",
+    "sold": [
+     "2000"
+    ],
+    "avgSell": [
+     "683.87"
+    ],
+    "net": [
+     "+3100"
+    ],
+    "exact": {
+     "bought": "5100",
+     "sold": "2000",
+     "buyNotional": "2217714",
+     "sellNotional": "1367740"
+    }
+   },
+   "KRONE": {
+    "buyOrders": "5",
+    "bought": [
+     "450"
+    ],
+    "avgBuy": [
+     "30.6298"
+    ],
+    "sellOrders": "6",
+    "sold": [
+     "690"
+    ],
+    "avgSell": [
+     "44.164"
+    ],
+    "net": [
+     "-240"
+    ],
+    "exact": {
+     "bought": "450",
+     "sold": "690",
+     "buyNotional": "13783.43",
+     "sellNotional": "30473.14"
+    }
+   },
+   "OMNI": {
+    "buyOrders": "4",
+    "bought": [
+     "27"
+    ],
+    "avgBuy": [
+     "3737.6241"
+    ],
+    "sellOrders": "8",
+    "sold": [
+     "50"
+    ],
+    "avgSell": [
+     "2434.79"
+    ],
+    "net": [
+     "-23"
+    ],
+    "exact": {
+     "bought": "27",
+     "sold": "50",
+     "buyNotional": "100915.85",
+     "sellNotional": "121739.5"
+    }
+   },
+   "ZETA": {
+    "buyOrders": "3",
+    "bought": [
+     "3"
+    ],
+    "avgBuy": [
+     "0.7296"
+    ],
+    "sellOrders": "8",
+    "sold": [
+     "57.5"
+    ],
+    "avgSell": [
+     "5.2794"
+    ],
+    "net": [
+     "-54.5"
+    ],
+    "exact": {
+     "bought": "3",
+     "sold": "57.5",
+     "buyNotional": "2.1887",
+     "sellNotional": "303.563"
+    }
+   }
+  },
+  "actual": {
+   "ACME": {
+    "buyOrders": "9",
+    "bought": "5100",
+    "avgBuy": "434.8459",
+    "sellOrders": "2",
+    "sold": "2000",
+    "avgSell": "683.87",
+    "net": "+3100"
+   },
+   "KRONE": {
+    "buyOrders": "5",
+    "bought": "450",
+    "avgBuy": "30.6298",
+    "sellOrders": "6",
+    "sold": "690",
+    "avgSell": "44.164",
+    "net": "-240"
+   },
+   "OMNI": {
+    "buyOrders": "4",
+    "bought": "27",
+    "avgBuy": "3737.6241",
+    "sellOrders": "8",
+    "sold": "50",
+    "avgSell": "2434.79",
+    "net": "-23"
+   },
+   "ZETA": {
+    "buyOrders": "3",
+    "bought": "3",
+    "avgBuy": "0.7296",
+    "sellOrders": "8",
+    "sold": "57.5",
+    "avgSell": "5.2794",
+    "net": "-54.5"
+   }
+  }
+ },
+ {
+  "id": "DS-lifecycle-42-06",
+  "feature": "Selecting an order (45 orders): its messages, its state, the strip",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/lifecycle-42.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "no differences",
+  "actual": []
+ },
+ {
+  "id": "DS-lifecycle-42-07",
+  "feature": "Filters (5 Account and SenderCompID choices): messages, summary, counts",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/lifecycle-42.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "no differences",
+  "actual": []
+ },
+ {
+  "id": "DS-lifecycle-42-08",
+  "feature": "Decoding the same text twice gives the same result",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/lifecycle-42.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-42-01",
+  "feature": "Same result as raw SOH: pipe-delimited",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/lifecycle-42.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-42-02",
+  "feature": "Same result as raw SOH: ^A text form",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/lifecycle-42.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-42-03",
+  "feature": "Same result as raw SOH: <SOH> text form",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/lifecycle-42.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-42-04",
+  "feature": "Same result as raw SOH: Windows CRLF",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/lifecycle-42.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-42-05",
+  "feature": "Same result as raw SOH: CR only",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/lifecycle-42.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-42-06",
+  "feature": "Same result as raw SOH: UTF-8 BOM",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/lifecycle-42.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-42-07",
+  "feature": "Same result as raw SOH: no trailing newline",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/lifecycle-42.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-42-08",
+  "feature": "Same result as raw SOH: empty lines between messages",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/lifecycle-42.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-42-09",
+  "feature": "Same result as raw SOH: QuickFIX file log lines",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/lifecycle-42.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-42-10",
+  "feature": "Same result as raw SOH: QuickFIX/J log lines",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/lifecycle-42.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-42-11",
+  "feature": "Same result as raw SOH: timestamp and direction prefix",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/lifecycle-42.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-42-12",
+  "feature": "Same result as raw SOH: logger prefix, pipe form",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/lifecycle-42.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-42-13",
+  "feature": "Same result as raw SOH: mixed with non-FIX log lines",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/lifecycle-42.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-42-14",
+  "feature": "Same result as raw SOH: all messages on one line",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/lifecycle-42.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-42-15",
+  "feature": "Same result as raw SOH: two messages per line",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/lifecycle-42.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-42-16",
+  "feature": "Same result as raw SOH: three delimiter forms mixed by line",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/lifecycle-42.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "DS-lifecycle-44-01",
+  "feature": "Counts: messages, valid, malformed, sequence gaps, orders",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/lifecycle-44.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": {
+   "messages": 328,
+   "valid": 328,
+   "malformed": 0,
+   "gaps": 2,
+   "orders": 45
+  },
+  "actual": {
+   "messages": 328,
+   "valid": 328,
+   "malformed": 0,
+   "gaps": 2,
+   "orders": 45
+  }
+ },
+ {
+  "id": "DS-lifecycle-44-02",
+  "feature": "Every timeline event, in log order",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/lifecycle-44.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "330 items, first: [\"1:Logon\",\"2:Logon\",\"3:NewOrder\"]",
+  "actual": "330 items, first: [\"1:Logon\",\"2:Logon\",\"3:NewOrder\"]"
+ },
+ {
+  "id": "DS-lifecycle-44-03",
+  "feature": "Sequence gaps: message, expected and received numbers",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/lifecycle-44.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": [
+   [
+    109,
+    79,
+    80
+   ],
+   [
+    213,
+    55,
+    56
+   ]
+  ],
+  "actual": [
+   [
+    109,
+    79,
+    80
+   ],
+   [
+    213,
+    55,
+    56
+   ]
+  ]
+ },
+ {
+  "id": "DS-lifecycle-44-04",
+  "feature": "Order grouping: each logical order (with its amendment chain) is one group",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/lifecycle-44.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "45 items, first: [[3,12,21],[4,14,16,71,97,101,102,103,104,108],[5,49,60,70]]",
+  "actual": "45 items, first: [[3,12,21],[4,14,16,71,97,101,102,103,104,108],[5,49,60,70]]"
+ },
+ {
+  "id": "DS-lifecycle-44-05",
+  "feature": "Trading summary per symbol against decimal ground truth",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/lifecycle-44.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": {
+   "ACME": {
+    "buyOrders": "4",
+    "bought": [
+     "1000"
+    ],
+    "avgBuy": [
+     "771.401"
+    ],
+    "sellOrders": "5",
+    "sold": [
+     "7000"
+    ],
+    "avgSell": [
+     "646.8147"
+    ],
+    "net": [
+     "-6000"
+    ],
+    "exact": {
+     "bought": "1000",
+     "sold": "7000",
+     "buyNotional": "771401",
+     "sellNotional": "4527703"
+    }
+   },
+   "KRONE": {
+    "buyOrders": "3",
+    "bought": [
+     "330"
+    ],
+    "avgBuy": [
+     "46.8033"
+    ],
+    "sellOrders": "6",
+    "sold": [
+     "770"
+    ],
+    "avgSell": [
+     "54.2397"
+    ],
+    "net": [
+     "-440"
+    ],
+    "exact": {
+     "bought": "330",
+     "sold": "770",
+     "buyNotional": "15445.08",
+     "sellNotional": "41764.57"
+    }
+   },
+   "OMNI": {
+    "buyOrders": "4",
+    "bought": [
+     "27"
+    ],
+    "avgBuy": [
+     "2024.3796"
+    ],
+    "sellOrders": "7",
+    "sold": [
+     "100"
+    ],
+    "avgSell": [
+     "2511.344"
+    ],
+    "net": [
+     "-73"
+    ],
+    "exact": {
+     "bought": "27",
+     "sold": "100",
+     "buyNotional": "54658.25",
+     "sellNotional": "251134.4"
+    }
+   },
+   "ZETA": {
+    "buyOrders": "3",
+    "bought": [
+     "5.5"
+    ],
+    "avgBuy": [
+     "6.019"
+    ],
+    "sellOrders": "13",
+    "sold": [
+     "103.5"
+    ],
+    "avgSell": [
+     "4.0577"
+    ],
+    "net": [
+     "-98"
+    ],
+    "exact": {
+     "bought": "5.5",
+     "sold": "103.5",
+     "buyNotional": "33.10445",
+     "sellNotional": "419.9733"
+    }
+   }
+  },
+  "actual": {
+   "ACME": {
+    "buyOrders": "4",
+    "bought": "1000",
+    "avgBuy": "771.401",
+    "sellOrders": "5",
+    "sold": "7000",
+    "avgSell": "646.8147",
+    "net": "-6000"
+   },
+   "KRONE": {
+    "buyOrders": "3",
+    "bought": "330",
+    "avgBuy": "46.8033",
+    "sellOrders": "6",
+    "sold": "770",
+    "avgSell": "54.2397",
+    "net": "-440"
+   },
+   "OMNI": {
+    "buyOrders": "4",
+    "bought": "27",
+    "avgBuy": "2024.3796",
+    "sellOrders": "7",
+    "sold": "100",
+    "avgSell": "2511.344",
+    "net": "-73"
+   },
+   "ZETA": {
+    "buyOrders": "3",
+    "bought": "5.5",
+    "avgBuy": "6.019",
+    "sellOrders": "13",
+    "sold": "103.5",
+    "avgSell": "4.0577",
+    "net": "-98"
+   }
+  }
+ },
+ {
+  "id": "DS-lifecycle-44-06",
+  "feature": "Selecting an order (45 orders): its messages, its state, the strip",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/lifecycle-44.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "no differences",
+  "actual": []
+ },
+ {
+  "id": "DS-lifecycle-44-07",
+  "feature": "Filters (5 Account and SenderCompID choices): messages, summary, counts",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/lifecycle-44.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "no differences",
+  "actual": []
+ },
+ {
+  "id": "DS-lifecycle-44-08",
+  "feature": "Decoding the same text twice gives the same result",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/lifecycle-44.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-44-01",
+  "feature": "Same result as raw SOH: pipe-delimited",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/lifecycle-44.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-44-02",
+  "feature": "Same result as raw SOH: ^A text form",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/lifecycle-44.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-44-03",
+  "feature": "Same result as raw SOH: <SOH> text form",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/lifecycle-44.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-44-04",
+  "feature": "Same result as raw SOH: Windows CRLF",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/lifecycle-44.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-44-05",
+  "feature": "Same result as raw SOH: CR only",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/lifecycle-44.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-44-06",
+  "feature": "Same result as raw SOH: UTF-8 BOM",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/lifecycle-44.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-44-07",
+  "feature": "Same result as raw SOH: no trailing newline",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/lifecycle-44.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-44-08",
+  "feature": "Same result as raw SOH: empty lines between messages",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/lifecycle-44.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-44-09",
+  "feature": "Same result as raw SOH: QuickFIX file log lines",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/lifecycle-44.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-44-10",
+  "feature": "Same result as raw SOH: QuickFIX/J log lines",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/lifecycle-44.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-44-11",
+  "feature": "Same result as raw SOH: timestamp and direction prefix",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/lifecycle-44.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-44-12",
+  "feature": "Same result as raw SOH: logger prefix, pipe form",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/lifecycle-44.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-44-13",
+  "feature": "Same result as raw SOH: mixed with non-FIX log lines",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/lifecycle-44.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-44-14",
+  "feature": "Same result as raw SOH: all messages on one line",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/lifecycle-44.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-44-15",
+  "feature": "Same result as raw SOH: two messages per line",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/lifecycle-44.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-lifecycle-44-16",
+  "feature": "Same result as raw SOH: three delimiter forms mixed by line",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/lifecycle-44.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "DS-mixed-sessions-01",
+  "feature": "Counts: messages, valid, malformed, sequence gaps, orders",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/multi-session/mixed-sessions.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": {
+   "messages": 845,
+   "valid": 845,
+   "malformed": 0,
+   "gaps": 2,
+   "orders": 110
+  },
+  "actual": {
+   "messages": 845,
+   "valid": 845,
+   "malformed": 0,
+   "gaps": 2,
+   "orders": 110
+  }
+ },
+ {
+  "id": "DS-mixed-sessions-02",
+  "feature": "Every timeline event, in log order",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/multi-session/mixed-sessions.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "847 items, first: [\"1:Logon\",\"2:Logon\",\"3:Logon\"]",
+  "actual": "847 items, first: [\"1:Logon\",\"2:Logon\",\"3:Logon\"]"
+ },
+ {
+  "id": "DS-mixed-sessions-03",
+  "feature": "Sequence gaps: message, expected and received numbers",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/multi-session/mixed-sessions.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": [
+   [
+    301,
+    39,
+    40
+   ],
+   [
+    566,
+    38,
+    39
+   ]
+  ],
+  "actual": [
+   [
+    301,
+    39,
+    40
+   ],
+   [
+    566,
+    38,
+    39
+   ]
+  ]
+ },
+ {
+  "id": "DS-mixed-sessions-04",
+  "feature": "Order grouping: each logical order (with its amendment chain) is one group",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/multi-session/mixed-sessions.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "110 items, first: [[11,34,39,80,131,134,161,185],[12,22,128,144,152,153,166,172],[13,14,20]]",
+  "actual": "110 items, first: [[11,34,39,80,131,134,161,185],[12,22,128,144,152,153,166,172],[13,14,20]]"
+ },
+ {
+  "id": "DS-mixed-sessions-05",
+  "feature": "Trading summary per symbol against decimal ground truth",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/multi-session/mixed-sessions.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": {
+   "ACME": {
+    "buyOrders": "13",
+    "bought": [
+     "13800"
+    ],
+    "avgBuy": [
+     "333.0529"
+    ],
+    "sellOrders": "11",
+    "sold": [
+     "15900"
+    ],
+    "avgSell": [
+     "388.2776"
+    ],
+    "net": [
+     "-2100"
+    ],
+    "exact": {
+     "bought": "13800",
+     "sold": "15900",
+     "buyNotional": "4596130",
+     "sellNotional": "6173614"
+    }
+   },
+   "KRONE": {
+    "buyOrders": "8",
+    "bought": [
+     "870"
+    ],
+    "avgBuy": [
+     "55.2881"
+    ],
+    "sellOrders": "14",
+    "sold": [
+     "1940"
+    ],
+    "avgSell": [
+     "35.3807"
+    ],
+    "net": [
+     "-1070"
+    ],
+    "exact": {
+     "bought": "870",
+     "sold": "1940",
+     "buyNotional": "48100.66",
+     "sellNotional": "68638.53"
+    }
+   },
+   "OMNI": {
+    "buyOrders": "13",
+    "bought": [
+     "128"
+    ],
+    "avgBuy": [
+     "1822.8297"
+    ],
+    "sellOrders": "17",
+    "sold": [
+     "225"
+    ],
+    "avgSell": [
+     "2952.7987"
+    ],
+    "net": [
+     "-97"
+    ],
+    "exact": {
+     "bought": "128",
+     "sold": "225",
+     "buyNotional": "233322.2",
+     "sellNotional": "664379.7"
+    }
+   },
+   "ZETA": {
+    "buyOrders": "15",
+    "bought": [
+     "68.5"
+    ],
+    "avgBuy": [
+     "5.9186"
+    ],
+    "sellOrders": "19",
+    "sold": [
+     "37.5"
+    ],
+    "avgSell": [
+     "3.7819"
+    ],
+    "net": [
+     "+31"
+    ],
+    "exact": {
+     "bought": "68.5",
+     "sold": "37.5",
+     "buyNotional": "405.4262",
+     "sellNotional": "141.82"
+    }
+   }
+  },
+  "actual": {
+   "ACME": {
+    "buyOrders": "13",
+    "bought": "13800",
+    "avgBuy": "333.0529",
+    "sellOrders": "11",
+    "sold": "15900",
+    "avgSell": "388.2776",
+    "net": "-2100"
+   },
+   "KRONE": {
+    "buyOrders": "8",
+    "bought": "870",
+    "avgBuy": "55.2881",
+    "sellOrders": "14",
+    "sold": "1940",
+    "avgSell": "35.3807",
+    "net": "-1070"
+   },
+   "OMNI": {
+    "buyOrders": "13",
+    "bought": "128",
+    "avgBuy": "1822.8297",
+    "sellOrders": "17",
+    "sold": "225",
+    "avgSell": "2952.7987",
+    "net": "-97"
+   },
+   "ZETA": {
+    "buyOrders": "15",
+    "bought": "68.5",
+    "avgBuy": "5.9186",
+    "sellOrders": "19",
+    "sold": "37.5",
+    "avgSell": "3.7819",
+    "net": "+31"
+   }
+  }
+ },
+ {
+  "id": "DS-mixed-sessions-06",
+  "feature": "Selecting an order (28 orders): its messages, its state, the strip",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/multi-session/mixed-sessions.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "no differences",
+  "actual": []
+ },
+ {
+  "id": "DS-mixed-sessions-07",
+  "feature": "Filters (9 Account and SenderCompID choices): messages, summary, counts",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/multi-session/mixed-sessions.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "no differences",
+  "actual": []
+ },
+ {
+  "id": "DS-mixed-sessions-08",
+  "feature": "Decoding the same text twice gives the same result",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/multi-session/mixed-sessions.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-mixed-sessions-01",
+  "feature": "Same result as raw SOH: pipe-delimited",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/multi-session/mixed-sessions.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-mixed-sessions-02",
+  "feature": "Same result as raw SOH: ^A text form",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/multi-session/mixed-sessions.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-mixed-sessions-03",
+  "feature": "Same result as raw SOH: <SOH> text form",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/multi-session/mixed-sessions.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-mixed-sessions-04",
+  "feature": "Same result as raw SOH: Windows CRLF",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/multi-session/mixed-sessions.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-mixed-sessions-05",
+  "feature": "Same result as raw SOH: CR only",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/multi-session/mixed-sessions.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-mixed-sessions-06",
+  "feature": "Same result as raw SOH: UTF-8 BOM",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/multi-session/mixed-sessions.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-mixed-sessions-07",
+  "feature": "Same result as raw SOH: no trailing newline",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/multi-session/mixed-sessions.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-mixed-sessions-08",
+  "feature": "Same result as raw SOH: empty lines between messages",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/multi-session/mixed-sessions.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-mixed-sessions-09",
+  "feature": "Same result as raw SOH: QuickFIX file log lines",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/multi-session/mixed-sessions.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-mixed-sessions-10",
+  "feature": "Same result as raw SOH: QuickFIX/J log lines",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/multi-session/mixed-sessions.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-mixed-sessions-11",
+  "feature": "Same result as raw SOH: timestamp and direction prefix",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/multi-session/mixed-sessions.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-mixed-sessions-12",
+  "feature": "Same result as raw SOH: logger prefix, pipe form",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/multi-session/mixed-sessions.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-mixed-sessions-13",
+  "feature": "Same result as raw SOH: mixed with non-FIX log lines",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/multi-session/mixed-sessions.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-mixed-sessions-14",
+  "feature": "Same result as raw SOH: all messages on one line",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/multi-session/mixed-sessions.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-mixed-sessions-15",
+  "feature": "Same result as raw SOH: two messages per line",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/multi-session/mixed-sessions.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "EQ-mixed-sessions-16",
+  "feature": "Same result as raw SOH: three delimiter forms mixed by line",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/multi-session/mixed-sessions.log (rewritten by tests/run_datasets.mjs)",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical decode, timeline, summary and counts",
+  "actual": "identical"
+ },
+ {
+  "id": "DS-mix-100-01",
+  "feature": "Counts: messages, valid, malformed, sequence gaps, orders",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/performance/mix-100.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": {
+   "messages": 100,
+   "valid": 100,
+   "malformed": 0,
+   "gaps": 0,
+   "orders": 19
+  },
+  "actual": {
+   "messages": 100,
+   "valid": 100,
+   "malformed": 0,
+   "gaps": 0,
+   "orders": 19
+  }
+ },
+ {
+  "id": "DS-mix-100-02",
+  "feature": "Every timeline event, in log order",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/performance/mix-100.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "100 items, first: [\"1:Logon\",\"2:Logon\",\"3:Logon\"]",
+  "actual": "100 items, first: [\"1:Logon\",\"2:Logon\",\"3:Logon\"]"
+ },
+ {
+  "id": "DS-mix-100-03",
+  "feature": "Sequence gaps: message, expected and received numbers",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/performance/mix-100.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": [],
+  "actual": []
+ },
+ {
+  "id": "DS-mix-100-04",
+  "feature": "Order grouping: each logical order (with its amendment chain) is one group",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/performance/mix-100.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "19 items, first: [[11,26,30,36,44,47,63,69,70,85],[12,18,48,80,95,97],[13,14,19,29,33,62,72,81]]",
+  "actual": "19 items, first: [[11,26,30,36,44,47,63,69,70,85],[12,18,48,80,95,97],[13,14,19,29,33,62,72,81]]"
+ },
+ {
+  "id": "DS-mix-100-05",
+  "feature": "Trading summary per symbol against decimal ground truth",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/performance/mix-100.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": {
+   "ACME": {
+    "buyOrders": "3",
+    "bought": [
+     "2900"
+    ],
+    "avgBuy": [
+     "530.7641"
+    ],
+    "sellOrders": "0",
+    "sold": [
+     "0"
+    ],
+    "avgSell": [
+     "–"
+    ],
+    "net": [
+     "+2900"
+    ],
+    "exact": {
+     "bought": "2900",
+     "sold": "0",
+     "buyNotional": "1539216",
+     "sellNotional": "0"
+    }
+   },
+   "KRONE": {
+    "buyOrders": "0",
+    "bought": [
+     "0"
+    ],
+    "avgBuy": [
+     "–"
+    ],
+    "sellOrders": "4",
+    "sold": [
+     "470"
+    ],
+    "avgSell": [
+     "36.4118"
+    ],
+    "net": [
+     "-470"
+    ],
+    "exact": {
+     "bought": "0",
+     "sold": "470",
+     "buyNotional": "0",
+     "sellNotional": "17113.55"
+    }
+   },
+   "OMNI": {
+    "buyOrders": "0",
+    "bought": [
+     "0"
+    ],
+    "avgBuy": [
+     "–"
+    ],
+    "sellOrders": "3",
+    "sold": [
+     "2"
+    ],
+    "avgSell": [
+     "1991.775"
+    ],
+    "net": [
+     "-2"
+    ],
+    "exact": {
+     "bought": "0",
+     "sold": "2",
+     "buyNotional": "0",
+     "sellNotional": "3983.55"
+    }
+   },
+   "ZETA": {
+    "buyOrders": "3",
+    "bought": [
+     "8.5"
+    ],
+    "avgBuy": [
+     "2.715"
+    ],
+    "sellOrders": "6",
+    "sold": [
+     "27.5"
+    ],
+    "avgSell": [
+     "3.5088"
+    ],
+    "net": [
+     "-19"
+    ],
+    "exact": {
+     "bought": "8.5",
+     "sold": "27.5",
+     "buyNotional": "23.0774",
+     "sellNotional": "96.4926"
+    }
+   }
+  },
+  "actual": {
+   "ACME": {
+    "buyOrders": "3",
+    "bought": "2900",
+    "avgBuy": "530.7641",
+    "sellOrders": "0",
+    "sold": "0",
+    "avgSell": "–",
+    "net": "+2900"
+   },
+   "KRONE": {
+    "buyOrders": "0",
+    "bought": "0",
+    "avgBuy": "–",
+    "sellOrders": "4",
+    "sold": "470",
+    "avgSell": "36.4118",
+    "net": "-470"
+   },
+   "OMNI": {
+    "buyOrders": "0",
+    "bought": "0",
+    "avgBuy": "–",
+    "sellOrders": "3",
+    "sold": "2",
+    "avgSell": "1991.775",
+    "net": "-2"
+   },
+   "ZETA": {
+    "buyOrders": "3",
+    "bought": "8.5",
+    "avgBuy": "2.715",
+    "sellOrders": "6",
+    "sold": "27.5",
+    "avgSell": "3.5088",
+    "net": "-19"
+   }
+  }
+ },
+ {
+  "id": "DS-mix-100-06",
+  "feature": "Selecting an order (19 orders): its messages, its state, the strip",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/performance/mix-100.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "no differences",
+  "actual": []
+ },
+ {
+  "id": "DS-mix-100-07",
+  "feature": "Filters (11 Account and SenderCompID choices): messages, summary, counts",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/performance/mix-100.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "no differences",
+  "actual": []
+ },
+ {
+  "id": "DS-mix-100-08",
+  "feature": "Decoding the same text twice gives the same result",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "datasets/performance/mix-100.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "identical",
+  "actual": "identical"
+ },
+ {
+  "id": "EN-42-01",
+  "feature": "QuickFIX engine log: every message accepted; one gap, made by the engine; order count",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/engine-quickfix-42.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": {
+   "messages": 79,
+   "valid": 79,
+   "malformed": 0,
+   "gaps": 1,
+   "orders": 13
+  },
+  "actual": {
+   "messages": 79,
+   "valid": 79,
+   "malformed": 0,
+   "gaps": 1,
+   "orders": 13
+  }
+ },
+ {
+  "id": "EN-42-02",
+  "feature": "QuickFIX engine log: the skipped sequence numbers are the gap reported",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/engine-quickfix-42.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": [
+   [
+    24,
+    27
+   ]
+  ],
+  "actual": [
+   [
+    24,
+    27
+   ]
+  ]
+ },
+ {
+  "id": "EN-42-03",
+  "feature": "QuickFIX engine log: trading summary equals what the acceptor executed",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/engine-quickfix-42.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": {
+   "ACME": {
+    "buyOrders": "3",
+    "bought": [
+     "950"
+    ],
+    "avgBuy": [
+     "34.6142"
+    ],
+    "sellOrders": "2",
+    "sold": [
+     "375"
+    ],
+    "avgSell": [
+     "18.51"
+    ],
+    "net": [
+     "+575"
+    ]
+   },
+   "OMNI": {
+    "buyOrders": "3",
+    "bought": [
+     "1250"
+    ],
+    "avgBuy": [
+     "81.3472"
+    ],
+    "sellOrders": "2",
+    "sold": [
+     "3900"
+    ],
+    "avgSell": [
+     "51.524"
+    ],
+    "net": [
+     "-2650"
+    ]
+   },
+   "ZETA": {
+    "buyOrders": "2",
+    "bought": [
+     "1500"
+    ],
+    "avgBuy": [
+     "46.135"
+    ],
+    "sellOrders": "1",
+    "sold": [
+     "1500"
+    ],
+    "avgSell": [
+     "16.015"
+    ],
+    "net": [
+     "0"
+    ]
+   }
+  },
+  "actual": {
+   "ACME": {
+    "buyOrders": "3",
+    "bought": "950",
+    "avgBuy": "34.6142",
+    "sellOrders": "2",
+    "sold": "375",
+    "avgSell": "18.51",
+    "net": "+575"
+   },
+   "OMNI": {
+    "buyOrders": "3",
+    "bought": "1250",
+    "avgBuy": "81.3472",
+    "sellOrders": "2",
+    "sold": "3900",
+    "avgSell": "51.524",
+    "net": "-2650"
+   },
+   "ZETA": {
+    "buyOrders": "2",
+    "bought": "1500",
+    "avgBuy": "46.135",
+    "sellOrders": "1",
+    "sold": "1500",
+    "avgSell": "16.015",
+    "net": "0"
+   }
+  }
+ },
+ {
+  "id": "EN-42-04",
+  "feature": "QuickFIX engine log: each order chain is one group",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/engine-quickfix-42.log",
+  "kind": "prd",
+  "status": "FAIL",
+  "expected": "13 items, first: [[\"C2-1\",\"C2-1c\"],[\"C2-2\"],[\"C2-3\",\"C2-3c\"]]",
+  "actual": "13 items, first: [[\"C2-1\",\"C2-1c\"],[\"C2-2\"],[\"C2-3\",\"C2-3c\"]]"
+ },
+ {
+  "id": "EN-44-01",
+  "feature": "QuickFIX engine log: every message accepted; one gap, made by the engine; order count",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/engine-quickfix-44.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": {
+   "messages": 76,
+   "valid": 76,
+   "malformed": 0,
+   "gaps": 1,
+   "orders": 13
+  },
+  "actual": {
+   "messages": 76,
+   "valid": 76,
+   "malformed": 0,
+   "gaps": 1,
+   "orders": 13
+  }
+ },
+ {
+  "id": "EN-44-02",
+  "feature": "QuickFIX engine log: the skipped sequence numbers are the gap reported",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/engine-quickfix-44.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": [
+   [
+    21,
+    24
+   ]
+  ],
+  "actual": [
+   [
+    21,
+    24
+   ]
+  ]
+ },
+ {
+  "id": "EN-44-03",
+  "feature": "QuickFIX engine log: trading summary equals what the acceptor executed",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/engine-quickfix-44.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": {
+   "ACME": {
+    "buyOrders": "4",
+    "bought": [
+     "1900"
+    ],
+    "avgBuy": [
+     "41.6642"
+    ],
+    "sellOrders": "3",
+    "sold": [
+     "2150"
+    ],
+    "avgSell": [
+     "42.36"
+    ],
+    "net": [
+     "-250"
+    ]
+   },
+   "OMNI": {
+    "buyOrders": "1",
+    "bought": [
+     "1200"
+    ],
+    "avgBuy": [
+     "34.285"
+    ],
+    "sellOrders": "3",
+    "sold": [
+     "1925"
+    ],
+    "avgSell": [
+     "75.9271"
+    ],
+    "net": [
+     "-725"
+    ]
+   },
+   "ZETA": {
+    "buyOrders": "1",
+    "bought": [
+     "125"
+    ],
+    "avgBuy": [
+     "71.57"
+    ],
+    "sellOrders": "1",
+    "sold": [
+     "900"
+    ],
+    "avgSell": [
+     "87.46"
+    ],
+    "net": [
+     "-775"
+    ]
+   }
+  },
+  "actual": {
+   "ACME": {
+    "buyOrders": "4",
+    "bought": "1900",
+    "avgBuy": "41.6642",
+    "sellOrders": "3",
+    "sold": "2150",
+    "avgSell": "42.36",
+    "net": "-250"
+   },
+   "OMNI": {
+    "buyOrders": "1",
+    "bought": "1200",
+    "avgBuy": "34.285",
+    "sellOrders": "3",
+    "sold": "1925",
+    "avgSell": "75.9271",
+    "net": "-725"
+   },
+   "ZETA": {
+    "buyOrders": "1",
+    "bought": "125",
+    "avgBuy": "71.57",
+    "sellOrders": "1",
+    "sold": "900",
+    "avgSell": "87.46",
+    "net": "-775"
+   }
+  }
+ },
+ {
+  "id": "EN-44-04",
+  "feature": "QuickFIX engine log: each order chain is one group",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/engine-quickfix-44.log",
+  "kind": "prd",
+  "status": "PASS",
+  "expected": "13 items, first: [[\"C4-1\"],[\"C4-2\"],[\"C4-3\",\"C4-3c\"]]",
+  "actual": "13 items, first: [[\"C4-1\"],[\"C4-2\"],[\"C4-3\",\"C4-3c\"]]"
+ }
+]

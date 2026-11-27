@@ -140,16 +140,19 @@ case("S04-03-4.4", "FIX 4.4 execution reports: ExecType F, G, H, I", "FIX.4.4", 
                         "13:ExecutionReport (ExecType C)"],
              "trades": {"ACME": row(bought="40", avg_buy="9", net="+40")}, "unmatched": 0})
 
-# FIX 4.4 traffic that still uses ExecType 1 / 2 for fills (the FIX 4.4 spec keeps both values in the ExecType
-# list, marked "Replaced"; QuickFIX's FIX44.xml carries them as PARTIAL_FILL and FILL).
+# FIX 4.4 traffic that still uses the FIX 4.2 values ExecType 1 / 2 for fills. Neither the Orchestra FIX 4.4 file
+# nor QuickFIX's FIX44.xml lists 1 or 2 for ExecType, so by the dictionaries and by PRD TR-003 these are not
+# fills: the tool must show them as "ExecutionReport (ExecType X)" with "unknown value" and count nothing.
 s = S("FIX.4.4")
 lines = [s.nos("A", "B", "C1", qty=100, px=10),
          s.er("B", "A", "C1", "O1", "E1", "1", "1", lq=40, lp=10, cum=40, avg=10),
          s.er("B", "A", "C1", "O1", "E2", "2", "2", lq=60, lp=10, cum=100, avg=10)]
-case("S04-04", "FIX 4.4 fills sent with ExecType 1 or 2 are counted as executions", "FIX.4.4", "fix",
-     "FIX 4.4 ExecType (150) values 1 and 2; QuickFIX FIX44.xml; PRD TR-003 maps them for FIX 4.2 only",
-     lines, {"trades": {"ACME": row(buy_orders=1, bought="100", avg_buy="10", net="+100")},
-             "rows": [{"number": 2, "tag": "150", "value": "1", "meaning_not": "unknown value"}]})
+case("S04-04", "FIX 4.4 reports with the FIX 4.2 values ExecType 1 or 2 are not fills and are labelled", "FIX.4.4", "prd",
+     "TR-003 ('1 or 2 (FIX 4.2)'); AC-004, AC-009; Orchestra FIX 4.4 and QuickFIX FIX44.xml ExecType code sets",
+     lines, {"trades": {"ACME": row(buy_orders=1)},
+             "events": ["1:NewOrder", "2:ExecutionReport (ExecType 1)", "3:ExecutionReport (ExecType 2)"],
+             "rows": [{"number": 2, "tag": "150", "value": "1", "meaning": "unknown value"}]},
+     note="Risk, not verified with real logs: counterparties that still send 150=1/2 on FIX 4.4 get no fills counted.")
 
 for v in ("FIX.4.2", "FIX.4.4"):
     s = S(v)

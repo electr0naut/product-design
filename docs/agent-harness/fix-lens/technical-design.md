@@ -1,7 +1,7 @@
-# FIX Lens - Technical Design (v1.3 draft; Confluence page 1409027 still holds v1.2.2)
+# FIX Lens - Technical Design (v1.3; Confluence page 1409027 still holds v1.2.2)
 
 **Version:** 1.3, for PRD v1.3. **The v1.3 changes (sections 4, 9, 10, 15 and the new section 16, each marked
-"v1.3") were drafted on 2026-11-27 and await Ubay Gonzalez's approval.** Everything else is v1.2.2, unchanged.
+"v1.3") were approved by Ubay Gonzalez on 2026-11-27 ("approved").** Everything else is v1.2.2, unchanged.
 **Status of v1.2.2:** v1.2 approved by Ubay Gonzalez (2026-11-26); it replaces v1.1, which was approved under delegation on
 2026-11-25. The v1.2.1 clarifications (four corrections and seven additions, none changing the PRD) were approved
 by Ubay Gonzalez on 2026-11-27. The v1.2.2 clarification (one addition in section 13, on a report that names an

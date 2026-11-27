@@ -2,7 +2,7 @@
 
 **Product:** FIX Lens
 **Version:** 1.3 (Proof of Concept)
-**Status:** v1.3 drafted on 2026-11-27 and **awaiting Ubay Gonzalez's approval of this text**. v1.2 was approved (Gate 3, 2026-11-26).
+**Status:** v1.3 approved by Ubay Gonzalez on 2026-11-27. v1.2 was approved at Gate 3 on 2026-11-26.
 **BRD Status:** Approved by Risk Committee (2026-11-24)
 
 > **Changes in v1.3:** the largest log the tool accepts goes from 1,000 messages and 1,048,576 bytes to 10,000 messages and 10,485,760 bytes. So that a log of that size stays readable and quick, the timeline and the message cards are shown 200 messages at a time (US-010). Nothing else changes: every result is still computed on the whole log.
@@ -361,5 +361,5 @@ Deployment to the internal web server follows after the user has tested with rea
 - **BRD:** Approved by Risk Committee (2026-11-24). Refreshed for the extended functionality of v1.2; the refresh was approved on 2026-11-26.
 - **PRD:** v1.2 approved by Ubay Gonzalez (2026-11-26). v1.1 approved by Ubay Gonzalez (2026-11-25).
 - **Technical Design:** v1.2 approved by Ubay Gonzalez (2026-11-26) (see the child page FIX Lens - Technical Design). It replaces v1.1, which was approved under delegation on 2026-11-25.
-- **PRD v1.3:** the change was set by Ubay Gonzalez on 2026-11-27 ("10000 is the max for now", "v1.3 is fine"). This text awaits his approval.
+- **PRD v1.3:** approved by Ubay Gonzalez on 2026-11-27 ("approved", in answer to the request to approve PRD v1.3 and technical design v1.3). He had set the change the same day: "10000 is the max for now", "v1.3 is fine".
 - **Implementation:** v1.2 is built: tickets 1 to 18 are on the trusted main (2026-11-27), with 173 of 173 acceptance tests passing. It has not yet been tested with real logs or deployed. v1.3 is pending.

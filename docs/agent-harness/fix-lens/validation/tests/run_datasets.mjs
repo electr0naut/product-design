@@ -119,10 +119,12 @@ for (const [v, version] of [['42', 'FIX.4.2'], ['44', 'FIX.4.4']]) {
   record(`EN-${v}-02`, 'QuickFIX engine log: the skipped sequence numbers are the gap reported', version, truth.dataset, [[g.expected, g.received]], gaps, same(gaps, [[g.expected, g.received]]));
   const diffs = compareTrades(tradesOf(r), truth.trades);
   record(`EN-${v}-03`, 'QuickFIX engine log: trading summary equals what the acceptor executed', version, truth.dataset, truth.trades, diffs.length ? diffs : tradesOf(r), diffs.length === 0);
-  const wantGroups = truth.orders.map(o => [...o.clOrdIds].sort());
-  const got = (await import('./harness.mjs')).orderGroups(result.decoded).map(x => [...x.clOrdIds].sort());
-  const key = list => JSON.stringify(list.map(x => x.join(',')).sort());
-  record(`EN-${v}-04`, 'QuickFIX engine log: each order chain is one group', version, truth.dataset, brief(wantGroups), brief(got), key(got) === key(wantGroups));
+  // A rejected cancel request carries a ClOrdID that never becomes part of the chain, so the tool's group may hold
+  // more ids than the acceptor's chain: every chain must sit inside exactly one group, and no two chains share one.
+  const groups = (await import('./harness.mjs')).orderGroups(result.decoded);
+  const owner = truth.orders.map(o => groups.findIndex(gr => o.clOrdIds.every(c => gr.clOrdIds.includes(c)) && gr.orderIds.includes(o.orderId)));
+  const ok = owner.every(i => i >= 0) && new Set(owner).size === truth.orders.length && groups.length === truth.orders.length;
+  record(`EN-${v}-04`, 'QuickFIX engine log: each order chain is one group, and no two orders share a group', version, truth.dataset, `${truth.orders.length} orders in ${truth.orders.length} groups`, { groups: groups.length, owner }, ok);
 }
 
 fs.mkdirSync(path.join(root, 'reports/partial'), { recursive: true });

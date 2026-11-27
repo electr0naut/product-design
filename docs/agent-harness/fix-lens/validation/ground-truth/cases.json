@@ -194,33 +194,38 @@
  },
  {
   "id": "S04-04",
-  "feature": "FIX 4.4 fills sent with ExecType 1 or 2 are counted as executions",
+  "feature": "FIX 4.4 reports with the FIX 4.2 values ExecType 1 or 2 are not fills and are labelled",
   "version": "FIX.4.4",
-  "kind": "fix",
-  "basis": "FIX 4.4 ExecType (150) values 1 and 2; QuickFIX FIX44.xml; PRD TR-003 maps them for FIX 4.2 only",
+  "kind": "prd",
+  "basis": "TR-003 ('1 or 2 (FIX 4.2)'); AC-004, AC-009; Orchestra FIX 4.4 and QuickFIX FIX44.xml ExecType code sets",
   "expect": {
    "trades": {
     "ACME": {
      "buyOrders": "1",
-     "bought": "100",
-     "avgBuy": "10",
+     "bought": "0",
+     "avgBuy": "–",
      "sellOrders": "0",
      "sold": "0",
      "avgSell": "–",
-     "net": "+100"
+     "net": "0"
     }
    },
+   "events": [
+    "1:NewOrder",
+    "2:ExecutionReport (ExecType 1)",
+    "3:ExecutionReport (ExecType 2)"
+   ],
    "rows": [
     {
      "number": 2,
      "tag": "150",
      "value": "1",
-     "meaning_not": "unknown value"
+     "meaning": "unknown value"
     }
    ]
   },
   "view": null,
-  "note": null,
+  "note": "Risk, not verified with real logs: counterparties that still send 150=1/2 on FIX 4.4 get no fills counted.",
   "dataset": "datasets/FIX44/S04-04.log",
   "sha256": "2bf1bbbbc29d5e3f40954269b23f7eef3a17713e8db4147d80283c4d7158ae81",
   "bytes": 405,
