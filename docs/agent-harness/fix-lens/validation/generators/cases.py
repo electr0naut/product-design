@@ -282,6 +282,20 @@ case("S06-16", "No false gap when a second SubID session of the same CompIDs run
      "Brief 11; FIX session identity; TR-003 keys a direction on 49/56 only", lines, {"gaps": []},
      folder="multi-session")
 
+# A PossDup message that carries exactly the expected number has not been received before: FIX processes it
+# normally and it takes that number (QuickFIX acceptance definition 2e_PossDupNotReceived).
+s = S()
+lines = [s.m("A", "B", "A", LOGON), s.m("A", "B", "0"), s.m("A", "B", "0", seq=3, possdup=True), s.m("A", "B", "5", seq=4)]
+case("S06-17", "A PossDup message with the expected number fills that number: no gap after it", "FIX.4.4", "fix",
+     "FIX session protocol (PossDupFlag: process if MsgSeqNum not yet received); QuickFIX 2e_PossDupNotReceived.def; "
+     "TR-003 'Messages with PossDupFlag=Y don't advance'", lines, {"gaps": []})
+# A SequenceReset may only move the expected number forward (QuickFIX acceptance definition 11c_NewSeqNoLess).
+s = S()
+lines = [s.m("A", "B", "A", LOGON), s.m("A", "B", "0"), s.m("A", "B", "4", [(36, 1)]), s.m("A", "B", "0", seq=4)]
+case("S06-18", "A SequenceReset to a lower number is not followed by a false gap", "FIX.4.4", "fix",
+     "FIX SequenceReset: NewSeqNo may only increase the expected number; QuickFIX 11c_NewSeqNoLess.def; TR-003",
+     lines, {"gaps": []})
+
 # =============================================================================== section 7
 for v in ("FIX.4.2", "FIX.4.4"):
     s = S(v)
@@ -640,6 +654,16 @@ ck = sum(padded[:padded.index("10=")].encode()) % 256
 padded = padded[:padded.index("10=")] + f"10={ck:03d}{SOH}"
 bad("S10-23", "Unusual but valid: BodyLength with leading zeros and an empty value are accepted", "prd",
     "TR-002; design 6 ('58=' is shown as empty)", padded + "\n", {"stats": {"messages": 1, "valid": 1, "malformed": 0}})
+
+# A wire-valid message whose Text holds ISO-8859-1 bytes (one byte per character). After a paste the tool sees
+# characters, counts them as UTF-8 (two bytes each) and can no longer match BodyLength or CheckSum.
+head = [(35, "0"), (49, "A"), (56, "B"), (34, 1), (52, "20261127-09:00:00.000"), (58, "Soci\u00e9t\u00e9 G\u00e9n\u00e9rale order")]
+payload = "".join(f"{t}={v}{SOH}" for t, v in head)
+first = f"8=FIX.4.4{SOH}9={len(payload.encode('latin-1'))}{SOH}"
+latin = first + payload + f"10={sum((first + payload).encode('latin-1')) % 256:03d}{SOH}"
+bad("S10-24", "A wire-valid message with ISO-8859-1 text (one byte per character) is not called malformed", "fix",
+    "FIX messages are bytes, and BodyLength/CheckSum count bytes; design 3.7 counts the UTF-8 bytes of the pasted characters",
+    latin + "\n", {"stats": {"messages": 1, "valid": 1, "malformed": 0}})
 
 # =============================================================================== section 11
 # A log merged from both sides of one connection: every message appears twice.

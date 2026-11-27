@@ -11,7 +11,7 @@
   "feature": "Property: text delimiter forms follow TR-002 (literal delimiter in a value; the ambiguous case is an error)",
   "version": "FIX.4.2 + FIX.4.4",
   "status": "PASS",
-  "actual": "300 messages with literal delimiters read back exactly; 0 ambiguous ones reported as errors"
+  "actual": "207 messages with literal delimiters read back exactly; 93 ambiguous ones reported as errors"
  },
  {
   "id": "PB-03",
@@ -25,7 +25,7 @@
   "feature": "Property: arbitrary hostile text never throws; message numbers are consecutive",
   "version": "FIX.4.2 + FIX.4.4",
   "status": "PASS",
-  "actual": "300 hostile texts; slowest answer so far 3.3 ms"
+  "actual": "300 hostile texts; slowest answer so far 1.6 ms"
  },
  {
   "id": "PB-05",
@@ -39,7 +39,7 @@
   "feature": "Randomised valid order lifecycles (40 seeds) against decimal ground truth",
   "version": "FIX.4.2 + FIX.4.4",
   "status": "FAIL",
-  "actual": "seed 9014 ZETA.avgSell: shown 3.1071, expected ['3.1072'] (exact {'bought': '67.5', 'sold': '11', 'buyNotional': '188.10585', 'sellNotional': '34.17865'})"
+  "actual": "1 difference(s) in 40 seeds / 7811 messages: seed 9014 ZETA.avgSell: shown 3.1071, expected ['3.1072'] (exact {'bought': '67.5', 'sold': '11', 'buyNotional': '188.10585', 'sellNotional': '34.17865'})"
  },
  {
   "id": "PB-07",

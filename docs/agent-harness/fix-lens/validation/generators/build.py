@@ -16,6 +16,7 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 
 import cases  # noqa: E402
+from defects import DEFECTS  # noqa: E402
 from fixgen import SOH, Sim, plain, shown, validate_wire  # noqa: E402
 
 SYMBOLS = [("ACME", D("0.01"), D(100)), ("ZETA", D("0.0001"), D("0.5")), ("OMNI", D("0.05"), D(1)),
@@ -202,6 +203,20 @@ def main():
                                  for t in summary],
                    "cases": {"file": "ground-truth/cases.json", "count": len(index),
                              "intentionallyInvalid": [c["id"] for c in index if c["intentionallyInvalid"]]}}, f, indent=1)
+    by_id = {c["id"]: c for c in cases.CASES}
+    repro = []
+    for defect, severity, title, ids in DEFECTS:
+        fixtures = []
+        for cid in ids:
+            c = by_id[cid]
+            name = f"{defect}-{cid}.log"
+            write(os.path.join(ROOT, "reproductions", name), c["text"])
+            fixtures.append({"file": name, "test": cid, "feature": c["feature"], "expect": c["expect"], "view": c["view"],
+                             "basis": c["basis"], "against": "PRD" if c["kind"] == "prd" else "FIX"})
+        repro.append({"defect": defect, "severity": severity, "title": title, "fixtures": fixtures})
+    with open(os.path.join(ROOT, "reproductions", "index.json"), "w") as f:
+        json.dump(repro, f, indent=1, ensure_ascii=False)
+
     engine = []
     for v, folder in (("42", "FIX42"), ("44", "FIX44")):
         tp = os.path.join(ROOT, "ground-truth", f"engine-quickfix-{v}.truth.json")

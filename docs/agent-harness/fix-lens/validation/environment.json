@@ -1,0 +1,22 @@
+{
+ "date": "2026-11-27",
+ "productUnderTest": {
+  "name": "FIX Lens v1.2",
+  "folder": "a read-only rebuild of the owner's trusted main at commit 6f2f554, made from the published patches",
+  "localCommit": "8eeb9bbb5fbbf50ef7337040668556030254a33b (the local commit id differs from 6f2f554 because the history was rebuilt)",
+  "headSubject": "FXL-18: Style the order banner, the order links, the trading summary and the filters",
+  "workingTree": "clean apart from the untracked node_modules link; nothing in the folder was changed by this validation",
+  "sourceSize": "903 lines in 12 modules under src/ (plus two generated dictionary modules); 3,541 lines of tests",
+  "runtimeDependencies": "none",
+  "devDependencies": {"vitest": "5.1.2", "jsdom": "31.0.1"},
+  "limitLiftedCopy": "a copy in the scratch work folder with one line of src/limits.js changed (bytes <= 16777216 && messages <= 10000), used only for the 'information for the planned limit of 10,000 messages' measurements"
+ },
+ "baseline": {"command": "npx vitest run", "testFiles": 19, "tests": 268, "passed": 264, "failed": 4,
+  "failures": "all four in test/dictionary.test.js, because this copy lacks vendor/orchestra/OrchestraFIX42.xml and OrchestraFIX44.xml. Known, not a finding."},
+ "hardware": {"cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz, 4 virtual cores", "memory": "15 GiB", "kind": "cloud container (shared host: timings vary by about +/-30% between runs)"},
+ "os": "Ubuntu 24.04.5 LTS, Linux 6.18.44 x86_64",
+ "runtimes": {"node": "v22.23.5", "python": "3.13.18", "playwright": "1.63.0 with its bundled headless Chromium, launched with no options", "java": "21.0.13 (present, not used)", "gcc": "used once, by pip, to build the quickfix package"},
+ "testDependencies": {"quickfix": "1.16.0 (PyPI, virtual environment in the scratch folder)", "hypothesis": "6.170.22 (same virtual environment)", "jsdom": "31.0.1, the product's own copy, loaded with default options (no script execution) to run the product's render.js under Node"},
+ "configuration": {"browser": "headless Chromium, default window 1280x720, default device scale, served by python3 -m http.server on 127.0.0.1", "nodeFlags": "--expose-gc for the benchmark children only"},
+ "network": "outbound HTTPS through the session's proxy; github.com, raw.githubusercontent.com, pypi.org and fixtags.dev answered. Nothing of this project was sent out."
+}

@@ -1,0 +1,548 @@
+suite,dataset,product,messages,bytes,metric,unit,value,min,max,runs,note
+"logic modules, Node: inside the limits",mix-100,v1.2,100,19456,"analyse(), repeated",ms,4.57,2.82,9.94,15,median of fresh processes: 2.83 / 4.57 / 4.94; accepted=true
+"logic modules, Node: inside the limits",mix-100,v1.2,100,19456,"analyse(), first call in the process",ms,12.63,,,1,
+"logic modules, Node: inside the limits",mix-100,v1.2,100,19456,throughput,messages/s,21866.7,,,,
+"logic modules, Node: inside the limits",mix-100,v1.2,100,19456,throughput,MB/s,4.06,,,,
+"logic modules, Node: inside the limits",mix-100,v1.2,100,19456,peak resident memory of the process,MB,59.79,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: inside the limits",mix-100,v1.2,100,19456,"JS heap in use after GC, result kept",MB,5.81,,,,
+"logic modules, Node: inside the limits",mix-100,v1.2,100,19456,module import,ms,9.09,,,1,initialisation
+"logic modules, Node: inside the limits",mix-100,v1.2,100,19456,module checkLimits,ms,0.72,0.64,1.14,15,
+"logic modules, Node: inside the limits",mix-100,v1.2,100,19456,module splitMessages,ms,0.66,0.61,1.18,15,
+"logic modules, Node: inside the limits",mix-100,v1.2,100,19456,module checkMessage,ms,1.96,1.6,2.74,15,
+"logic modules, Node: inside the limits",mix-100,v1.2,100,19456,module decode,ms,0.41,0.37,0.85,15,
+"logic modules, Node: inside the limits",mix-100,v1.2,100,19456,module timeline,ms,0.19,0.15,0.29,15,
+"logic modules, Node: inside the limits",mix-100,v1.2,100,19456,module orderGroups,ms,0.29,0.23,0.96,15,
+"logic modules, Node: inside the limits",mix-100,v1.2,100,19456,module tradeSummary,ms,0.15,0.12,1.25,15,
+"logic modules, Node: inside the limits",mix-100,v1.2,100,19456,module filterOptions,ms,0.16,0.06,0.58,15,
+"logic modules, Node: inside the limits",mix-100,v1.2,100,19456,module applyFiltersAccount,ms,0.27,0.24,1.03,15,
+"logic modules, Node: inside the limits",mix-100,v1.2,100,19456,module applyFiltersSender,ms,0.02,0.02,0.1,15,
+"logic modules, Node: inside the limits",mix-250,v1.2,250,50810,"analyse(), repeated",ms,7.46,6.35,15.52,15,median of fresh processes: 9.28 / 7.46 / 7.61; accepted=true
+"logic modules, Node: inside the limits",mix-250,v1.2,250,50810,"analyse(), first call in the process",ms,22.55,,,1,
+"logic modules, Node: inside the limits",mix-250,v1.2,250,50810,throughput,messages/s,33505.63,,,,
+"logic modules, Node: inside the limits",mix-250,v1.2,250,50810,throughput,MB/s,6.49,,,,
+"logic modules, Node: inside the limits",mix-250,v1.2,250,50810,peak resident memory of the process,MB,73.34,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: inside the limits",mix-250,v1.2,250,50810,"JS heap in use after GC, result kept",MB,6.68,,,,
+"logic modules, Node: inside the limits",mix-250,v1.2,250,50810,module import,ms,8.79,,,1,initialisation
+"logic modules, Node: inside the limits",mix-250,v1.2,250,50810,module checkLimits,ms,1.42,1.01,3.29,15,
+"logic modules, Node: inside the limits",mix-250,v1.2,250,50810,module splitMessages,ms,1.14,0.98,1.66,15,
+"logic modules, Node: inside the limits",mix-250,v1.2,250,50810,module checkMessage,ms,4.73,3.04,6.04,15,
+"logic modules, Node: inside the limits",mix-250,v1.2,250,50810,module decode,ms,0.75,0.57,1.77,15,
+"logic modules, Node: inside the limits",mix-250,v1.2,250,50810,module timeline,ms,0.13,0.12,0.34,15,
+"logic modules, Node: inside the limits",mix-250,v1.2,250,50810,module orderGroups,ms,0.55,0.42,1.17,15,
+"logic modules, Node: inside the limits",mix-250,v1.2,250,50810,module tradeSummary,ms,0.21,0.14,1.17,15,
+"logic modules, Node: inside the limits",mix-250,v1.2,250,50810,module filterOptions,ms,0.19,0.08,0.64,15,
+"logic modules, Node: inside the limits",mix-250,v1.2,250,50810,module applyFiltersAccount,ms,0.19,0.15,0.72,15,
+"logic modules, Node: inside the limits",mix-250,v1.2,250,50810,module applyFiltersSender,ms,0.04,0.04,0.18,15,
+"logic modules, Node: inside the limits",mix-500,v1.2,500,103224,"analyse(), repeated",ms,16.97,14.19,21.8,15,median of fresh processes: 19.76 / 16.97 / 16.97; accepted=true
+"logic modules, Node: inside the limits",mix-500,v1.2,500,103224,"analyse(), first call in the process",ms,40.37,,,1,
+"logic modules, Node: inside the limits",mix-500,v1.2,500,103224,throughput,messages/s,29462.92,,,,
+"logic modules, Node: inside the limits",mix-500,v1.2,500,103224,throughput,MB/s,5.8,,,,
+"logic modules, Node: inside the limits",mix-500,v1.2,500,103224,peak resident memory of the process,MB,97.59,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: inside the limits",mix-500,v1.2,500,103224,"JS heap in use after GC, result kept",MB,8.04,,,,
+"logic modules, Node: inside the limits",mix-500,v1.2,500,103224,module import,ms,9,,,1,initialisation
+"logic modules, Node: inside the limits",mix-500,v1.2,500,103224,module checkLimits,ms,2.48,2.14,4.07,15,
+"logic modules, Node: inside the limits",mix-500,v1.2,500,103224,module splitMessages,ms,2.19,2.07,3.63,15,
+"logic modules, Node: inside the limits",mix-500,v1.2,500,103224,module checkMessage,ms,7.96,5.76,10.57,15,
+"logic modules, Node: inside the limits",mix-500,v1.2,500,103224,module decode,ms,0.98,0.92,2.54,15,
+"logic modules, Node: inside the limits",mix-500,v1.2,500,103224,module timeline,ms,0.27,0.26,0.53,15,
+"logic modules, Node: inside the limits",mix-500,v1.2,500,103224,module orderGroups,ms,0.9,0.81,1.57,15,
+"logic modules, Node: inside the limits",mix-500,v1.2,500,103224,module tradeSummary,ms,0.23,0.18,2.33,15,
+"logic modules, Node: inside the limits",mix-500,v1.2,500,103224,module filterOptions,ms,0.2,0.16,0.95,15,
+"logic modules, Node: inside the limits",mix-500,v1.2,500,103224,module applyFiltersAccount,ms,0.5,0.36,1.01,15,
+"logic modules, Node: inside the limits",mix-500,v1.2,500,103224,module applyFiltersSender,ms,0.04,0.04,0.13,15,
+"logic modules, Node: inside the limits",mix-999,v1.2,999,207200,"analyse(), repeated",ms,36.55,31.62,46.72,15,median of fresh processes: 36.4 / 36.55 / 48.06; accepted=true
+"logic modules, Node: inside the limits",mix-999,v1.2,999,207200,"analyse(), first call in the process",ms,84.53,,,1,
+"logic modules, Node: inside the limits",mix-999,v1.2,999,207200,throughput,messages/s,27332.5,,,,
+"logic modules, Node: inside the limits",mix-999,v1.2,999,207200,throughput,MB/s,5.41,,,,
+"logic modules, Node: inside the limits",mix-999,v1.2,999,207200,peak resident memory of the process,MB,142.88,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: inside the limits",mix-999,v1.2,999,207200,"JS heap in use after GC, result kept",MB,10.8,,,,
+"logic modules, Node: inside the limits",mix-999,v1.2,999,207200,module import,ms,9.25,,,1,initialisation
+"logic modules, Node: inside the limits",mix-999,v1.2,999,207200,module checkLimits,ms,7.01,5.07,8.85,15,
+"logic modules, Node: inside the limits",mix-999,v1.2,999,207200,module splitMessages,ms,5.12,4.05,7.5,15,
+"logic modules, Node: inside the limits",mix-999,v1.2,999,207200,module checkMessage,ms,19.61,16.16,21.21,15,
+"logic modules, Node: inside the limits",mix-999,v1.2,999,207200,module decode,ms,2.26,1.95,9.37,15,
+"logic modules, Node: inside the limits",mix-999,v1.2,999,207200,module timeline,ms,0.65,0.51,2.19,15,
+"logic modules, Node: inside the limits",mix-999,v1.2,999,207200,module orderGroups,ms,0.92,0.75,4.72,15,
+"logic modules, Node: inside the limits",mix-999,v1.2,999,207200,module tradeSummary,ms,0.46,0.4,2.26,15,
+"logic modules, Node: inside the limits",mix-999,v1.2,999,207200,module filterOptions,ms,0.39,0.33,2.42,15,
+"logic modules, Node: inside the limits",mix-999,v1.2,999,207200,module applyFiltersAccount,ms,1.1,0.92,1.94,15,
+"logic modules, Node: inside the limits",mix-999,v1.2,999,207200,module applyFiltersSender,ms,0.13,0.07,0.28,15,
+"logic modules, Node: inside the limits",mix-1000,v1.2,1000,208290,"analyse(), repeated",ms,50.06,42.03,65.26,15,median of fresh processes: 38.99 / 50.06 / 48.15; accepted=true
+"logic modules, Node: inside the limits",mix-1000,v1.2,1000,208290,"analyse(), first call in the process",ms,126.14,,,1,
+"logic modules, Node: inside the limits",mix-1000,v1.2,1000,208290,throughput,messages/s,19974.65,,,,
+"logic modules, Node: inside the limits",mix-1000,v1.2,1000,208290,throughput,MB/s,3.97,,,,
+"logic modules, Node: inside the limits",mix-1000,v1.2,1000,208290,peak resident memory of the process,MB,146.24,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: inside the limits",mix-1000,v1.2,1000,208290,"JS heap in use after GC, result kept",MB,10.84,,,,
+"logic modules, Node: inside the limits",mix-1000,v1.2,1000,208290,module import,ms,16.86,,,1,initialisation
+"logic modules, Node: inside the limits",mix-1000,v1.2,1000,208290,module checkLimits,ms,11.22,9.85,14.57,15,
+"logic modules, Node: inside the limits",mix-1000,v1.2,1000,208290,module splitMessages,ms,7.25,4.88,12.55,15,
+"logic modules, Node: inside the limits",mix-1000,v1.2,1000,208290,module checkMessage,ms,26.6,18.57,37.85,15,
+"logic modules, Node: inside the limits",mix-1000,v1.2,1000,208290,module decode,ms,4.51,2.13,18.86,15,
+"logic modules, Node: inside the limits",mix-1000,v1.2,1000,208290,module timeline,ms,1.32,0.91,5.29,15,
+"logic modules, Node: inside the limits",mix-1000,v1.2,1000,208290,module orderGroups,ms,1.76,1.19,6.63,15,
+"logic modules, Node: inside the limits",mix-1000,v1.2,1000,208290,module tradeSummary,ms,0.76,0.52,4.03,15,
+"logic modules, Node: inside the limits",mix-1000,v1.2,1000,208290,module filterOptions,ms,0.41,0.27,6.78,15,
+"logic modules, Node: inside the limits",mix-1000,v1.2,1000,208290,module applyFiltersAccount,ms,1.16,0.91,1.74,15,
+"logic modules, Node: inside the limits",mix-1000,v1.2,1000,208290,module applyFiltersSender,ms,0.13,0.05,1.34,15,
+"logic modules, Node: over the limit",mix-1001,v1.2,1001,207520,"analyse(), repeated",ms,6.76,4.92,12.42,15,median of fresh processes: 8.26 / 6.76 / 10.08; accepted=false
+"logic modules, Node: over the limit",mix-1001,v1.2,1001,207520,"analyse(), first call in the process",ms,26.17,,,1,
+"logic modules, Node: over the limit",mix-1001,v1.2,1001,207520,throughput,messages/s,148103.72,,,,
+"logic modules, Node: over the limit",mix-1001,v1.2,1001,207520,throughput,MB/s,29.28,,,,
+"logic modules, Node: over the limit",mix-1001,v1.2,1001,207520,peak resident memory of the process,MB,85.88,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: over the limit",mix-1001,v1.2,1001,207520,"JS heap in use after GC, result kept",MB,5.3,,,,
+"logic modules, Node: over the limit",mix-1001,v1.2,1001,207520,module import,ms,13.52,,,1,initialisation
+"logic modules, Node: over the limit",mix-10000,v1.2,10000,2146439,"analyse(), repeated",ms,68.04,53.57,80.51,15,median of fresh processes: 68.3 / 68.04 / 70.56; accepted=false
+"logic modules, Node: over the limit",mix-10000,v1.2,10000,2146439,"analyse(), first call in the process",ms,87.89,,,1,
+"logic modules, Node: over the limit",mix-10000,v1.2,10000,2146439,throughput,messages/s,146979.54,,,,
+"logic modules, Node: over the limit",mix-10000,v1.2,10000,2146439,throughput,MB/s,30.09,,,,
+"logic modules, Node: over the limit",mix-10000,v1.2,10000,2146439,peak resident memory of the process,MB,194.91,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: over the limit",mix-10000,v1.2,10000,2146439,"JS heap in use after GC, result kept",MB,7.16,,,,
+"logic modules, Node: over the limit",mix-10000,v1.2,10000,2146439,module import,ms,11.11,,,1,initialisation
+"logic modules, Node: variants",bytes-1048575,v1.2,1000,1048575,"analyse(), repeated",ms,55.54,51.36,87.21,15,median of fresh processes: 59.07 / 55.54 / 64.03; accepted=true
+"logic modules, Node: variants",bytes-1048575,v1.2,1000,1048575,"analyse(), first call in the process",ms,80.91,,,1,
+"logic modules, Node: variants",bytes-1048575,v1.2,1000,1048575,throughput,messages/s,18005.09,,,,
+"logic modules, Node: variants",bytes-1048575,v1.2,1000,1048575,throughput,MB/s,18.01,,,,
+"logic modules, Node: variants",bytes-1048575,v1.2,1000,1048575,peak resident memory of the process,MB,151.51,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: variants",bytes-1048575,v1.2,1000,1048575,"JS heap in use after GC, result kept",MB,11.64,,,,
+"logic modules, Node: variants",bytes-1048575,v1.2,1000,1048575,module import,ms,8.95,,,1,initialisation
+"logic modules, Node: variants",bytes-1048575,v1.2,1000,1048575,module checkLimits,ms,9.66,9.06,14.44,15,
+"logic modules, Node: variants",bytes-1048575,v1.2,1000,1048575,module splitMessages,ms,12.51,8.62,17.06,15,
+"logic modules, Node: variants",bytes-1048575,v1.2,1000,1048575,module checkMessage,ms,29.18,25.5,37.88,15,
+"logic modules, Node: variants",bytes-1048575,v1.2,1000,1048575,module decode,ms,3.36,2,4.37,15,
+"logic modules, Node: variants",bytes-1048575,v1.2,1000,1048575,module timeline,ms,0.93,0.53,2.25,15,
+"logic modules, Node: variants",bytes-1048575,v1.2,1000,1048575,module orderGroups,ms,0.84,0.76,3.09,15,
+"logic modules, Node: variants",bytes-1048575,v1.2,1000,1048575,module tradeSummary,ms,0.45,0.4,2.31,15,
+"logic modules, Node: variants",bytes-1048575,v1.2,1000,1048575,module filterOptions,ms,0.43,0.38,1.94,15,
+"logic modules, Node: variants",bytes-1048575,v1.2,1000,1048575,module applyFiltersAccount,ms,1.22,0.71,1.95,15,
+"logic modules, Node: variants",bytes-1048575,v1.2,1000,1048575,module applyFiltersSender,ms,0.09,0.08,0.19,15,
+"logic modules, Node: variants",bytes-1048576,v1.2,1000,1048576,"analyse(), repeated",ms,56.02,51.2,73.55,15,median of fresh processes: 55.47 / 56.02 / 67.16; accepted=true
+"logic modules, Node: variants",bytes-1048576,v1.2,1000,1048576,"analyse(), first call in the process",ms,109.83,,,1,
+"logic modules, Node: variants",bytes-1048576,v1.2,1000,1048576,throughput,messages/s,17849.78,,,,
+"logic modules, Node: variants",bytes-1048576,v1.2,1000,1048576,throughput,MB/s,17.85,,,,
+"logic modules, Node: variants",bytes-1048576,v1.2,1000,1048576,peak resident memory of the process,MB,149.98,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: variants",bytes-1048576,v1.2,1000,1048576,"JS heap in use after GC, result kept",MB,11.63,,,,
+"logic modules, Node: variants",bytes-1048576,v1.2,1000,1048576,module import,ms,11.59,,,1,initialisation
+"logic modules, Node: variants",bytes-1048576,v1.2,1000,1048576,module checkLimits,ms,10.38,9.43,13.74,15,
+"logic modules, Node: variants",bytes-1048576,v1.2,1000,1048576,module splitMessages,ms,9.81,8.61,10.92,15,
+"logic modules, Node: variants",bytes-1048576,v1.2,1000,1048576,module checkMessage,ms,26.15,24.67,28.62,15,
+"logic modules, Node: variants",bytes-1048576,v1.2,1000,1048576,module decode,ms,2.07,1.97,3.62,15,
+"logic modules, Node: variants",bytes-1048576,v1.2,1000,1048576,module timeline,ms,0.59,0.54,1.71,15,
+"logic modules, Node: variants",bytes-1048576,v1.2,1000,1048576,module orderGroups,ms,0.91,0.77,2.96,15,
+"logic modules, Node: variants",bytes-1048576,v1.2,1000,1048576,module tradeSummary,ms,0.49,0.41,2.26,15,
+"logic modules, Node: variants",bytes-1048576,v1.2,1000,1048576,module filterOptions,ms,0.29,0.22,1.59,15,
+"logic modules, Node: variants",bytes-1048576,v1.2,1000,1048576,module applyFiltersAccount,ms,0.88,0.72,1.27,15,
+"logic modules, Node: variants",bytes-1048576,v1.2,1000,1048576,module applyFiltersSender,ms,0.08,0.07,0.45,15,
+"logic modules, Node: variants",bytes-1048577,v1.2,1000,1048577,"analyse(), repeated",ms,16.42,10.41,19.51,15,median of fresh processes: 11.7 / 16.42 / 16.85; accepted=false
+"logic modules, Node: variants",bytes-1048577,v1.2,1000,1048577,"analyse(), first call in the process",ms,32.82,,,1,
+"logic modules, Node: variants",bytes-1048577,v1.2,1000,1048577,throughput,messages/s,60888.63,,,,
+"logic modules, Node: variants",bytes-1048577,v1.2,1000,1048577,throughput,MB/s,60.89,,,,
+"logic modules, Node: variants",bytes-1048577,v1.2,1000,1048577,peak resident memory of the process,MB,89.79,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: variants",bytes-1048577,v1.2,1000,1048577,"JS heap in use after GC, result kept",MB,6.11,,,,
+"logic modules, Node: variants",bytes-1048577,v1.2,1000,1048577,module import,ms,9.07,,,1,initialisation
+"logic modules, Node: variants",malformed-010pct-1000,v1.2,1000,208290,"analyse(), repeated",ms,34.64,29.32,54.35,15,median of fresh processes: 30.59 / 34.64 / 31.42; accepted=true
+"logic modules, Node: variants",malformed-010pct-1000,v1.2,1000,208290,"analyse(), first call in the process",ms,65.23,,,1,
+"logic modules, Node: variants",malformed-010pct-1000,v1.2,1000,208290,throughput,messages/s,28870.61,,,,
+"logic modules, Node: variants",malformed-010pct-1000,v1.2,1000,208290,throughput,MB/s,5.73,,,,
+"logic modules, Node: variants",malformed-010pct-1000,v1.2,1000,208290,peak resident memory of the process,MB,154.73,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: variants",malformed-010pct-1000,v1.2,1000,208290,"JS heap in use after GC, result kept",MB,10.53,,,,
+"logic modules, Node: variants",malformed-010pct-1000,v1.2,1000,208290,module import,ms,9.41,,,1,initialisation
+"logic modules, Node: variants",malformed-010pct-1000,v1.2,1000,208290,module checkLimits,ms,5.22,4.23,5.9,15,
+"logic modules, Node: variants",malformed-010pct-1000,v1.2,1000,208290,module splitMessages,ms,5.25,4.2,6.4,15,
+"logic modules, Node: variants",malformed-010pct-1000,v1.2,1000,208290,module checkMessage,ms,24.1,13.13,27,15,
+"logic modules, Node: variants",malformed-010pct-1000,v1.2,1000,208290,module decode,ms,4.11,3.35,8.75,15,
+"logic modules, Node: variants",malformed-010pct-1000,v1.2,1000,208290,module timeline,ms,0.93,0.5,1.68,15,
+"logic modules, Node: variants",malformed-010pct-1000,v1.2,1000,208290,module orderGroups,ms,1.72,0.54,2.7,15,
+"logic modules, Node: variants",malformed-010pct-1000,v1.2,1000,208290,module tradeSummary,ms,0.48,0.34,2.25,15,
+"logic modules, Node: variants",malformed-010pct-1000,v1.2,1000,208290,module filterOptions,ms,0.31,0.19,1.48,15,
+"logic modules, Node: variants",malformed-010pct-1000,v1.2,1000,208290,module applyFiltersAccount,ms,0.71,0.65,1.17,15,
+"logic modules, Node: variants",malformed-010pct-1000,v1.2,1000,208290,module applyFiltersSender,ms,0.08,0.07,0.17,15,
+"logic modules, Node: variants",malformed-050pct-1000,v1.2,1000,208290,"analyse(), repeated",ms,34.58,27.25,49.75,15,median of fresh processes: 31.03 / 34.58 / 37.39; accepted=true
+"logic modules, Node: variants",malformed-050pct-1000,v1.2,1000,208290,"analyse(), first call in the process",ms,79.98,,,1,
+"logic modules, Node: variants",malformed-050pct-1000,v1.2,1000,208290,throughput,messages/s,28921.55,,,,
+"logic modules, Node: variants",malformed-050pct-1000,v1.2,1000,208290,throughput,MB/s,5.75,,,,
+"logic modules, Node: variants",malformed-050pct-1000,v1.2,1000,208290,peak resident memory of the process,MB,112.21,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: variants",malformed-050pct-1000,v1.2,1000,208290,"JS heap in use after GC, result kept",MB,9.18,,,,
+"logic modules, Node: variants",malformed-050pct-1000,v1.2,1000,208290,module import,ms,9.69,,,1,initialisation
+"logic modules, Node: variants",malformed-050pct-1000,v1.2,1000,208290,module checkLimits,ms,8.35,4.43,9.47,15,
+"logic modules, Node: variants",malformed-050pct-1000,v1.2,1000,208290,module splitMessages,ms,8.26,8.02,9.77,15,
+"logic modules, Node: variants",malformed-050pct-1000,v1.2,1000,208290,module checkMessage,ms,25.12,20.93,27.17,15,
+"logic modules, Node: variants",malformed-050pct-1000,v1.2,1000,208290,module decode,ms,2.3,1.76,5.79,15,
+"logic modules, Node: variants",malformed-050pct-1000,v1.2,1000,208290,module timeline,ms,0.54,0.5,1.16,15,
+"logic modules, Node: variants",malformed-050pct-1000,v1.2,1000,208290,module orderGroups,ms,1.53,0.45,2.86,15,
+"logic modules, Node: variants",malformed-050pct-1000,v1.2,1000,208290,module tradeSummary,ms,0.5,0.35,2.45,15,
+"logic modules, Node: variants",malformed-050pct-1000,v1.2,1000,208290,module filterOptions,ms,0.27,0.14,1.58,15,
+"logic modules, Node: variants",malformed-050pct-1000,v1.2,1000,208290,module applyFiltersAccount,ms,0.63,0.54,1.33,15,
+"logic modules, Node: variants",malformed-050pct-1000,v1.2,1000,208290,module applyFiltersSender,ms,0.06,0.06,0.22,15,
+"logic modules, Node: variants",malformed-100pct-1000,v1.2,1000,208290,"analyse(), repeated",ms,37.67,25.07,53.62,15,median of fresh processes: 38.4 / 37.67 / 27.24; accepted=true
+"logic modules, Node: variants",malformed-100pct-1000,v1.2,1000,208290,"analyse(), first call in the process",ms,78.9,,,1,
+"logic modules, Node: variants",malformed-100pct-1000,v1.2,1000,208290,throughput,messages/s,26546.91,,,,
+"logic modules, Node: variants",malformed-100pct-1000,v1.2,1000,208290,throughput,MB/s,5.27,,,,
+"logic modules, Node: variants",malformed-100pct-1000,v1.2,1000,208290,peak resident memory of the process,MB,105.11,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: variants",malformed-100pct-1000,v1.2,1000,208290,"JS heap in use after GC, result kept",MB,7.33,,,,
+"logic modules, Node: variants",malformed-100pct-1000,v1.2,1000,208290,module import,ms,12.18,,,1,initialisation
+"logic modules, Node: variants",malformed-100pct-1000,v1.2,1000,208290,module checkLimits,ms,7.32,4.8,10.13,15,
+"logic modules, Node: variants",malformed-100pct-1000,v1.2,1000,208290,module splitMessages,ms,5.05,3.98,6.05,15,
+"logic modules, Node: variants",malformed-100pct-1000,v1.2,1000,208290,module checkMessage,ms,17.94,12.63,25.23,15,
+"logic modules, Node: variants",malformed-100pct-1000,v1.2,1000,208290,module decode,ms,0,0,1.93,15,
+"logic modules, Node: variants",malformed-100pct-1000,v1.2,1000,208290,module timeline,ms,0,0,0.02,15,
+"logic modules, Node: variants",malformed-100pct-1000,v1.2,1000,208290,module orderGroups,ms,0,0,0.2,15,
+"logic modules, Node: variants",malformed-100pct-1000,v1.2,1000,208290,module tradeSummary,ms,0,0,0.21,15,
+"logic modules, Node: variants",malformed-100pct-1000,v1.2,1000,208290,module filterOptions,ms,0,0,0.07,15,
+"logic modules, Node: variants",sessions-01-1000,v1.2,1000,208286,"analyse(), repeated",ms,33.93,30.06,47.58,15,median of fresh processes: 43.02 / 33.93 / 43.13; accepted=true
+"logic modules, Node: variants",sessions-01-1000,v1.2,1000,208286,"analyse(), first call in the process",ms,67.59,,,1,
+"logic modules, Node: variants",sessions-01-1000,v1.2,1000,208286,throughput,messages/s,29473.54,,,,
+"logic modules, Node: variants",sessions-01-1000,v1.2,1000,208286,throughput,MB/s,5.85,,,,
+"logic modules, Node: variants",sessions-01-1000,v1.2,1000,208286,peak resident memory of the process,MB,140.13,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: variants",sessions-01-1000,v1.2,1000,208286,"JS heap in use after GC, result kept",MB,10.77,,,,
+"logic modules, Node: variants",sessions-01-1000,v1.2,1000,208286,module import,ms,8.92,,,1,initialisation
+"logic modules, Node: variants",sessions-01-1000,v1.2,1000,208286,module checkLimits,ms,5.15,4.29,11.72,15,
+"logic modules, Node: variants",sessions-01-1000,v1.2,1000,208286,module splitMessages,ms,5,4.07,6.15,15,
+"logic modules, Node: variants",sessions-01-1000,v1.2,1000,208286,module checkMessage,ms,17.08,12.01,20.07,15,
+"logic modules, Node: variants",sessions-01-1000,v1.2,1000,208286,module decode,ms,2.16,1.73,10.68,15,
+"logic modules, Node: variants",sessions-01-1000,v1.2,1000,208286,module timeline,ms,0.6,0.5,3.72,15,
+"logic modules, Node: variants",sessions-01-1000,v1.2,1000,208286,module orderGroups,ms,1.21,1.14,4.04,15,
+"logic modules, Node: variants",sessions-01-1000,v1.2,1000,208286,module tradeSummary,ms,0.75,0.44,3.25,15,
+"logic modules, Node: variants",sessions-01-1000,v1.2,1000,208286,module filterOptions,ms,0.33,0.19,2.51,15,
+"logic modules, Node: variants",sessions-01-1000,v1.2,1000,208286,module applyFiltersAccount,ms,1,0.68,1.91,15,
+"logic modules, Node: variants",sessions-01-1000,v1.2,1000,208286,module applyFiltersSender,ms,0.08,0.05,0.6,15,
+"logic modules, Node: variants",sessions-20-1000,v1.2,1000,202771,"analyse(), repeated",ms,30.74,27.04,45.02,15,median of fresh processes: 42.87 / 30.74 / 36.69; accepted=true
+"logic modules, Node: variants",sessions-20-1000,v1.2,1000,202771,"analyse(), first call in the process",ms,64.87,,,1,
+"logic modules, Node: variants",sessions-20-1000,v1.2,1000,202771,throughput,messages/s,32527.55,,,,
+"logic modules, Node: variants",sessions-20-1000,v1.2,1000,202771,throughput,MB/s,6.29,,,,
+"logic modules, Node: variants",sessions-20-1000,v1.2,1000,202771,peak resident memory of the process,MB,147.27,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: variants",sessions-20-1000,v1.2,1000,202771,"JS heap in use after GC, result kept",MB,10.72,,,,
+"logic modules, Node: variants",sessions-20-1000,v1.2,1000,202771,module import,ms,9.36,,,1,initialisation
+"logic modules, Node: variants",sessions-20-1000,v1.2,1000,202771,module checkLimits,ms,5.18,4.1,6.99,15,
+"logic modules, Node: variants",sessions-20-1000,v1.2,1000,202771,module splitMessages,ms,5.08,4.16,6.03,15,
+"logic modules, Node: variants",sessions-20-1000,v1.2,1000,202771,module checkMessage,ms,17.92,12.68,30.17,15,
+"logic modules, Node: variants",sessions-20-1000,v1.2,1000,202771,module decode,ms,3.73,2.25,10.46,15,
+"logic modules, Node: variants",sessions-20-1000,v1.2,1000,202771,module timeline,ms,0.57,0.51,4.62,15,
+"logic modules, Node: variants",sessions-20-1000,v1.2,1000,202771,module orderGroups,ms,1.14,0.8,3.04,15,
+"logic modules, Node: variants",sessions-20-1000,v1.2,1000,202771,module tradeSummary,ms,0.7,0.58,2.13,15,
+"logic modules, Node: variants",sessions-20-1000,v1.2,1000,202771,module filterOptions,ms,0.54,0.21,2.7,15,
+"logic modules, Node: variants",sessions-20-1000,v1.2,1000,202771,module applyFiltersAccount,ms,0.84,0.75,1.59,15,
+"logic modules, Node: variants",sessions-20-1000,v1.2,1000,202771,module applyFiltersSender,ms,0.09,0.07,0.21,15,
+"logic modules, Node: variants",sessions-50-1000,v1.2,1000,195040,"analyse(), repeated",ms,29.11,26.43,37.7,15,median of fresh processes: 31.79 / 29.11 / 40.26; accepted=true
+"logic modules, Node: variants",sessions-50-1000,v1.2,1000,195040,"analyse(), first call in the process",ms,69.13,,,1,
+"logic modules, Node: variants",sessions-50-1000,v1.2,1000,195040,throughput,messages/s,34357.59,,,,
+"logic modules, Node: variants",sessions-50-1000,v1.2,1000,195040,throughput,MB/s,6.39,,,,
+"logic modules, Node: variants",sessions-50-1000,v1.2,1000,195040,peak resident memory of the process,MB,110.25,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: variants",sessions-50-1000,v1.2,1000,195040,"JS heap in use after GC, result kept",MB,10.51,,,,
+"logic modules, Node: variants",sessions-50-1000,v1.2,1000,195040,module import,ms,9.16,,,1,initialisation
+"logic modules, Node: variants",sessions-50-1000,v1.2,1000,195040,module checkLimits,ms,4.71,4.09,6.27,15,
+"logic modules, Node: variants",sessions-50-1000,v1.2,1000,195040,module splitMessages,ms,4.96,3.91,5.53,15,
+"logic modules, Node: variants",sessions-50-1000,v1.2,1000,195040,module checkMessage,ms,18.6,12.57,21.54,15,
+"logic modules, Node: variants",sessions-50-1000,v1.2,1000,195040,module decode,ms,1.92,1.83,6.99,15,
+"logic modules, Node: variants",sessions-50-1000,v1.2,1000,195040,module timeline,ms,0.58,0.54,0.93,15,
+"logic modules, Node: variants",sessions-50-1000,v1.2,1000,195040,module orderGroups,ms,0.89,0.73,3.33,15,
+"logic modules, Node: variants",sessions-50-1000,v1.2,1000,195040,module tradeSummary,ms,0.47,0.35,2.05,15,
+"logic modules, Node: variants",sessions-50-1000,v1.2,1000,195040,module filterOptions,ms,0.38,0.24,1.59,15,
+"logic modules, Node: variants",sessions-50-1000,v1.2,1000,195040,module applyFiltersAccount,ms,0.76,0.68,1.22,15,
+"logic modules, Node: variants",sessions-50-1000,v1.2,1000,195040,module applyFiltersSender,ms,0.08,0.08,0.18,15,
+"logic modules, Node: hostile input","one message with a 1,000,000-character value",v1.2,1,1000076,"analyse(), repeated",ms,28.31,26.42,67.85,15,median of fresh processes: 49.66 / 28.31 / 28.91; accepted=true
+"logic modules, Node: hostile input","one message with a 1,000,000-character value",v1.2,1,1000076,"analyse(), first call in the process",ms,80.98,,,1,
+"logic modules, Node: hostile input","one message with a 1,000,000-character value",v1.2,1,1000076,throughput,messages/s,35.32,,,,
+"logic modules, Node: hostile input","one message with a 1,000,000-character value",v1.2,1,1000076,throughput,MB/s,33.69,,,,
+"logic modules, Node: hostile input","one message with a 1,000,000-character value",v1.2,1,1000076,peak resident memory of the process,MB,62.75,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: hostile input","one message with a 1,000,000-character value",v1.2,1,1000076,"JS heap in use after GC, result kept",MB,6.12,,,,
+"logic modules, Node: hostile input","one message with a 1,000,000-character value",v1.2,1,1000076,module import,ms,12.78,,,1,initialisation
+"logic modules, Node: hostile input","one message with 100,000 fields",v1.2,1,700071,"analyse(), repeated",ms,211.98,160.66,247.33,15,median of fresh processes: 205.69 / 211.98 / 182.42; accepted=true
+"logic modules, Node: hostile input","one message with 100,000 fields",v1.2,1,700071,"analyse(), first call in the process",ms,292.12,,,1,
+"logic modules, Node: hostile input","one message with 100,000 fields",v1.2,1,700071,throughput,messages/s,4.72,,,,
+"logic modules, Node: hostile input","one message with 100,000 fields",v1.2,1,700071,throughput,MB/s,3.15,,,,
+"logic modules, Node: hostile input","one message with 100,000 fields",v1.2,1,700071,peak resident memory of the process,MB,258.34,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: hostile input","one message with 100,000 fields",v1.2,1,700071,"JS heap in use after GC, result kept",MB,21.26,,,,
+"logic modules, Node: hostile input","one message with 100,000 fields",v1.2,1,700071,module import,ms,12.12,,,1,initialisation
+"logic modules, Node: hostile input","pipe form, 1,000,000 literal pipes in a value",v1.2,1,1000022,"analyse(), repeated",ms,108.79,100.17,109.61,15,median of fresh processes: 112.17 / 108.79 / 107.96; accepted=true
+"logic modules, Node: hostile input","pipe form, 1,000,000 literal pipes in a value",v1.2,1,1000022,"analyse(), first call in the process",ms,104.08,,,1,
+"logic modules, Node: hostile input","pipe form, 1,000,000 literal pipes in a value",v1.2,1,1000022,throughput,messages/s,9.19,,,,
+"logic modules, Node: hostile input","pipe form, 1,000,000 literal pipes in a value",v1.2,1,1000022,throughput,MB/s,8.77,,,,
+"logic modules, Node: hostile input","pipe form, 1,000,000 literal pipes in a value",v1.2,1,1000022,peak resident memory of the process,MB,57.27,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: hostile input","pipe form, 1,000,000 literal pipes in a value",v1.2,1,1000022,"JS heap in use after GC, result kept",MB,6.07,,,,
+"logic modules, Node: hostile input","pipe form, 1,000,000 literal pipes in a value",v1.2,1,1000022,module import,ms,8.81,,,1,initialisation
+"logic modules, Node: hostile input","caret form, 1,000,000 carets in a value",v1.2,1,1000025,"analyse(), repeated",ms,66.88,66.53,69.55,15,median of fresh processes: 68.21 / 66.88 / 83.74; accepted=true
+"logic modules, Node: hostile input","caret form, 1,000,000 carets in a value",v1.2,1,1000025,"analyse(), first call in the process",ms,73.02,,,1,
+"logic modules, Node: hostile input","caret form, 1,000,000 carets in a value",v1.2,1,1000025,throughput,messages/s,14.95,,,,
+"logic modules, Node: hostile input","caret form, 1,000,000 carets in a value",v1.2,1,1000025,throughput,MB/s,14.26,,,,
+"logic modules, Node: hostile input","caret form, 1,000,000 carets in a value",v1.2,1,1000025,peak resident memory of the process,MB,56.13,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: hostile input","caret form, 1,000,000 carets in a value",v1.2,1,1000025,"JS heap in use after GC, result kept",MB,6.07,,,,
+"logic modules, Node: hostile input","caret form, 1,000,000 carets in a value",v1.2,1,1000025,module import,ms,9.72,,,1,initialisation
+"logic modules, Node: hostile input","angle form, 250,000 near-miss ""<SOH"" in a value",v1.2,1,1000034,"analyse(), repeated",ms,77.5,63.82,78.86,15,median of fresh processes: 50.62 / 77.5 / 50.28; accepted=true
+"logic modules, Node: hostile input","angle form, 250,000 near-miss ""<SOH"" in a value",v1.2,1,1000034,"analyse(), first call in the process",ms,81.68,,,1,
+"logic modules, Node: hostile input","angle form, 250,000 near-miss ""<SOH"" in a value",v1.2,1,1000034,throughput,messages/s,12.9,,,,
+"logic modules, Node: hostile input","angle form, 250,000 near-miss ""<SOH"" in a value",v1.2,1,1000034,throughput,MB/s,12.31,,,,
+"logic modules, Node: hostile input","angle form, 250,000 near-miss ""<SOH"" in a value",v1.2,1,1000034,peak resident memory of the process,MB,56.47,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: hostile input","angle form, 250,000 near-miss ""<SOH"" in a value",v1.2,1,1000034,"JS heap in use after GC, result kept",MB,6.07,,,,
+"logic modules, Node: hostile input","angle form, 250,000 near-miss ""<SOH"" in a value",v1.2,1,1000034,module import,ms,9.59,,,1,initialisation
+"logic modules, Node: hostile input","""8=FIX"" 200,000 times with no delimiter",v1.2,1,1000000,"analyse(), repeated",ms,36.73,35.12,41.43,15,median of fresh processes: 48.54 / 36.73 / 39.4; accepted=true
+"logic modules, Node: hostile input","""8=FIX"" 200,000 times with no delimiter",v1.2,1,1000000,"analyse(), first call in the process",ms,41.21,,,1,
+"logic modules, Node: hostile input","""8=FIX"" 200,000 times with no delimiter",v1.2,1,1000000,throughput,messages/s,27.22,,,,
+"logic modules, Node: hostile input","""8=FIX"" 200,000 times with no delimiter",v1.2,1,1000000,throughput,MB/s,25.96,,,,
+"logic modules, Node: hostile input","""8=FIX"" 200,000 times with no delimiter",v1.2,1,1000000,peak resident memory of the process,MB,56.29,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: hostile input","""8=FIX"" 200,000 times with no delimiter",v1.2,1,1000000,"JS heap in use after GC, result kept",MB,6.04,,,,
+"logic modules, Node: hostile input","""8=FIX"" 200,000 times with no delimiter",v1.2,1,1000000,module import,ms,9.08,,,1,initialisation
+"logic modules, Node: hostile input","""8=FIX|"" 170,000 times (over the message limit)",v1.2,170000,1020000,"analyse(), repeated",ms,102.08,81.17,126.96,15,median of fresh processes: 125.3 / 102.08 / 109.89; accepted=false
+"logic modules, Node: hostile input","""8=FIX|"" 170,000 times (over the message limit)",v1.2,170000,1020000,"analyse(), first call in the process",ms,124.21,,,1,
+"logic modules, Node: hostile input","""8=FIX|"" 170,000 times (over the message limit)",v1.2,170000,1020000,throughput,messages/s,1665308.62,,,,
+"logic modules, Node: hostile input","""8=FIX|"" 170,000 times (over the message limit)",v1.2,170000,1020000,throughput,MB/s,9.53,,,,
+"logic modules, Node: hostile input","""8=FIX|"" 170,000 times (over the message limit)",v1.2,170000,1020000,peak resident memory of the process,MB,306.29,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: hostile input","""8=FIX|"" 170,000 times (over the message limit)",v1.2,170000,1020000,"JS heap in use after GC, result kept",MB,6.09,,,,
+"logic modules, Node: hostile input","""8=FIX|"" 170,000 times (over the message limit)",v1.2,170000,1020000,module import,ms,8.86,,,1,initialisation
+"logic modules, Node: hostile input","""18=FIX"" 170,000 times (never a start)",v1.2,0,1020000,"analyse(), repeated",ms,6.53,6.36,6.69,15,median of fresh processes: 6.62 / 6.53 / 7.7; accepted=true
+"logic modules, Node: hostile input","""18=FIX"" 170,000 times (never a start)",v1.2,0,1020000,"analyse(), first call in the process",ms,9.07,,,1,
+"logic modules, Node: hostile input","""18=FIX"" 170,000 times (never a start)",v1.2,0,1020000,throughput,messages/s,0,,,,
+"logic modules, Node: hostile input","""18=FIX"" 170,000 times (never a start)",v1.2,0,1020000,throughput,MB/s,148.96,,,,
+"logic modules, Node: hostile input","""18=FIX"" 170,000 times (never a start)",v1.2,0,1020000,peak resident memory of the process,MB,55.63,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: hostile input","""18=FIX"" 170,000 times (never a start)",v1.2,0,1020000,"JS heap in use after GC, result kept",MB,6.04,,,,
+"logic modules, Node: hostile input","""18=FIX"" 170,000 times (never a start)",v1.2,0,1020000,module import,ms,8.75,,,1,initialisation
+"logic modules, Node: hostile input","pipe form, 300,000 empty-looking fields ""|1=|""",v1.2,1,900026,"analyse(), repeated",ms,408.34,387.64,460.94,15,median of fresh processes: 432 / 408.34 / 422.87; accepted=true
+"logic modules, Node: hostile input","pipe form, 300,000 empty-looking fields ""|1=|""",v1.2,1,900026,"analyse(), first call in the process",ms,570.82,,,1,
+"logic modules, Node: hostile input","pipe form, 300,000 empty-looking fields ""|1=|""",v1.2,1,900026,throughput,messages/s,2.45,,,,
+"logic modules, Node: hostile input","pipe form, 300,000 empty-looking fields ""|1=|""",v1.2,1,900026,throughput,MB/s,2.1,,,,
+"logic modules, Node: hostile input","pipe form, 300,000 empty-looking fields ""|1=|""",v1.2,1,900026,peak resident memory of the process,MB,289.68,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: hostile input","pipe form, 300,000 empty-looking fields ""|1=|""",v1.2,1,900026,"JS heap in use after GC, result kept",MB,5.19,,,,
+"logic modules, Node: hostile input","pipe form, 300,000 empty-looking fields ""|1=|""",v1.2,1,900026,module import,ms,9.77,,,1,initialisation
+"logic modules, Node: hostile input","1,000 messages chained by OrigClOrdID (one order)",v1.2,1000,80675,"analyse(), repeated",ms,26.3,19.57,30.66,15,median of fresh processes: 17.66 / 26.3 / 18.42; accepted=true
+"logic modules, Node: hostile input","1,000 messages chained by OrigClOrdID (one order)",v1.2,1000,80675,"analyse(), first call in the process",ms,43.33,,,1,
+"logic modules, Node: hostile input","1,000 messages chained by OrigClOrdID (one order)",v1.2,1000,80675,throughput,messages/s,38021.96,,,,
+"logic modules, Node: hostile input","1,000 messages chained by OrigClOrdID (one order)",v1.2,1000,80675,throughput,MB/s,2.93,,,,
+"logic modules, Node: hostile input","1,000 messages chained by OrigClOrdID (one order)",v1.2,1000,80675,peak resident memory of the process,MB,90.91,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: hostile input","1,000 messages chained by OrigClOrdID (one order)",v1.2,1000,80675,"JS heap in use after GC, result kept",MB,7.44,,,,
+"logic modules, Node: hostile input","1,000 messages chained by OrigClOrdID (one order)",v1.2,1000,80675,module import,ms,10.4,,,1,initialisation
+"logic modules, Node: hostile input","1 MiB of newlines and ""="" signs",v1.2,0,1048576,"analyse(), repeated",ms,0.78,0.72,0.81,15,median of fresh processes: 1.14 / 0.78 / 0.95; accepted=true
+"logic modules, Node: hostile input","1 MiB of newlines and ""="" signs",v1.2,0,1048576,"analyse(), first call in the process",ms,1.68,,,1,
+"logic modules, Node: hostile input","1 MiB of newlines and ""="" signs",v1.2,0,1048576,throughput,messages/s,0,,,,
+"logic modules, Node: hostile input","1 MiB of newlines and ""="" signs",v1.2,0,1048576,throughput,MB/s,1289.69,,,,
+"logic modules, Node: hostile input","1 MiB of newlines and ""="" signs",v1.2,0,1048576,peak resident memory of the process,MB,55.7,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: hostile input","1 MiB of newlines and ""="" signs",v1.2,0,1048576,"JS heap in use after GC, result kept",MB,6.07,,,,
+"logic modules, Node: hostile input","1 MiB of newlines and ""="" signs",v1.2,0,1048576,module import,ms,8.98,,,1,initialisation
+"logic modules, Node: limit lifted to 10,000 (information)",mix-1000,"copy, limit lifted",1000,208290,"analyse(), repeated",ms,33.57,26.89,47.49,15,median of fresh processes: 30.93 / 33.57 / 33.47; accepted=true
+"logic modules, Node: limit lifted to 10,000 (information)",mix-1000,"copy, limit lifted",1000,208290,"analyse(), first call in the process",ms,66.81,,,1,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-1000,"copy, limit lifted",1000,208290,throughput,messages/s,29784.63,,,,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-1000,"copy, limit lifted",1000,208290,throughput,MB/s,5.92,,,,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-1000,"copy, limit lifted",1000,208290,peak resident memory of the process,MB,150.45,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: limit lifted to 10,000 (information)",mix-1000,"copy, limit lifted",1000,208290,"JS heap in use after GC, result kept",MB,10.79,,,,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-1000,"copy, limit lifted",1000,208290,module import,ms,12.88,,,1,initialisation
+"logic modules, Node: limit lifted to 10,000 (information)",mix-1000,"copy, limit lifted",1000,208290,module checkLimits,ms,5.66,4.38,6.89,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-1000,"copy, limit lifted",1000,208290,module splitMessages,ms,5.44,4.22,9.23,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-1000,"copy, limit lifted",1000,208290,module checkMessage,ms,18.31,12.38,32.13,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-1000,"copy, limit lifted",1000,208290,module decode,ms,4.45,2.16,10.8,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-1000,"copy, limit lifted",1000,208290,module timeline,ms,0.58,0.53,6.6,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-1000,"copy, limit lifted",1000,208290,module orderGroups,ms,1.38,0.72,2.78,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-1000,"copy, limit lifted",1000,208290,module tradeSummary,ms,0.58,0.4,2.83,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-1000,"copy, limit lifted",1000,208290,module filterOptions,ms,0.41,0.37,2.73,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-1000,"copy, limit lifted",1000,208290,module applyFiltersAccount,ms,0.89,0.7,1.87,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-1000,"copy, limit lifted",1000,208290,module applyFiltersSender,ms,0.08,0.08,0.23,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-2500,"copy, limit lifted",2500,528866,"analyse(), repeated",ms,101.37,69.71,138.69,15,median of fresh processes: 88.78 / 101.37 / 86.02; accepted=true
+"logic modules, Node: limit lifted to 10,000 (information)",mix-2500,"copy, limit lifted",2500,528866,"analyse(), first call in the process",ms,180.42,,,1,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-2500,"copy, limit lifted",2500,528866,throughput,messages/s,24661.87,,,,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-2500,"copy, limit lifted",2500,528866,throughput,MB/s,4.98,,,,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-2500,"copy, limit lifted",2500,528866,peak resident memory of the process,MB,202.05,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: limit lifted to 10,000 (information)",mix-2500,"copy, limit lifted",2500,528866,"JS heap in use after GC, result kept",MB,19.09,,,,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-2500,"copy, limit lifted",2500,528866,module import,ms,10.3,,,1,initialisation
+"logic modules, Node: limit lifted to 10,000 (information)",mix-2500,"copy, limit lifted",2500,528866,module checkLimits,ms,23.26,14.09,41.86,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-2500,"copy, limit lifted",2500,528866,module splitMessages,ms,12.63,12.2,23.26,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-2500,"copy, limit lifted",2500,528866,module checkMessage,ms,56,36.07,64.28,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-2500,"copy, limit lifted",2500,528866,module decode,ms,7.01,5.63,14.51,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-2500,"copy, limit lifted",2500,528866,module timeline,ms,1.66,1.5,4.05,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-2500,"copy, limit lifted",2500,528866,module orderGroups,ms,3.4,2.18,8.95,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-2500,"copy, limit lifted",2500,528866,module tradeSummary,ms,1.88,0.98,5.72,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-2500,"copy, limit lifted",2500,528866,module filterOptions,ms,1.31,1.22,4.64,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-2500,"copy, limit lifted",2500,528866,module applyFiltersAccount,ms,2.67,1.79,3.97,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-2500,"copy, limit lifted",2500,528866,module applyFiltersSender,ms,0.22,0.18,0.47,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-5000,"copy, limit lifted",5000,1063192,"analyse(), repeated",ms,193.47,160.44,234.62,15,median of fresh processes: 173.82 / 193.47 / 211.93; accepted=true
+"logic modules, Node: limit lifted to 10,000 (information)",mix-5000,"copy, limit lifted",5000,1063192,"analyse(), first call in the process",ms,234.65,,,1,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-5000,"copy, limit lifted",5000,1063192,throughput,messages/s,25844.28,,,,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-5000,"copy, limit lifted",5000,1063192,throughput,MB/s,5.24,,,,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-5000,"copy, limit lifted",5000,1063192,peak resident memory of the process,MB,281.03,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: limit lifted to 10,000 (information)",mix-5000,"copy, limit lifted",5000,1063192,"JS heap in use after GC, result kept",MB,31.9,,,,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-5000,"copy, limit lifted",5000,1063192,module import,ms,9.88,,,1,initialisation
+"logic modules, Node: limit lifted to 10,000 (information)",mix-5000,"copy, limit lifted",5000,1063192,module checkLimits,ms,41.73,30.99,52.6,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-5000,"copy, limit lifted",5000,1063192,module splitMessages,ms,28.2,23.83,44.79,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-5000,"copy, limit lifted",5000,1063192,module checkMessage,ms,118.84,83.56,146.94,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-5000,"copy, limit lifted",5000,1063192,module decode,ms,12.51,10.59,22.61,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-5000,"copy, limit lifted",5000,1063192,module timeline,ms,4.79,4.43,8.11,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-5000,"copy, limit lifted",5000,1063192,module orderGroups,ms,4.96,3.15,19.03,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-5000,"copy, limit lifted",5000,1063192,module tradeSummary,ms,2.61,1.84,9.44,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-5000,"copy, limit lifted",5000,1063192,module filterOptions,ms,2.39,2.17,6.84,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-5000,"copy, limit lifted",5000,1063192,module applyFiltersAccount,ms,5.82,3.8,15.34,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-5000,"copy, limit lifted",5000,1063192,module applyFiltersSender,ms,0.68,0.64,2.25,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-10000,"copy, limit lifted",10000,2146439,"analyse(), repeated",ms,362.44,316.71,476.12,15,median of fresh processes: 394.2 / 362.44 / 377.02; accepted=true
+"logic modules, Node: limit lifted to 10,000 (information)",mix-10000,"copy, limit lifted",10000,2146439,"analyse(), first call in the process",ms,549.8,,,1,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-10000,"copy, limit lifted",10000,2146439,throughput,messages/s,27590.41,,,,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-10000,"copy, limit lifted",10000,2146439,throughput,MB/s,5.65,,,,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-10000,"copy, limit lifted",10000,2146439,peak resident memory of the process,MB,417.83,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: limit lifted to 10,000 (information)",mix-10000,"copy, limit lifted",10000,2146439,"JS heap in use after GC, result kept",MB,59.38,,,,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-10000,"copy, limit lifted",10000,2146439,module import,ms,12.14,,,1,initialisation
+"logic modules, Node: limit lifted to 10,000 (information)",mix-10000,"copy, limit lifted",10000,2146439,module checkLimits,ms,56.06,53.65,79.51,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-10000,"copy, limit lifted",10000,2146439,module splitMessages,ms,64.85,53.29,80.22,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-10000,"copy, limit lifted",10000,2146439,module checkMessage,ms,207.72,184.24,276.6,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-10000,"copy, limit lifted",10000,2146439,module decode,ms,41.25,32.3,58.01,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-10000,"copy, limit lifted",10000,2146439,module timeline,ms,9.26,6.52,14.16,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-10000,"copy, limit lifted",10000,2146439,module orderGroups,ms,6.95,6.04,26.9,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-10000,"copy, limit lifted",10000,2146439,module tradeSummary,ms,4.4,2.72,11.09,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-10000,"copy, limit lifted",10000,2146439,module filterOptions,ms,4.72,3.92,8.02,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-10000,"copy, limit lifted",10000,2146439,module applyFiltersAccount,ms,10.21,8.48,24.56,15,
+"logic modules, Node: limit lifted to 10,000 (information)",mix-10000,"copy, limit lifted",10000,2146439,module applyFiltersSender,ms,1.2,1.14,2.03,15,
+"logic modules, Node: limit lifted to 10,000 (information)","10,000 messages chained by OrigClOrdID","copy, limit lifted",10000,836678,"analyse(), repeated",ms,264.47,191.5,301.73,15,median of fresh processes: 207.35 / 264.47 / 244.21; accepted=true
+"logic modules, Node: limit lifted to 10,000 (information)","10,000 messages chained by OrigClOrdID","copy, limit lifted",10000,836678,"analyse(), first call in the process",ms,338.95,,,1,
+"logic modules, Node: limit lifted to 10,000 (information)","10,000 messages chained by OrigClOrdID","copy, limit lifted",10000,836678,throughput,messages/s,37811.15,,,,
+"logic modules, Node: limit lifted to 10,000 (information)","10,000 messages chained by OrigClOrdID","copy, limit lifted",10000,836678,throughput,MB/s,3.02,,,,
+"logic modules, Node: limit lifted to 10,000 (information)","10,000 messages chained by OrigClOrdID","copy, limit lifted",10000,836678,peak resident memory of the process,MB,289.34,,,,an idle Node process with the modules loaded and 100 messages decoded once peaks at 55.45 MB
+"logic modules, Node: limit lifted to 10,000 (information)","10,000 messages chained by OrigClOrdID","copy, limit lifted",10000,836678,"JS heap in use after GC, result kept",MB,37.58,,,,
+"logic modules, Node: limit lifted to 10,000 (information)","10,000 messages chained by OrigClOrdID","copy, limit lifted",10000,836678,module import,ms,12.58,,,1,initialisation
+"logic modules, Node: limit lifted to 10,000 (information)","10,000 messages chained by OrigClOrdID","copy, limit lifted",10000,836678,module checkLimits,ms,48.45,34.2,66.65,15,
+"logic modules, Node: limit lifted to 10,000 (information)","10,000 messages chained by OrigClOrdID","copy, limit lifted",10000,836678,module splitMessages,ms,46.18,29.82,48.47,15,
+"logic modules, Node: limit lifted to 10,000 (information)","10,000 messages chained by OrigClOrdID","copy, limit lifted",10000,836678,module checkMessage,ms,124.33,99.31,132.51,15,
+"logic modules, Node: limit lifted to 10,000 (information)","10,000 messages chained by OrigClOrdID","copy, limit lifted",10000,836678,module decode,ms,22.11,11.78,23.95,15,
+"logic modules, Node: limit lifted to 10,000 (information)","10,000 messages chained by OrigClOrdID","copy, limit lifted",10000,836678,module timeline,ms,6.16,3.8,14.49,15,
+"logic modules, Node: limit lifted to 10,000 (information)","10,000 messages chained by OrigClOrdID","copy, limit lifted",10000,836678,module orderGroups,ms,6.79,4.82,20.07,15,
+"logic modules, Node: limit lifted to 10,000 (information)","10,000 messages chained by OrigClOrdID","copy, limit lifted",10000,836678,module tradeSummary,ms,0.91,0.82,5.83,15,
+"logic modules, Node: limit lifted to 10,000 (information)","10,000 messages chained by OrigClOrdID","copy, limit lifted",10000,836678,module filterOptions,ms,2.93,2.31,5.38,15,
+"logic modules, Node: limit lifted to 10,000 (information)","10,000 messages chained by OrigClOrdID","copy, limit lifted",10000,836678,module applyFiltersSender,ms,0.93,0.54,2.26,15,
+"page, Chromium: at the limit",mix-1000.log,v1.2,,,Decode to painted,ms,1392.7,,,,
+"page, Chromium: at the limit",mix-1000.log,v1.2,,,Decode handler,ms,166.9,,,,
+"page, Chromium: at the limit",mix-1000.log,v1.2,,,DOM elements,count,129174,,,,
+"page, Chromium: over the limit",mix-1001.log,v1.2,,,Decode to painted,ms,111.8,,,,
+"page, Chromium: over the limit",mix-1001.log,v1.2,,,Decode handler,ms,109.9,,,,
+"page, Chromium: over the limit",mix-1001.log,v1.2,,,DOM elements,count,26,,,,
+"page, Chromium: at the limit",bytes-1048576.log,v1.2,,,Decode to painted,ms,1070.2,,,,
+"page, Chromium: at the limit",bytes-1048576.log,v1.2,,,Decode handler,ms,162,,,,
+"page, Chromium: at the limit",bytes-1048576.log,v1.2,,,DOM elements,count,129181,,,,
+"page, Chromium: over the limit",bytes-1048577.log,v1.2,,,Decode to painted,ms,82.8,,,,
+"page, Chromium: over the limit",bytes-1048577.log,v1.2,,,Decode handler,ms,80.8,,,,
+"page, Chromium: over the limit",bytes-1048577.log,v1.2,,,DOM elements,count,26,,,,
+"page, Chromium: over the limit",mix-10000.log,v1.2,,,Decode to painted,ms,75.7,,,,
+"page, Chromium: over the limit",mix-10000.log,v1.2,,,Decode handler,ms,62.8,,,,
+"page, Chromium: over the limit",mix-10000.log,v1.2,,,DOM elements,count,26,,,,
+"page, Chromium: page load",index.html,v1.2,,,page load to ready,ms,117,,,,
+"page, Chromium: empty page",-,v1.2,,,"DOM nodes (CDP, with text nodes)",count,20069,,,,
+"page, Chromium: empty page",-,v1.2,,,JS heap in use after GC,MB,1.51,,,,
+"page, Chromium: inside the limits",mix-100.log,v1.2,100,19456,"Decode to first painted result, first decode",ms,188.5,,,,
+"page, Chromium: inside the limits",mix-100.log,v1.2,100,19456,"Decode handler (analysis + building the DOM), first decode",ms,37.3,,,,
+"page, Chromium: inside the limits",mix-100.log,v1.2,100,19456,"Decode to first painted result, repeated",ms,117.5,86.5,166.8,5,
+"page, Chromium: inside the limits",mix-100.log,v1.2,100,19456,"Decode handler (analysis + building the DOM), repeated",ms,20.5,20,33.8,5,
+"page, Chromium: inside the limits",mix-100.log,v1.2,100,19456,filter change to painted,ms,21,,,,10 messages shown
+"page, Chromium: inside the limits",mix-100.log,v1.2,100,19456,filter change handler,ms,8.7,,,,
+"page, Chromium: inside the limits",mix-100.log,v1.2,100,19456,order selection to painted,ms,20.1,,,,10 messages shown
+"page, Chromium: inside the limits",mix-100.log,v1.2,100,19456,order selection handler,ms,8.8,,,,
+"page, Chromium: inside the limits",mix-100.log,v1.2,100,19456,Show all messages to painted,ms,148.3,,,,
+"page, Chromium: inside the limits",mix-100.log,v1.2,100,19456,DOM elements,count,12527,,,,
+"page, Chromium: inside the limits",mix-100.log,v1.2,100,19456,"DOM nodes (CDP, with text nodes)",count,20861,,,,
+"page, Chromium: inside the limits",mix-100.log,v1.2,100,19456,JS heap in use after GC,MB,2.87,,,,
+"page, Chromium: inside the limits",mix-250.log,v1.2,250,50810,"Decode to first painted result, first decode",ms,352.8,,,,
+"page, Chromium: inside the limits",mix-250.log,v1.2,250,50810,"Decode handler (analysis + building the DOM), first decode",ms,71.2,,,,
+"page, Chromium: inside the limits",mix-250.log,v1.2,250,50810,"Decode to first painted result, repeated",ms,368.9,271.4,437.9,5,
+"page, Chromium: inside the limits",mix-250.log,v1.2,250,50810,"Decode handler (analysis + building the DOM), repeated",ms,81.6,53.9,87.2,5,
+"page, Chromium: inside the limits",mix-250.log,v1.2,250,50810,filter change to painted,ms,110.2,,,,33 messages shown
+"page, Chromium: inside the limits",mix-250.log,v1.2,250,50810,filter change handler,ms,39.1,,,,
+"page, Chromium: inside the limits",mix-250.log,v1.2,250,50810,order selection to painted,ms,46.2,,,,5 messages shown
+"page, Chromium: inside the limits",mix-250.log,v1.2,250,50810,order selection handler,ms,32.6,,,,
+"page, Chromium: inside the limits",mix-250.log,v1.2,250,50810,Show all messages to painted,ms,332.7,,,,
+"page, Chromium: inside the limits",mix-250.log,v1.2,250,50810,DOM elements,count,31912,,,,
+"page, Chromium: inside the limits",mix-250.log,v1.2,250,50810,"DOM nodes (CDP, with text nodes)",count,52826,,,,
+"page, Chromium: inside the limits",mix-250.log,v1.2,250,50810,JS heap in use after GC,MB,3.51,,,,
+"page, Chromium: inside the limits",mix-500.log,v1.2,500,103224,"Decode to first painted result, first decode",ms,735.8,,,,
+"page, Chromium: inside the limits",mix-500.log,v1.2,500,103224,"Decode handler (analysis + building the DOM), first decode",ms,142.4,,,,
+"page, Chromium: inside the limits",mix-500.log,v1.2,500,103224,"Decode to first painted result, repeated",ms,760.6,453,864.5,5,
+"page, Chromium: inside the limits",mix-500.log,v1.2,500,103224,"Decode handler (analysis + building the DOM), repeated",ms,131.1,101.1,180.2,5,
+"page, Chromium: inside the limits",mix-500.log,v1.2,500,103224,filter change to painted,ms,167.3,,,,86 messages shown
+"page, Chromium: inside the limits",mix-500.log,v1.2,500,103224,filter change handler,ms,49.3,,,,
+"page, Chromium: inside the limits",mix-500.log,v1.2,500,103224,order selection to painted,ms,75.6,,,,2 messages shown
+"page, Chromium: inside the limits",mix-500.log,v1.2,500,103224,order selection handler,ms,66.5,,,,
+"page, Chromium: inside the limits",mix-500.log,v1.2,500,103224,Show all messages to painted,ms,732.1,,,,
+"page, Chromium: inside the limits",mix-500.log,v1.2,500,103224,DOM elements,count,64412,,,,
+"page, Chromium: inside the limits",mix-500.log,v1.2,500,103224,"DOM nodes (CDP, with text nodes)",count,106442,,,,
+"page, Chromium: inside the limits",mix-500.log,v1.2,500,103224,JS heap in use after GC,MB,4.53,,,,
+"page, Chromium: inside the limits",mix-1000.log,v1.2,1000,208290,"Decode to first painted result, first decode",ms,1550.2,,,,
+"page, Chromium: inside the limits",mix-1000.log,v1.2,1000,208290,"Decode handler (analysis + building the DOM), first decode",ms,208.8,,,,
+"page, Chromium: inside the limits",mix-1000.log,v1.2,1000,208290,"Decode to first painted result, repeated",ms,1569.3,1173,1687.9,5,
+"page, Chromium: inside the limits",mix-1000.log,v1.2,1000,208290,"Decode handler (analysis + building the DOM), repeated",ms,371.7,191.8,442.9,5,
+"page, Chromium: inside the limits",mix-1000.log,v1.2,1000,208290,filter change to painted,ms,479.4,,,,261 messages shown
+"page, Chromium: inside the limits",mix-1000.log,v1.2,1000,208290,filter change handler,ms,112.8,,,,
+"page, Chromium: inside the limits",mix-1000.log,v1.2,1000,208290,order selection to painted,ms,141.6,,,,2 messages shown
+"page, Chromium: inside the limits",mix-1000.log,v1.2,1000,208290,order selection handler,ms,131.1,,,,
+"page, Chromium: inside the limits",mix-1000.log,v1.2,1000,208290,Show all messages to painted,ms,1278.9,,,,
+"page, Chromium: inside the limits",mix-1000.log,v1.2,1000,208290,DOM elements,count,129174,,,,
+"page, Chromium: inside the limits",mix-1000.log,v1.2,1000,208290,"DOM nodes (CDP, with text nodes)",count,213290,,,,
+"page, Chromium: inside the limits",mix-1000.log,v1.2,1000,208290,JS heap in use after GC,MB,6.48,,,,
+"page, Chromium: variants",sessions-01-1000.log,v1.2,1000,,"Decode to first painted result, first decode",ms,1000.1,,,,
+"page, Chromium: variants",sessions-01-1000.log,v1.2,1000,,"Decode to first painted result, repeated",ms,1500.3,,,,
+"page, Chromium: variants",sessions-01-1000.log,v1.2,1000,,DOM elements,count,127333,,,,
+"page, Chromium: variants",sessions-50-1000.log,v1.2,1000,,"Decode to first painted result, first decode",ms,946.4,,,,
+"page, Chromium: variants",sessions-50-1000.log,v1.2,1000,,"Decode to first painted result, repeated",ms,1008.1,,,,
+"page, Chromium: variants",sessions-50-1000.log,v1.2,1000,,DOM elements,count,123364,,,,
+"page, Chromium: variants",malformed-050pct-1000.log,v1.2,1000,,"Decode to first painted result, first decode",ms,662.3,,,,
+"page, Chromium: variants",malformed-050pct-1000.log,v1.2,1000,,"Decode to first painted result, repeated",ms,933.2,,,,
+"page, Chromium: variants",malformed-050pct-1000.log,v1.2,1000,,DOM elements,count,67334,,,,
+"page, Chromium: variants",bytes-1048576.log,v1.2,1000,,"Decode to first painted result, first decode",ms,1056.4,,,,
+"page, Chromium: variants",bytes-1048576.log,v1.2,1000,,"Decode to first painted result, repeated",ms,1621.3,,,,
+"page, Chromium: variants",bytes-1048576.log,v1.2,1000,,DOM elements,count,129181,,,,
+"page, Chromium: hostile input","one message with a 1,000,000-character value",v1.2,,1000051,Decode to painted,ms,286.2,,,,
+"page, Chromium: hostile input","one message with a 1,000,000-character value",v1.2,,1000051,Decode handler,ms,55.9,,,,
+"page, Chromium: hostile input","one message with a 1,000,000-character value",v1.2,,1000051,wall clock,ms,350,,,,
+"page, Chromium: hostile input","one message with a 1,000,000-character value",v1.2,,1000051,DOM elements,count,119,,,,
+"page, Chromium: hostile input","one message with 100,000 fields",v1.2,,700046,Decode to painted,ms,4539.1,,,,
+"page, Chromium: hostile input","one message with 100,000 fields",v1.2,,700046,Decode handler,ms,741.4,,,,
+"page, Chromium: hostile input","one message with 100,000 fields",v1.2,,700046,wall clock,ms,7436,,,,
+"page, Chromium: hostile input","one message with 100,000 fields",v1.2,,700046,DOM elements,count,500114,,,,
+"page, Chromium: hostile input","pipe form, 1,000,000 literal pipes in a value",v1.2,,1000022,Decode to painted,ms,200.3,,,,
+"page, Chromium: hostile input","pipe form, 1,000,000 literal pipes in a value",v1.2,,1000022,Decode handler,ms,79.6,,,,
+"page, Chromium: hostile input","pipe form, 1,000,000 literal pipes in a value",v1.2,,1000022,wall clock,ms,266,,,,
+"page, Chromium: hostile input","pipe form, 1,000,000 literal pipes in a value",v1.2,,1000022,DOM elements,count,60,,,,
+"page, Chromium: hostile input","""8=FIX|"" 170,000 times",v1.2,,1020000,Decode to painted,ms,203.1,,,,
+"page, Chromium: hostile input","""8=FIX|"" 170,000 times",v1.2,,1020000,Decode handler,ms,114.2,,,,
+"page, Chromium: hostile input","""8=FIX|"" 170,000 times",v1.2,,1020000,wall clock,ms,265,,,,
+"page, Chromium: hostile input","""8=FIX|"" 170,000 times",v1.2,,1020000,DOM elements,count,26,,,,
+"page, Chromium: hostile input","1,000 malformed one-field candidates",v1.2,,18889,Decode to painted,ms,62.5,,,,
+"page, Chromium: hostile input","1,000 malformed one-field candidates",v1.2,,18889,Decode handler,ms,17,,,,
+"page, Chromium: hostile input","1,000 malformed one-field candidates",v1.2,,18889,wall clock,ms,101,,,,
+"page, Chromium: hostile input","1,000 malformed one-field candidates",v1.2,,18889,DOM elements,count,5055,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-1000.log,"copy, limit lifted",1000,208290,"Decode to first painted result, first decode",ms,1271.1,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-1000.log,"copy, limit lifted",1000,208290,"Decode handler (analysis + building the DOM), first decode",ms,183.2,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-1000.log,"copy, limit lifted",1000,208290,"Decode to first painted result, repeated",ms,1282.5,915.3,1519.5,5,
+"page, Chromium: limit lifted to 10,000 (information)",mix-1000.log,"copy, limit lifted",1000,208290,"Decode handler (analysis + building the DOM), repeated",ms,224.2,182.9,339.6,5,
+"page, Chromium: limit lifted to 10,000 (information)",mix-1000.log,"copy, limit lifted",1000,208290,filter change to painted,ms,384.2,,,,261 messages shown
+"page, Chromium: limit lifted to 10,000 (information)",mix-1000.log,"copy, limit lifted",1000,208290,filter change handler,ms,97.9,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-1000.log,"copy, limit lifted",1000,208290,order selection to painted,ms,111.9,,,,2 messages shown
+"page, Chromium: limit lifted to 10,000 (information)",mix-1000.log,"copy, limit lifted",1000,208290,order selection handler,ms,102.6,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-1000.log,"copy, limit lifted",1000,208290,Show all messages to painted,ms,1471.4,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-1000.log,"copy, limit lifted",1000,208290,DOM elements,count,129174,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-1000.log,"copy, limit lifted",1000,208290,"DOM nodes (CDP, with text nodes)",count,213290,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-1000.log,"copy, limit lifted",1000,208290,JS heap in use after GC,MB,6.46,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-2500.log,"copy, limit lifted",2500,528866,"Decode to first painted result, first decode",ms,2780.5,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-2500.log,"copy, limit lifted",2500,528866,"Decode handler (analysis + building the DOM), first decode",ms,384.4,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-2500.log,"copy, limit lifted",2500,528866,"Decode to first painted result, repeated",ms,3298.4,2799.1,4161.4,5,
+"page, Chromium: limit lifted to 10,000 (information)",mix-2500.log,"copy, limit lifted",2500,528866,"Decode handler (analysis + building the DOM), repeated",ms,648.2,505.2,665.5,5,
+"page, Chromium: limit lifted to 10,000 (information)",mix-2500.log,"copy, limit lifted",2500,528866,filter change to painted,ms,970.4,,,,521 messages shown
+"page, Chromium: limit lifted to 10,000 (information)",mix-2500.log,"copy, limit lifted",2500,528866,filter change handler,ms,294.1,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-2500.log,"copy, limit lifted",2500,528866,order selection to painted,ms,232.7,,,,8 messages shown
+"page, Chromium: limit lifted to 10,000 (information)",mix-2500.log,"copy, limit lifted",2500,528866,order selection handler,ms,210.3,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-2500.log,"copy, limit lifted",2500,528866,Show all messages to painted,ms,2865.9,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-2500.log,"copy, limit lifted",2500,528866,DOM elements,count,325067,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-2500.log,"copy, limit lifted",2500,528866,"DOM nodes (CDP, with text nodes)",count,536437,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-2500.log,"copy, limit lifted",2500,528866,JS heap in use after GC,MB,12.31,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-5000.log,"copy, limit lifted",5000,1063192,"Decode to first painted result, first decode",ms,5457.8,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-5000.log,"copy, limit lifted",5000,1063192,"Decode handler (analysis + building the DOM), first decode",ms,909.9,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-5000.log,"copy, limit lifted",5000,1063192,"Decode to first painted result, repeated",ms,5537.9,5040.5,7898.6,5,
+"page, Chromium: limit lifted to 10,000 (information)",mix-5000.log,"copy, limit lifted",5000,1063192,"Decode handler (analysis + building the DOM), repeated",ms,1281.1,1062,1281.1,5,
+"page, Chromium: limit lifted to 10,000 (information)",mix-5000.log,"copy, limit lifted",5000,1063192,filter change to painted,ms,2622.3,,,,1292 messages shown
+"page, Chromium: limit lifted to 10,000 (information)",mix-5000.log,"copy, limit lifted",5000,1063192,filter change handler,ms,530.6,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-5000.log,"copy, limit lifted",5000,1063192,order selection to painted,ms,433.6,,,,6 messages shown
+"page, Chromium: limit lifted to 10,000 (information)",mix-5000.log,"copy, limit lifted",5000,1063192,order selection handler,ms,413.5,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-5000.log,"copy, limit lifted",5000,1063192,Show all messages to painted,ms,6169.2,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-5000.log,"copy, limit lifted",5000,1063192,DOM elements,count,649963,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-5000.log,"copy, limit lifted",5000,1063192,"DOM nodes (CDP, with text nodes)",count,1072303,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-5000.log,"copy, limit lifted",5000,1063192,JS heap in use after GC,MB,12.45,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-10000.log,"copy, limit lifted",10000,2146439,"Decode to first painted result, first decode",ms,12388.7,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-10000.log,"copy, limit lifted",10000,2146439,"Decode handler (analysis + building the DOM), first decode",ms,1332.3,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-10000.log,"copy, limit lifted",10000,2146439,"Decode to first painted result, repeated",ms,13291.8,13082.7,14056,5,
+"page, Chromium: limit lifted to 10,000 (information)",mix-10000.log,"copy, limit lifted",10000,2146439,"Decode handler (analysis + building the DOM), repeated",ms,2201.6,2201.6,2946.6,5,
+"page, Chromium: limit lifted to 10,000 (information)",mix-10000.log,"copy, limit lifted",10000,2146439,filter change to painted,ms,4310.6,,,,2512 messages shown
+"page, Chromium: limit lifted to 10,000 (information)",mix-10000.log,"copy, limit lifted",10000,2146439,filter change handler,ms,1229,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-10000.log,"copy, limit lifted",10000,2146439,order selection to painted,ms,1073.4,,,,11 messages shown
+"page, Chromium: limit lifted to 10,000 (information)",mix-10000.log,"copy, limit lifted",10000,2146439,order selection handler,ms,1048.8,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-10000.log,"copy, limit lifted",10000,2146439,Show all messages to painted,ms,10400,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-10000.log,"copy, limit lifted",10000,2146439,DOM elements,count,1303278,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-10000.log,"copy, limit lifted",10000,2146439,"DOM nodes (CDP, with text nodes)",count,2149870,,,,
+"page, Chromium: limit lifted to 10,000 (information)",mix-10000.log,"copy, limit lifted",10000,2146439,JS heap in use after GC,MB,42.63,,,,

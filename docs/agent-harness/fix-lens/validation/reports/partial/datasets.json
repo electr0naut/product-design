@@ -1605,13 +1605,30 @@
  },
  {
   "id": "EN-42-04",
-  "feature": "QuickFIX engine log: each order chain is one group",
+  "feature": "QuickFIX engine log: each order chain is one group, and no two orders share a group",
   "version": "FIX.4.2",
   "dataset": "datasets/FIX42/engine-quickfix-42.log",
   "kind": "prd",
-  "status": "FAIL",
-  "expected": "13 items, first: [[\"C2-1\",\"C2-1c\"],[\"C2-2\"],[\"C2-3\",\"C2-3c\"]]",
-  "actual": "13 items, first: [[\"C2-1\",\"C2-1c\"],[\"C2-2\"],[\"C2-3\",\"C2-3c\"]]"
+  "status": "PASS",
+  "expected": "13 orders in 13 groups",
+  "actual": {
+   "groups": 13,
+   "owner": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+   ]
+  }
  },
  {
   "id": "EN-44-01",
@@ -1753,12 +1770,29 @@
  },
  {
   "id": "EN-44-04",
-  "feature": "QuickFIX engine log: each order chain is one group",
+  "feature": "QuickFIX engine log: each order chain is one group, and no two orders share a group",
   "version": "FIX.4.4",
   "dataset": "datasets/FIX44/engine-quickfix-44.log",
   "kind": "prd",
   "status": "PASS",
-  "expected": "13 items, first: [[\"C4-1\"],[\"C4-2\"],[\"C4-3\",\"C4-3c\"]]",
-  "actual": "13 items, first: [[\"C4-1\"],[\"C4-2\"],[\"C4-3\",\"C4-3c\"]]"
+  "expected": "13 orders in 13 groups",
+  "actual": {
+   "groups": 13,
+   "owner": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+   ]
+  }
  }
 ]

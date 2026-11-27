@@ -169,21 +169,29 @@ def p5():
 
 # P6: randomised valid order lifecycles against the generator's decimal ground truth
 def p6():
-    n = 0
+    n, wrong = 0, []
     for sd in range(9000, 9040):
         sim = market(sd, MULTI if sd % 2 else MULTI[:1], 25)
         truth = sim.truth()
         out = tool(sim.text(), render=True)
-        assert out["errors"] == [], sd
-        assert out["events"] == truth["events"], f"seed {sd}: timeline differs"
-        assert out["gaps"] == [[g["number"], g["expected"], g["received"]] for g in truth["gaps"]], f"seed {sd}: gaps"
-        assert out["groups"] == [o["numbers"] for o in truth["orders"]], f"seed {sd}: order groups"
+        n += truth["messages"]
+        if out["errors"]:
+            wrong.append(f"seed {sd}: {len(out['errors'])} valid messages reported malformed")
+        if out["events"] != truth["events"]:
+            wrong.append(f"seed {sd}: timeline differs")
+        if out["gaps"] != [[g["number"], g["expected"], g["received"]] for g in truth["gaps"]]:
+            wrong.append(f"seed {sd}: gaps differ")
+        if out["groups"] != [o["numbers"] for o in truth["orders"]]:
+            wrong.append(f"seed {sd}: order groups differ")
         for sym, want in truth["trades"].items():
             got = out["trades"].get(sym)
-            assert got, f"seed {sd}: no row for {sym}"
+            if not got:
+                wrong.append(f"seed {sd}: no row for {sym}")
+                continue
             for k in ("buyOrders", "bought", "avgBuy", "sellOrders", "sold", "avgSell", "net"):
-                assert got[k] in (want[k] if isinstance(want[k], list) else [want[k]]), f"seed {sd} {sym}.{k}: shown {got[k]}, expected {want[k]} (exact {want['exact']})"
-        n += truth["messages"]
+                if got[k] not in (want[k] if isinstance(want[k], list) else [want[k]]):
+                    wrong.append(f"seed {sd} {sym}.{k}: shown {got[k]}, expected {want[k]} (exact {want['exact']})")
+    assert not wrong, f"{len(wrong)} difference(s) in 40 seeds / {n} messages: " + "; ".join(wrong[:6])
     return f"40 seeds, {n} messages, every timeline, gap, order group and trading figure equal to ground truth"
 
 

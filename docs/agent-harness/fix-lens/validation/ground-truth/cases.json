@@ -752,6 +752,38 @@
   "intentionallyInvalid": false
  },
  {
+  "id": "S06-17",
+  "feature": "A PossDup message with the expected number fills that number: no gap after it",
+  "version": "FIX.4.4",
+  "kind": "fix",
+  "basis": "FIX session protocol (PossDupFlag: process if MsgSeqNum not yet received); QuickFIX 2e_PossDupNotReceived.def; TR-003 'Messages with PossDupFlag=Y don't advance'",
+  "expect": {
+   "gaps": []
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S06-17.log",
+  "sha256": "ceaaaeddd21b18baddd3cd4b73de94a4decb01692de4767e86599739166319fa",
+  "bytes": 289,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S06-18",
+  "feature": "A SequenceReset to a lower number is not followed by a false gap",
+  "version": "FIX.4.4",
+  "kind": "fix",
+  "basis": "FIX SequenceReset: NewSeqNo may only increase the expected number; QuickFIX 11c_NewSeqNoLess.def; TR-003",
+  "expect": {
+   "gaps": []
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S06-18.log",
+  "sha256": "d87a28d992256ba9a24a422f9eb7ff1f789f8fcf179563c397232834d87058fb",
+  "bytes": 289,
+  "intentionallyInvalid": false
+ },
+ {
   "id": "S07-01-4.2",
   "feature": "A cancel/replace chain with fills is one order; figures are exact",
   "version": "FIX.4.2",
@@ -2984,6 +3016,26 @@
   "dataset": "datasets/malformed/S10-23.log",
   "sha256": "0d273381a9128c5261d997004a84b9c7c206363e2eceb9ced769a2c088efc533",
   "bytes": 74,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-24",
+  "feature": "A wire-valid message with ISO-8859-1 text (one byte per character) is not called malformed",
+  "version": "FIX.4.4",
+  "kind": "fix",
+  "basis": "FIX messages are bytes, and BodyLength/CheckSum count bytes; design 3.7 counts the UTF-8 bytes of the pasted characters",
+  "expect": {
+   "stats": {
+    "messages": 1,
+    "valid": 1,
+    "malformed": 0
+   }
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-24.log",
+  "sha256": "b445fc769fdfd1decc4f96a3727c7c55ac6e37ff73d040f289e1cc330e000410",
+  "bytes": 98,
   "intentionallyInvalid": true
  },
  {

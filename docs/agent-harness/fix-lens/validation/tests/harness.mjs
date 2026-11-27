@@ -1,8 +1,8 @@
 // Test harness for the FIX Lens validation. It loads the product's modules from
 // FIX_LENS_DIR (read-only) and offers an independent message builder for ad-hoc cases.
 // Nothing here is derived from the product's code: the builder below was written from
-// the FIX 4.2/4.4 specification (BodyLength, CheckSum) and is cross-checked against the
-// Python generator in ../generators/fixgen.py by tests/t01_builder_crosscheck.mjs.
+// the FIX 4.2/4.4 specification (BodyLength, CheckSum). It is for ad-hoc probes only: every
+// stored dataset and every expected result comes from the Python generator in ../generators/.
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import path from 'node:path';

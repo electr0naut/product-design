@@ -373,42 +373,62 @@
  },
  {
   "id": "S04-04",
-  "feature": "FIX 4.4 fills sent with ExecType 1 or 2 are counted as executions",
+  "feature": "FIX 4.4 reports with the FIX 4.2 values ExecType 1 or 2 are not fills and are labelled",
   "version": "FIX.4.4",
   "dataset": "datasets/FIX44/S04-04.log",
-  "kind": "fix",
-  "basis": "FIX 4.4 ExecType (150) values 1 and 2; QuickFIX FIX44.xml; PRD TR-003 maps them for FIX 4.2 only",
-  "status": "FAIL",
+  "kind": "prd",
+  "basis": "TR-003 ('1 or 2 (FIX 4.2)'); AC-004, AC-009; Orchestra FIX 4.4 and QuickFIX FIX44.xml ExecType code sets",
+  "status": "PASS",
   "stable": true,
   "checks": [
    {
     "check": "trading summary",
-    "pass": false,
+    "pass": true,
     "expected": {
      "ACME": {
       "buyOrders": "1",
-      "bought": "100",
-      "avgBuy": "10",
+      "bought": "0",
+      "avgBuy": "–",
       "sellOrders": "0",
       "sold": "0",
       "avgSell": "–",
-      "net": "+100"
+      "net": "0"
      }
     },
+    "actual": {
+     "ACME": {
+      "buyOrders": "1",
+      "bought": "0",
+      "avgBuy": "–",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "0"
+     }
+    }
+   },
+   {
+    "check": "timeline events",
+    "pass": true,
+    "expected": [
+     "1:NewOrder",
+     "2:ExecutionReport (ExecType 1)",
+     "3:ExecutionReport (ExecType 2)"
+    ],
     "actual": [
-     "ACME.bought: shown 0, expected 100",
-     "ACME.avgBuy: shown –, expected 10",
-     "ACME.net: shown 0, expected +100"
+     "1:NewOrder",
+     "2:ExecutionReport (ExecType 1)",
+     "3:ExecutionReport (ExecType 2)"
     ]
    },
    {
     "check": "card 2 row for tag 150",
-    "pass": false,
+    "pass": true,
     "expected": {
      "number": 2,
      "tag": "150",
      "value": "1",
-     "meaning_not": "unknown value"
+     "meaning": "unknown value"
     },
     "actual": [
      [
@@ -1186,6 +1206,54 @@
       3,
       3,
       50
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S06-17",
+  "feature": "A PossDup message with the expected number fills that number: no gap after it",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S06-17.log",
+  "kind": "fix",
+  "basis": "FIX session protocol (PossDupFlag: process if MsgSeqNum not yet received); QuickFIX 2e_PossDupNotReceived.def; TR-003 'Messages with PossDupFlag=Y don't advance'",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "sequence gaps",
+    "pass": false,
+    "expected": [],
+    "actual": [
+     [
+      4,
+      3,
+      4
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S06-18",
+  "feature": "A SequenceReset to a lower number is not followed by a false gap",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S06-18.log",
+  "kind": "fix",
+  "basis": "FIX SequenceReset: NewSeqNo may only increase the expected number; QuickFIX 11c_NewSeqNoLess.def; TR-003",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "sequence gaps",
+    "pass": false,
+    "expected": [],
+    "actual": [
+     [
+      4,
+      1,
+      4
      ]
     ]
    }
@@ -5316,6 +5384,32 @@
      "messages": 1,
      "valid": 1,
      "malformed": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "S10-24",
+  "feature": "A wire-valid message with ISO-8859-1 text (one byte per character) is not called malformed",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-24.log",
+  "kind": "fix",
+  "basis": "FIX messages are bytes, and BodyLength/CheckSum count bytes; design 3.7 counts the UTF-8 bytes of the pasted characters",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "summary strip",
+    "pass": false,
+    "expected": {
+     "messages": 1,
+     "valid": 1,
+     "malformed": 0
+    },
+    "actual": {
+     "messages": 1,
+     "valid": 0,
+     "malformed": 1
     }
    }
   ]
