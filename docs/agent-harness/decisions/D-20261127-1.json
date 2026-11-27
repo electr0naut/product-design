@@ -1,0 +1,7 @@
+{
+  "id": "D-20261127-1",
+  "action": "refresh_copies",
+  "key": "FXL-9",
+  "commit": "db3b087c00fed850d8ca63bcd3452a3594a05cf0",
+  "reason": "D19-code-review: first recorded copies. Technical design v1.2 (approved by Ubay Gonzalez, 2026-11-26) and the hidden suite with the v1.2 files"
+}
