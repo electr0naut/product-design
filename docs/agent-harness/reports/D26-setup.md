@@ -56,6 +56,19 @@ sudo test -e /home/harness-job/.claude/.credentials.json && echo "STOP: a stored
 
 Then do **4**, and then **4b**, which needs both.
 
+### Later, not urgent: make the token file root-only (`D26-first-jobs-review.md`)
+The CLI keeps its token out of the commands it runs, but a job's command can still `cat` the file. systemd should read an `EnvironmentFile` as root before it drops to the job user. **Check that first, with a scratch file and a made-up value** (untested: the VM has no `sudo`):
+```
+sudo sh -c 'install -d -o root -g root -m 700 /root/envtest && echo SCRATCH=yes > /root/envtest/e && chmod 600 /root/envtest/e'
+sudo systemd-run --pipe --wait -p User=harness-job -p EnvironmentFile=/root/envtest/e sh -c 'echo "in the unit: SCRATCH=$SCRATCH"; cat /root/envtest/e'
+sudo rm -r /root/envtest
+```
+It **must** print `in the unit: SCRATCH=yes` **and** `Permission denied` for the `cat`. Send the reviewer the output. Only if both hold, with no job running (`sudo systemctl stop harness-job-dispatch.timer`, start it again afterwards):
+```
+sudo chown root:root /etc/harness-job /etc/harness-job/claude.env && sudo chmod 700 /etc/harness-job && sudo chmod 600 /etc/harness-job/claude.env
+```
+**What it does not close:** a process of the same user may still be able to read the token from the CLI's `/proc` entry (not tried). The report guard for `sk-ant-` stays.
+
 ## 4. A deploy key for `agent-harness` only (untested)
 | command / action | does | undo |
 |---|---|---|
