@@ -1,10 +1,10 @@
 # Harness state
 
-Written by the runner at 2026-11-27T15:05:00+0100. Host-only copy: `state.json`.
-Kit: `6c483e64d2f0fc26a787f51c7b39cf4c8b2d7953`
+Written by the runner at 2026-11-27T15:23:31+0100. Host-only copy: `state.json`.
+Kit: `b20b702746f76fc19bedab2d7989714738f6f86a`
 
 ## What changed
-- finished: FXL-14
+- kit commit is now b20b702746f76fc19bedab2d7989714738f6f86a
 
 ## Tickets
 - **SMK-1** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
@@ -16,7 +16,7 @@ Kit: `6c483e64d2f0fc26a787f51c7b39cf4c8b2d7953`
 - **FXL-13** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
 - **FXL-17** (finished): gatekeeper (fix 1): done, implementer: done, implementer (fix 1): done, planner: done, reviewer (fix 1): done, scribe: done, triage: done
 - **FXL-14** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
-- **FXL-15** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: ready
+- **FXL-15** (open): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: running, triage: done
 - **FXL-16** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: todo
 
 ## Blocks
@@ -39,4 +39,4 @@ Kit: `6c483e64d2f0fc26a787f51c7b39cf4c8b2d7953`
 | scribe | deepseek-flash | qwen3.7-plus (alibaba-token-plan) |
 
 ## Instructions without a report
-- FXL-13-landed-review.md
+- none
