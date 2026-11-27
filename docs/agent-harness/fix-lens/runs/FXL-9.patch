@@ -1,0 +1,1050 @@
+From 60b1211023d1f00874e6231d5c98c94501613581 Mon Sep 17 00:00:00 2001
+From: Hermes Agent <hermes@agent.local>
+Date: Fri, 27 Nov 2026 12:21:16 +0100
+Subject: [PATCH] FXL-9: support FIX log delimiter forms and literal values
+
+---
+ src/framing.js             | 508 +++++++++----------------------------
+ test/framing-f1.test.js    |  24 +-
+ test/framing-f1b.test.js   |  15 ++
+ test/framing-f2.test.js    |  31 ++-
+ test/framing-f2b.test.js   |  69 +++++
+ test/framing.test.js       |  66 ++++-
+ test/helpers.test.js       |  11 +
+ test/helpers/fix.js        |  28 +-
+ test/static-checks.test.js |  56 ++--
+ tools/audit-source.mjs     |  53 ++++
+ 10 files changed, 421 insertions(+), 440 deletions(-)
+ create mode 100644 tools/audit-source.mjs
+
+diff --git a/src/framing.js b/src/framing.js
+index 4a1bdad..3df5ef3 100644
+--- a/src/framing.js
++++ b/src/framing.js
+@@ -1,419 +1,147 @@
+-// Split a pasted FIX log into parsed message candidates.
++// Scan the pasted string without rewriting it: offsets are UTF-16 code units.
++const SOH = "\x01";
++const encoder = new TextEncoder();
++const isLineEnd = ch => ch === "\n" || ch === "\r";
++const isDigitAt = (text, i) => {
++  const code = text.charCodeAt(i);
++  return code >= 48 && code <= 57;
++};
++const isTag = tag => /^[1-9][0-9]{0,8}$/.test(tag);
++const isChecksum = field => /^10=[0-9]{3}$/.test(field);
+ 
+-/**
+- * splitMessages(text) -> [{number, start, end, fields}]
+- *
+- * - number: 1-based index in discovery order
+- * - start: offset of "8=FIX" in the original text
+- * - end: exclusive candidate boundary in the original text
+- * - fields: [{tag (number), value (string), position (number)}]
+- *   position is the index of the tag's first character in the original text.
+- *
+- * Rules:
+- *  - Delimiter is detected per message: if the region from "8=FIX" to the
+- *    next line end contains SOH (0x01), use SOH; otherwise use "|".
+- *  - A message starts at "8=FIX" that is:
+- *    * at position 0, OR
+- *    * preceded by a line end (\n, \r\n, or \r), OR
+- *    * preceded by a delimiter (| or \x01), OR
+- *    * preceded by text that doesn't contain a delimiter AND the character
+- *      immediately before "8" is not a digit (so "448=FIXCLIENT" doesn't match).
+- *  - A candidate ends after a field whose tag is exactly 10 and whose value
+- *    is exactly 3 digits, followed by the delimiter, a line end, or end of text.
+- *  - The empty piece after the final delimiter is not a field.
+- *  - Text after the end on the same line is excluded.
+- *  - Text with no "8=FIX" returns [].
+- *  - Repeated tags appear once per occurrence in order.
+- */
+-export function splitMessages(text) {
+-  if (typeof text !== "string" || text.length === 0) return [];
+-
+-  const results = [];
+-  let pos = 0;
+-
+-  while (pos < text.length) {
+-    // Find next candidate start: "8=FIX" at a valid position.
+-    const start = findMessageStart(text, pos);
+-    if (start === -1) break;
+-
+-    // Detect delimiter for this message: look from start to the next line end.
+-    const delim = detectDelimiter(text, start);
+-
+-    // Walk fields from start.
+-    const fields = [];
+-    let cursor = start;
+-    let end = -1; // end offset (exclusive) of the whole candidate
+-
+-    while (cursor < text.length) {
+-      // A delimiter-adjacent BeginString starts another candidate, even if
+-      // the current one has no CheckSum yet.
+-      if (cursor > start && findMessageStart(text, cursor) === cursor &&
+-          (text[cursor - 1] === delim || text[cursor - 1] === "\n" || text[cursor - 1] === "\r")) {
+-        end = cursor;
+-        break;
+-      }
+-      // Find the end of this field: next delimiter or line end.
+-      const fieldEnd = findFieldEnd(text, cursor, delim);
+-      const fieldText = text.substring(cursor, fieldEnd);
+-
+-      // Parse tag=value
+-      const eqIdx = fieldText.indexOf("=");
+-      if (eqIdx === -1) {
+-        // Malformed field (no '='); skip past it.
+-        if (fieldEnd >= text.length) { cursor = text.length; end = text.length; break; }
+-        const sep = text[fieldEnd];
+-        if (sep === "\n" || sep === "\r") {
+-          cursor = advancePastLineEnd(text, fieldEnd);
+-          // A line end without a checksum means this candidate is incomplete.
+-          end = fieldEnd;
+-          break;
+-        }
+-        cursor = fieldEnd + 1; // skip delimiter
+-        continue;
+-      }
+-
+-      const tagStr = fieldText.substring(0, eqIdx);
+-      const value = fieldText.substring(eqIdx + 1);
+-
+-      // Tag must be purely digits to be valid.
+-      if (!/^\d+$/.test(tagStr)) {
+-        // Not a valid field; skip past it.
+-        if (fieldEnd >= text.length) { cursor = text.length; end = text.length; break; }
+-        const sep = text[fieldEnd];
+-        if (sep === "\n" || sep === "\r") {
+-          cursor = advancePastLineEnd(text, fieldEnd);
+-          end = fieldEnd;
+-          break;
+-        }
+-        cursor = fieldEnd + 1;
+-        continue;
+-      }
+-
+-      const tag = Number(tagStr);
+-      fields.push({ tag, value, position: cursor });
+-
+-      // Check if this is the checksum terminator: tag===10 and value is exactly 3 digits.
+-      if (tag === 10 && /^\d{3}$/.test(value)) {
+-        // Candidate ends here. The end includes the delimiter/line-end/text-end
+-        // right after this field.
+-        if (fieldEnd >= text.length) {
+-          end = text.length;
+-        } else {
+-          const sep = text[fieldEnd];
+-          if (sep === delim) {
+-            end = fieldEnd + 1; // include the delimiter
+-          } else if (sep === "\n" || sep === "\r") {
+-            end = advancePastLineEnd(text, fieldEnd);
+-          } else {
+-            // Something else follows immediately (shouldn't happen in well-formed
+-            // FIX, but treat the field itself as the end).
+-            end = fieldEnd;
+-          }
+-        }
+-        cursor = end;
+-        break;
+-      }
+-
+-      // Not the checksum; advance past this field.
+-      if (fieldEnd >= text.length) {
+-        // Reached end of text without checksum -> candidate incomplete.
+-        cursor = text.length;
+-        end = text.length;
+-        break;
+-      }
+-      const sep = text[fieldEnd];
+-      if (sep === "\n" || sep === "\r") {
+-        // Line end without checksum -> candidate incomplete.
+-        cursor = advancePastLineEnd(text, fieldEnd);
+-        end = fieldEnd;
+-        break;
+-      }
+-      // sep === delim
+-      cursor = fieldEnd + 1;
+-    }
+-
+-    if (fields.length > 0) {
+-      results.push({
+-        number: results.length + 1,
+-        start,
+-        end: end === -1 ? text.length : end,
+-        fields,
+-      });
+-      pos = end === -1 ? cursor : end;
+-    } else {
+-      // No valid candidate found starting here; advance past this "8=FIX".
+-      pos = start + 1;
+-    }
++function findMessageStart(text, from) {
++  let start = text.indexOf("8=FIX", from);
++  while (start !== -1 && isDigitAt(text, start - 1)) {
++    start = text.indexOf("8=FIX", start + 1);
+   }
+-
+-  return results;
++  return start;
+ }
+ 
+-/**
+- * checkMessage(candidate, text) -> null | {number, position, rule, text}
+- *
+- * Validates a parsed FIX message candidate. Returns null for valid messages,
+- * or an error object for the first failing rule (in priority order).
+- *
+- * candidate: {number, start, end, fields} from splitMessages
+- * text: the original pasted text
+- *
+- * Rules checked in priority order:
+- * 1. field_without_equals - any field missing '=' including empty fields
+- * 2. bad_tag - tag is 0, negative, has leading zero, or non-numeric
+- * 3. header_order - fewer than 3 fields or first three tags not 8, 9, 35
+- * 4. missing_checksum - no field with tag 10 at the end
+- * 5. checksum_format - tag 10 value is not exactly 3 digits
+- * 6. body_length - tag 9 value is not a number or doesn't match actual body byte length
+- * 7. checksum - tag 10 value doesn't match computed checksum
+- */
+-export function checkMessage(candidate, text) {
+-  const { number, start, fields } = candidate;
+-
+-  // Re-parse only this candidate; the next candidate may be on the same line.
+-  const rawText = text.slice(0, candidate.end);
+-  const delim = detectDelimiter(rawText, start);
+-  const rawFields = [];
+-  let cursor = start;
+-
+-  while (cursor < rawText.length) {
+-    const fieldEnd = findFieldEnd(rawText, cursor, delim);
+-    const fieldText = rawText.substring(cursor, fieldEnd);
+-
+-    // Stop at line ends
+-    if (fieldEnd < rawText.length) {
+-      const sep = rawText[fieldEnd];
+-      if (sep === "\n" || sep === "\r") break;
+-    }
+-
+-    // Empty field after delimiter (like from ||) - include it so field_without_equals can detect it
+-    if (fieldText === "") {
+-      // Check if this is the final empty field after the last delimiter
+-      if (fieldEnd >= rawText.length) break;
+-      const sep = rawText[fieldEnd];
+-      if (sep !== delim) break;
+-      // This is an empty field between delimiters (like ||)
+-      rawFields.push({ text: fieldText, position: cursor });
+-      cursor = fieldEnd + 1;
+-      continue;
+-    }
++function detectDelimiter(text, start, limit) {
++  for (let i = start; i < limit && !isLineEnd(text[i]); i++) {
++    if (text[i] === SOH || text[i] === "|") return text[i];
++    if (text[i] === "^" && i + 2 <= limit && text.startsWith("^A", i)) return "^A";
++    if (text[i] === "<" && i + 5 <= limit && text.startsWith("<SOH>", i)) return "<SOH>";
++  }
++  return "";
++}
+ 
+-    rawFields.push({ text: fieldText, position: cursor });
++function startsTag(text, start, limit) {
++  let i = start;
++  while (i < limit && isDigitAt(text, i)) i++;
++  return i > start && i < limit && text[i] === "=";
++}
+ 
+-    if (fieldEnd >= rawText.length) break;
+-    const sep = rawText[fieldEnd];
+-    if (sep === delim) {
+-      cursor = fieldEnd + 1;
+-    } else {
+-      break;
++function findFieldBoundary(text, position, delim, limit) {
++  let end = position;
++  for (; end < limit && !isLineEnd(text[end]); end++) {
++    if (!delim || text[end] !== delim[0] || !text.startsWith(delim, end)) continue;
++    const next = end + delim.length;
++    if (next > limit) continue;
++    if (delim === SOH || next === limit || isLineEnd(text[next]) ||
++        (end - position === 6 && isChecksum(text.slice(position, end))) ||
++        startsTag(text, next, limit)) {
++      return { end, next };
+     }
++    // A literal spelling cannot overlap another occurrence of itself.
++    end = next - 1;
+   }
++  // No separator: keep the final piece, but do not consume the line break.
++  return { end, next: end };
++}
+ 
+-  // Rule 1: field_without_equals
+-  for (const field of rawFields) {
+-    if (!field.text.includes("=")) {
+-      return {
+-        number,
+-        position: field.position + 1,
+-        rule: "field_without_equals",
+-        text: `Message ${number}: field without '=' at position ${field.position + 1}`,
+-      };
++// The same scan supplies both public field offsets and validation's wire spans.
++function scanCandidate(text, start, limit) {
++  const delim = detectDelimiter(text, start, limit);
++  const pieces = [];
++  let position = start;
++  while (position < limit && !isLineEnd(text[position])) {
++    // Once inside a candidate, only a real separator can introduce a new one.
++    if (position !== start && text.startsWith("8=FIX", position)) break;
++    const { end, next } = findFieldBoundary(text, position, delim, limit);
++    const field = text.slice(position, end);
++    const equals = field.indexOf("=");
++    pieces.push({ field, equals, position, separated: next > end });
++    position = next;
++    if (isChecksum(field)) {
++      // Keep the prior end convention for a checksum with no explicit delimiter.
++      if (next === end && position < limit && isLineEnd(text[position])) {
++        position += text[position] === "\r" && text[position + 1] === "\n" && position + 1 < limit ? 2 : 1;
++      }
++      break;
+     }
+   }
++  return { delim, pieces, end: position };
++}
+ 
+-  // Rule 2: bad_tag
+-  for (const field of rawFields) {
+-    const eqIdx = field.text.indexOf("=");
+-    const tagStr = field.text.substring(0, eqIdx);
+-
+-    // Non-numeric tag (including negative like -5)
+-    if (!/^\d+$/.test(tagStr)) {
+-      return {
+-        number,
+-        position: field.position + 1,
+-        rule: "bad_tag",
+-        text: `Message ${number}: bad tag '${tagStr}' at position ${field.position + 1}`,
+-      };
+-    }
+-
+-    // Tag 0
+-    if (tagStr === "0") {
+-      return {
+-        number,
+-        position: field.position + 1,
+-        rule: "bad_tag",
+-        text: `Message ${number}: bad tag '0' at position ${field.position + 1}`,
+-      };
+-    }
+-
+-    // Leading zero (e.g. '07')
+-    if (tagStr.length > 1 && tagStr[0] === "0") {
+-      return {
+-        number,
+-        position: field.position + 1,
+-        rule: "bad_tag",
+-        text: `Message ${number}: bad tag '${tagStr}' at position ${field.position + 1}`,
+-      };
++/** Return candidates in discovery order, with exclusive ends and original offsets. */
++export function splitMessages(text) {
++  if (typeof text !== "string" || text.length === 0) return [];
++  const candidates = [];
++  for (let start = findMessageStart(text, 0); start !== -1;) {
++    const { pieces, end } = scanCandidate(text, start, text.length);
++    const fields = [];
++    for (const { field, equals, position } of pieces) {
++      const tag = field.slice(0, equals);
++      if (equals !== -1 && isTag(tag)) {
++        fields.push({ tag: Number(tag), value: field.slice(equals + 1), position });
++      }
+     }
++    candidates.push({ number: candidates.length + 1, start, end, fields });
++    start = findMessageStart(text, end);
+   }
++  return candidates;
++}
+ 
+-  // Rule 3: header_order
+-  if (fields.length < 3) {
+-    return {
+-      number,
+-      position: fields[0].position + 1,
+-      rule: "header_order",
+-      text: `Message ${number}: header order wrong at position ${fields[0].position + 1}`,
+-    };
+-  }
+-
+-  if (fields[0].tag !== 8 || fields[1].tag !== 9 || fields[2].tag !== 35) {
+-    let wrongIdx = 0;
+-    if (fields[0].tag !== 8) wrongIdx = 0;
+-    else if (fields[1].tag !== 9) wrongIdx = 1;
+-    else wrongIdx = 2;
+-
+-    return {
+-      number,
+-      position: fields[wrongIdx].position + 1,
+-      rule: "header_order",
+-      text: `Message ${number}: header order wrong at position ${fields[wrongIdx].position + 1}`,
+-    };
++/** Return the first validation error (one-based position), or null. */
++export function checkMessage(candidate, text) {
++  const { number, start, end } = candidate;
++  const { delim, pieces } = scanCandidate(text, start, end);
++  function error(rule, offset, problem) {
++    const position = offset + 1;
++    return { number, position, rule, text: `Message ${number}: ${problem} at position ${position}` };
+   }
+ 
+-  // Rule 4: missing_checksum
+-  const lastField = fields[fields.length - 1];
+-  if (lastField.tag !== 10) {
+-    // Position is end of candidate (after last field + delimiter)
+-    const lastFieldEnd = lastField.position + String(lastField.tag).length + 1 + lastField.value.length;
+-    return {
+-      number,
+-      position: lastFieldEnd + 1,
+-      rule: "missing_checksum",
+-      text: `Message ${number}: missing CheckSum (tag 10) at position ${lastFieldEnd + 1}`,
+-    };
++  // The ordering is deliberate: a later missing '=' wins over an earlier bad tag.
++  for (const { equals, position } of pieces) {
++    if (equals === -1) return error("field_without_equals", position, "field without '='");
+   }
+-
+-  // Rule 5: checksum_format
+-  if (!/^\d{3}$/.test(lastField.value)) {
+-    return {
+-      number,
+-      position: lastField.position + 1,
+-      rule: "checksum_format",
+-      text: `Message ${number}: CheckSum format wrong at position ${lastField.position + 1}`,
+-    };
++  for (const { field, equals, position } of pieces) {
++    const tag = field.slice(0, equals);
++    if (!isTag(tag)) return error("bad_tag", position, `bad tag '${tag}'`);
+   }
+ 
+-  // Rule 6: body_length
+-  const bodyLengthField = fields.find(f => f.tag === 9);
+-  if (!bodyLengthField || !/^\d+$/.test(bodyLengthField.value)) {
+-    const pos = bodyLengthField ? bodyLengthField.position + 1 : fields[0].position + 1;
+-    return {
+-      number,
+-      position: pos,
+-      rule: "body_length",
+-      text: `Message ${number}: BodyLength (9) not a number at position ${pos}`,
+-    };
++  const headerError = offset => error("header_order", offset, "header order wrong");
++  if (!delim || pieces.length < 3) return headerError(start);
++  for (const [i, tag] of ["8=", "9=", "35="].entries()) {
++    if (!pieces[i].field.startsWith(tag)) return headerError(pieces[i].position);
+   }
+ 
+-  // Calculate actual body length in bytes (UTF-8)
+-  // Body starts AFTER the delimiter following 9=<len>
+-  const bodyStart = bodyLengthField.position + String(bodyLengthField.tag).length + 1 + bodyLengthField.value.length + 1;
+-  const bodyEnd = lastField.position;
+-  const bodyText = text.substring(bodyStart, bodyEnd);
+-  const actualBodyLength = new TextEncoder().encode(bodyText).length;
+-  const expectedBodyLength = Number(bodyLengthField.value);
++  const checksum = pieces.at(-1);
++  if (!checksum.field.startsWith("10=")) return error("missing_checksum", end, "missing CheckSum (tag 10)");
++  if (!isChecksum(checksum.field)) return error("checksum_format", checksum.position, "CheckSum format wrong");
+ 
+-  if (actualBodyLength !== expectedBodyLength) {
+-    return {
+-      number,
+-      position: bodyLengthField.position + 1,
+-      rule: "body_length",
+-      text: `Message ${number}: BodyLength (9) says ${expectedBodyLength}, actual ${actualBodyLength} at position ${bodyLengthField.position + 1}`,
+-    };
+-  }
++  const bodyLength = pieces[1];
++  const lengthValue = bodyLength.field.slice(2);
++  if (!/^[0-9]+$/.test(lengthValue)) return error("body_length", bodyLength.position, "BodyLength (9) not a number");
+ 
+-  // Rule 7: checksum
+-  const msgBeforeChecksum = text.substring(start, lastField.position);
+-  const bytes = new TextEncoder().encode(delim === "|" ? msgBeforeChecksum.replaceAll("|", "\x01") : msgBeforeChecksum);
++  // Only actual separators contribute a wire SOH. Literal spellings stay in
++  // the field text and are encoded as-is, including non-ASCII values.
++  let actualLength = 0;
+   let sum = 0;
+-  for (const b of bytes) sum += b;
+-  const expectedChecksum = (sum % 256).toString().padStart(3, "0");
+-
+-  if (lastField.value !== expectedChecksum) {
+-    return {
+-      number,
+-      position: lastField.position + 1,
+-      rule: "checksum",
+-      text: `Message ${number}: CheckSum mismatch at position ${lastField.position + 1}`,
+-    };
++  for (let i = 0; i < pieces.length - 1; i++) {
++    const { field, separated } = pieces[i];
++    const bytes = encoder.encode(field);
++    if (i >= 2) actualLength += bytes.length + Number(separated);
++    for (const byte of bytes) sum += byte;
++    if (separated) sum++;
+   }
+-
+-  // All rules passed
+-  return null;
+-}
+-
+-// Find the next position >= `from` where "8=FIX" occurs and is a valid message start.
+-function findMessageStart(text, from) {
+-  let idx = from;
+-  while (idx < text.length) {
+-    const hit = text.indexOf("8=FIX", idx);
+-    if (hit === -1) return -1;
+-
+-    if (hit === 0) return hit;
+-
+-    const prev = text[hit - 1];
+-    if (prev === "\n" || prev === "\r") return hit;
+-    if (prev === "|" || prev === "\x01") return hit;
+-
+-    let lineStart = hit - 1;
+-    while (lineStart >= 0 && text[lineStart] !== "\n" && text[lineStart] !== "\r") {
+-      lineStart--;
+-    }
+-    lineStart++;
+-
+-    const textBefore = text.substring(lineStart, hit);
+-
+-    if (!textBefore.includes("|") && !textBefore.includes("\x01")) {
+-      if (hit > 0 && /\d/.test(text[hit - 1])) {
+-        idx = hit + 1;
+-        continue;
+-      }
+-      return hit;
+-    }
+-
+-    idx = hit + 1;
++  const expectedLength = Number(lengthValue);
++  if (actualLength !== expectedLength) {
++    return error("body_length", bodyLength.position, `BodyLength (9) says ${expectedLength}, actual ${actualLength}`);
+   }
+-  return -1;
+-}
+-
+-// Detect the delimiter for the message starting at `start`.
+-function detectDelimiter(text, start) {
+-  let i = start;
+-  while (i < text.length) {
+-    const ch = text[i];
+-    if (ch === "\x01") return "\x01";
+-    if (ch === "\n" || ch === "\r") break;
+-    i++;
+-  }
+-  return "|";
+-}
+-
+-// Find the end of the current field starting at `cursor`.
+-function findFieldEnd(text, cursor, delim) {
+-  let i = cursor;
+-  while (i < text.length) {
+-    const ch = text[i];
+-    if (ch === delim || ch === "\n" || ch === "\r") return i;
+-    i++;
++  if (Number(checksum.field.slice(3)) !== sum % 256) {
++    return error("checksum", checksum.position, "CheckSum mismatch");
+   }
+-  return text.length;
+-}
+-
+-// Advance past a line end at position `i`.
+-function advancePastLineEnd(text, i) {
+-  if (text[i] === "\r" && i + 1 < text.length && text[i + 1] === "\n") {
+-    return i + 2;
+-  }
+-  return i + 1;
++  return null;
+ }
+diff --git a/test/framing-f1.test.js b/test/framing-f1.test.js
+index 86ffbf9..ef866a1 100644
+--- a/test/framing-f1.test.js
++++ b/test/framing-f1.test.js
+@@ -3,14 +3,32 @@ import { splitMessages } from "../src/framing.js";
+ 
+ describe("AC3: 8=FIX inside another field", () => {
+   it("does not start a message at 8=FIX inside the first field on a line", () => {
+-    expect(splitMessages("35=0|58=resend 8=FIX.4.2|10=042|")).toEqual([]);
++    const candidates = splitMessages("8=FIX.4.4|9=20|35=0|58=resend 8=FIX.4.2|10=042|");
++    expect(candidates).toHaveLength(1);
++    expect(candidates[0].fields.at(-2).value).toBe("resend 8=FIX.4.2");
+   });
+ 
+   it("does not start a message at 8=FIX inside tag 448 value on a line", () => {
+-    expect(splitMessages("35=0|448=8=FIX.4.2|10=042|")).toEqual([]);
++    const candidates = splitMessages("8=FIX.4.4|9=20|35=0|448=8=FIX.4.2|10=042|");
++    expect(candidates).toHaveLength(1);
++    expect(candidates[0].fields.at(-2).value).toBe("8=FIX.4.2");
+   });
+ 
+   it("does not start a message at 8=FIX inside tag 8 value on a line", () => {
+-    expect(splitMessages("35=0|8=8=FIX.4.2|10=042|")).toEqual([]);
++    const candidates = splitMessages("8=FIX.4.4|9=20|35=0|8=8=FIX.4.2|10=042|");
++    expect(candidates).toHaveLength(1);
++    expect(candidates[0].fields.at(-2).value).toBe("8=FIX.4.2");
+   });
+ });
++
++it('test_splitMessages_beginstring_uses_candidate_context', () => {
++  const prefix = 'log|^A<SOH> ignored: ';
++  expect(splitMessages(prefix + '8=FIX.4.4^A9=5^A35=0')[0].start).toBe(prefix.length);
++  expect(splitMessages('448=FIXCLIENT|35=0|')).toEqual([]);
++  const unfinished = '8=FIX.4.4^A9=20^A35=0^A58=resend 8=FIX.4.2|8=FIXCLIENT^A';
++  const next = '8=FIX.4.2|9=20|35=0|34=2|49=A|56=B|10=124|';
++  const [first, second] = splitMessages(unfinished + next);
++  expect(first.fields.at(-1).value).toBe('resend 8=FIX.4.2|8=FIXCLIENT');
++  expect(first.end).toBe(unfinished.length);
++  expect(second.start).toBe(first.end);
++});
+diff --git a/test/framing-f1b.test.js b/test/framing-f1b.test.js
+index 3a11e41..28cd2dc 100644
+--- a/test/framing-f1b.test.js
++++ b/test/framing-f1b.test.js
+@@ -1,3 +1,4 @@
++import { analyse } from "../src/analyse.js";
+ import { describe, it, expect } from "vitest";
+ import { splitMessages, checkMessage } from "../src/framing.js";
+ 
+@@ -80,3 +81,17 @@ describe("FXL-1B: review boundary regressions", () => {
+     expect(result.position).toBeLessThanOrEqual(first.end + 1);
+   });
+ });
++
++it('test_framing_public_imports_preserve_exact_shapes', () => {
++  const text = '8=FIX.4.4^A9=20^A35=0^A34=1^A49=A^A56=B^A10=125^A';
++  const [candidate] = splitMessages(text);
++  expect(Object.keys(candidate).sort()).toEqual(['end', 'fields', 'number', 'start']);
++  expect(candidate.fields).toHaveLength(7);
++  for (const field of candidate.fields) expect(Object.keys(field).sort()).toEqual(['position', 'tag', 'value']);
++  expect(checkMessage(candidate, text)).toBeNull();
++  expect(analyse(text).messages).toEqual([candidate]);
++  const malformed = text.replace('10=125', '10=049');
++  const error = checkMessage(splitMessages(malformed)[0], malformed);
++  expect(Object.keys(error).sort()).toEqual(['number', 'position', 'rule', 'text']);
++  expect(analyse(malformed).errors).toEqual([error]);
++});
+diff --git a/test/framing-f2.test.js b/test/framing-f2.test.js
+index 5fee5ad..824a190 100644
+--- a/test/framing-f2.test.js
++++ b/test/framing-f2.test.js
+@@ -45,7 +45,7 @@ describe("AC1: valid messages", () => {
+ describe("AC2: individual rules", () => {
+   it("detects field_without_equals for a field missing equals sign", () => {
+     // Manually construct a candidate with a malformed field
+-    const text = "8=FIX.4.2|9=5|35A|10=000|";
++    const text = "8=FIX.4.2\x019=5\x0135A\x0110=000\x01";
+     const fields = [
+       { tag: 8, value: "FIX.4.2", position: 0 },
+       { tag: 9, value: "5", position: 10 },
+@@ -79,7 +79,7 @@ describe("AC2: individual rules", () => {
+ describe("AC3: rule priority", () => {
+   it("reports only the first failing rule when multiple rules fail", () => {
+     // Message with both field_without_equals and bad_tag
+-    const text = "8=FIX.4.2|9=5|35A|0=xxx|10=000|";
++    const text = "8=FIX.4.2\x019=5\x0135A\x010=xxx\x0110=000\x01";
+     const fields = [
+       { tag: 8, value: "FIX.4.2", position: 0 },
+       { tag: 9, value: "5", position: 10 },
+@@ -184,3 +184,30 @@ describe("AC6: error text format", () => {
+   });
+ });
+ 
++it('test_checkMessage_caret_body_length_error_keeps_pasted_position', () => {
++  const text = '8=FIX.4.4^A9=21^A35=0^A34=1^A49=A^A56=B^A10=126^A';
++  expect(checkMessage(firstCandidate(text), text)).toEqual({
++    number: 1, position: 12, rule: 'body_length',
++    text: 'Message 1: BodyLength (9) says 21, actual 20 at position 12',
++  });
++});
++
++it('test_checkMessage_missing_exact_delimiter_reports_header_order', () => {
++  for (const text of ['8=FIX.4.4 9=20 35=0', '8=FIX.4.4<soh>9=20<soh>35=0<soh>34=1<soh>49=A<soh>56=B<soh>10=125<soh>']) {
++    const candidate = firstCandidate(text);
++    expect(checkMessage(candidate, text)).toMatchObject({ position: 1, rule: 'header_order' });
++  }
++  // A later message's separator must not supply the first line's missing delimiter.
++  const paste = '8=FIX.4.4 9=20 35=0\r8=FIX.4.4^A9=20^A35=0^A34=1^A49=A^A56=B^A10=125^A';
++  const [first, second] = splitMessages(paste);
++  expect(checkMessage(first, paste).rule).toBe('header_order');
++  expect(checkMessage(second, paste)).toBeNull();
++});
++
++it('test_checkMessage_double_raw_soh_reports_empty_field', () => {
++  const raw = '8=FIX.4.4\x019=20\x01\x0135=0\x01';
++  expect(checkMessage(firstCandidate(raw), raw)).toMatchObject({ position: 16, rule: 'field_without_equals' });
++  // In a text-delimited message the same doubled spelling is literal, not an empty piece.
++  const pipe = '8=FIX.4.4|9=28|35=0|34=1|49=A|56=B|58=x||y|10=025|';
++  expect(checkMessage(firstCandidate(pipe), pipe)).toBeNull();
++});
+diff --git a/test/framing-f2b.test.js b/test/framing-f2b.test.js
+index 50bdd39..5621c1a 100644
+--- a/test/framing-f2b.test.js
++++ b/test/framing-f2b.test.js
+@@ -29,3 +29,72 @@ describe("FXL-2B: fixed checksum vectors", () => {
+     expect(checkMessage(candidates[0], pipeRawChecksum)).toMatchObject({ rule: "checksum" });
+   });
+ });
++
++const referenceMessages = [
++  "8=FIX.4.4|9=20|35=0|34=1|49=A|56=B|10=125|",
++  "8=FIX.4.4^A9=20^A35=0^A34=1^A49=A^A56=B^A10=125^A",
++  "8=FIX.4.4<SOH>9=20<SOH>35=0<SOH>34=1<SOH>49=A<SOH>56=B<SOH>10=125<SOH>",
++  "8=FIX.4.4\u00019=20\u000135=0\u000134=1\u000149=A\u000156=B\u000110=125\u0001",
++];
++
++function assertReference(text, value) {
++  const candidates = splitMessages(text);
++  expect(candidates).toHaveLength(1);
++  const [candidate] = candidates;
++  expect(checkMessage(candidate, text)).toBeNull();
++  if (value !== undefined) expect(candidate.fields.find(({ tag }) => tag === 58)?.value).toBe(value);
++  return candidate.fields;
++}
++
++it('test_checkMessage_four_reference_forms_are_valid', () => {
++  for (const text of referenceMessages) {
++    expect(assertReference(text).map(({ tag, value }) => [tag, value])).toEqual([
++      [8, 'FIX.4.4'], [9, '20'], [35, '0'], [34, '1'], [49, 'A'], [56, 'B'], [10, '125'],
++    ]);
++  }
++});
++
++it('test_checkMessage_literal_text_delimiters_preserve_values', () => {
++  for (const [text, value] of [
++    ['8=FIX.4.4|9=27|35=0|34=1|49=A|56=B|58=a|b|10=110|', 'a|b'],
++    ['8=FIX.4.4|9=28|35=0|34=1|49=A|56=B|58=x||y|10=025|', 'x||y'],
++    ['8=FIX.4.4|9=28|35=0|34=1|49=A|56=B|58=end||10=227|', 'end|'],
++    ['8=FIX.4.4^A9=28^A35=0^A34=1^A49=A^A56=B^A58=a^Ab^A10=146^A', 'a^Ab'],
++    ['8=FIX.4.4<SOH>9=31<SOH>35=0<SOH>34=1<SOH>49=A<SOH>56=B<SOH>58=a<SOH>b<SOH>10=081<SOH>', 'a<SOH>b'],
++    ['8=FIX.4.4|9=33|35=0|34=1|49=A|56=B|58=café|€|10=078|', 'café|€'],
++  ]) {
++    const fields = assertReference(text, value);
++    if (value === 'café|€') expect(fields[1].value).toBe('33');
++  }
++});
++
++it('test_checkMessage_foreign_delimiter_forms_remain_literal', () => {
++  assertReference('8=FIX.4.4^A9=27^A35=0^A34=1^A49=A^A56=B^A58=a|b^A10=110^A', 'a|b');
++  assertReference('8=FIX.4.4|9=28|35=0|34=1|49=A|56=B|58=a^Ab|10=146|', 'a^Ab');
++  assertReference("8=FIX.4.4^A9=31^A35=0^A34=1^A49=A^A56=B^A58=a\u0001112=b^A10=191^A", "a\u0001112=b");
++});
++
++it('test_checkMessage_ambiguous_numeric_boundary_uses_only_split_reading', () => {
++  const prefix = '8=FIX.4.4|9=31|35=0|34=1|49=A|56=B|58=a|112=b|';
++  for (const checksum of ['058', '191']) {
++    const text = prefix + `10=${checksum}|`;
++    const [candidate] = splitMessages(text);
++    expect(candidate.fields.slice(-3, -1).map(({ tag, value }) => [tag, value])).toEqual([[58, 'a'], [112, 'b']]);
++    const error = checkMessage(candidate, text);
++    if (checksum === '058') expect(error?.rule).toBe('checksum');
++    else expect(error).toBeNull();
++  }
++  const caret = '8=FIX.4.4^A9=31^A35=0^A34=1^A49=A^A56=B^A58=a^A112=b^A10=191^A';
++  expect(assertReference(caret, 'a').find(({ tag }) => tag === 112)?.value).toBe('b');
++});
++
++it('test_checkMessage_caret_delimiter_text_checksum_is_rejected', () => {
++  const text = '8=FIX.4.4^A9=20^A35=0^A34=1^A49=A^A56=B^A10=049^A';
++  expect(checkMessage(splitMessages(text)[0], text)).toMatchObject({ position: 42, rule: 'checksum' });
++});
++
++it('test_checkMessage_raw_soh_preserves_all_text_delimiter_forms', () => {
++  assertReference("8=FIX.4.4\u00019=48\u000135=0\u000134=1\u000149=A\u000156=B\u000158=a|112=b^A113=c<SOH>114=d\u000110=177\u0001", "a|112=b^A113=c<SOH>114=d");
++  // The same literal occurrences are preserved when they are foreign to a text separator.
++  assertReference('8=FIX.4.4^A9=27^A35=0^A34=1^A49=A^A56=B^A58=a|b^A10=110^A', 'a|b');
++});
+diff --git a/test/framing.test.js b/test/framing.test.js
+index a1a164a..241ffd5 100644
+--- a/test/framing.test.js
++++ b/test/framing.test.js
+@@ -1,3 +1,4 @@
++import { analyse } from "../src/analyse.js";
+ import { describe, it, expect } from "vitest";
+ import { splitMessages } from "../src/framing.js";
+ import { buildMessage } from "./helpers/fix.js";
+@@ -82,15 +83,13 @@ describe("AC2: prefix before 8=FIX", () => {
+ 
+ describe("AC3: 8=FIX inside a field value", () => {
+   it("does not start a message when 8=FIX appears inside a field value", () => {
+-    // Case 1: "448=FIXCLIENT" — the "FIX" in "FIXCLIENT" is not preceded by "8="
+-    // so there's no "8=FIX" at all.
++    // Case 1: "448=FIXCLIENT" — the "8" in "8=FIX" is preceded by a digit.
+     const text1 = "448=FIXCLIENT|35=0|10=042|";
+     expect(splitMessages(text1)).toHaveLength(0);
+ 
+-    // Case 2: "58=resend 8=FIX.4.2" — the "8=FIX" is inside a field value,
+-    // preceded by a space (not a line end), so it does not start a message.
++    // Case 2: outside a candidate, a non-digit prefix can precede a start.
+     const text2 = "35=0|58=resend 8=FIX.4.2|10=042|";
+-    expect(splitMessages(text2)).toHaveLength(0);
++    expect(splitMessages(text2).map(({ start }) => start)).toEqual([text2.indexOf("8=FIX")]);
+ 
+     // Case 3: embedded inside a valid message, it's just the field's value.
+     const msg = buildMessage(
+@@ -383,3 +382,60 @@ describe("AC8: helper correctness", () => {
+     expect(f10.value).toBe(expectedChecksum);
+   });
+ });
++
++const referenceMessages = [
++  "8=FIX.4.4|9=20|35=0|34=1|49=A|56=B|10=125|",
++  "8=FIX.4.4^A9=20^A35=0^A34=1^A49=A^A56=B^A10=125^A",
++  "8=FIX.4.4<SOH>9=20<SOH>35=0<SOH>34=1<SOH>49=A<SOH>56=B<SOH>10=125<SOH>",
++  "8=FIX.4.4\u00019=20\u000135=0\u000134=1\u000149=A\u000156=B\u000110=125\u0001",
++];
++
++it('test_analyse_four_delimiter_lines_returns_four_valid_messages', () => {
++  const { ok, messages, errors } = analyse(referenceMessages.join('\r\n'));
++  expect(ok).toBe(true);
++  expect(errors).toEqual([]);
++  expect(messages.map(({ number }) => number)).toEqual([1, 2, 3, 4]);
++});
++
++it('test_splitMessages_text_delimiters_keep_pasted_field_offsets', () => {
++  const prefix = '📨 OUT: ';
++  for (const [index, positions] of [[1, [0, 11, 17, 23, 29, 35, 41]], [2, [0, 14, 23, 32, 41, 50, 59]]]) {
++    for (const leading of ['', prefix]) {
++      const [candidate] = splitMessages(leading + referenceMessages[index]);
++      expect(candidate.fields.map(({ position }) => position)).toEqual(positions.map(p => p + leading.length));
++    }
++  }
++});
++
++it('test_analyse_checksum_delimiter_excludes_trailing_log_text', () => {
++  const prefix = '10:00:00 OUT ';
++  // Pipe is the ticket example; the same exception must work for both new forms.
++  for (const message of referenceMessages.slice(0, 3)) {
++    const { messages, errors } = analyse(prefix + message + ' trailing text');
++    expect(errors).toEqual([]);
++    expect(messages.map(({ start, end }) => [start, end])).toEqual([[prefix.length, prefix.length + message.length]]);
++  }
++});
++
++it('test_analyse_adjacent_caret_messages_returns_two_valid_messages', () => {
++  const prefix = '10:00:00 OUT ';
++  const first = referenceMessages[1];
++  for (const second of ['8=FIX.4.2^A9=20^A35=0^A34=2^A49=A^A56=B^A10=124^A', referenceMessages[3]]) {
++    const { messages, errors } = analyse(prefix + first + second);
++    const boundary = prefix.length + first.length;
++    expect(errors).toEqual([]);
++    expect(messages.map(({ number, start, end }) => [number, start, end])).toEqual([
++      [1, prefix.length, boundary], [2, boundary, boundary + second.length],
++    ]);
++  }
++});
++
++it('test_analyse_hundred_mixed_delimiter_messages_finishes_under_five_seconds', () => {
++  const paste = Array.from({ length: 100 }, (_, i) => referenceMessages[i % 4]).join('\n');
++  const start = performance.now();
++  const result = analyse(paste);
++  expect(performance.now() - start).toBeLessThan(5000);
++  expect(result.ok).toBe(true);
++  expect(result.errors).toEqual([]);
++  expect(result.messages).toHaveLength(100);
++});
+diff --git a/test/helpers.test.js b/test/helpers.test.js
+index 24b5ae3..80f3639 100644
+--- a/test/helpers.test.js
++++ b/test/helpers.test.js
+@@ -107,3 +107,14 @@ describe("buildMessage helper", () => {
+     expect(result[0].fields.find((f) => f.tag === 49).value).toBe("SENDER");
+   });
+ });
++
++it('test_buildMessage_delimiter_option_matches_four_fixed_vectors', () => {
++  const fields = [[8, 'FIX.4.4'], [35, '0'], [34, '1'], [49, 'A'], [56, 'B']];
++  for (const [delim, text] of [
++    ["|", "8=FIX.4.4|9=20|35=0|34=1|49=A|56=B|10=125|"],
++    ["^A", "8=FIX.4.4^A9=20^A35=0^A34=1^A49=A^A56=B^A10=125^A"],
++    ["<SOH>", "8=FIX.4.4<SOH>9=20<SOH>35=0<SOH>34=1<SOH>49=A<SOH>56=B<SOH>10=125<SOH>"],
++    ["\u0001", "8=FIX.4.4\u00019=20\u000135=0\u000134=1\u000149=A\u000156=B\u000110=125\u0001"],
++  ]) expect(buildMessage(fields, { delim }), delim).toBe(text);
++  expect(buildMessage([...fields, [58, 'end|']])).toBe('8=FIX.4.4|9=28|35=0|34=1|49=A|56=B|58=end||10=227|');
++});
+diff --git a/test/helpers/fix.js b/test/helpers/fix.js
+index 124e329..11240fd 100644
+--- a/test/helpers/fix.js
++++ b/test/helpers/fix.js
+@@ -2,7 +2,7 @@
+ //
+ // buildMessage(fields, opts?)
+ //   fields: array of [tag, value] pairs (numbers or strings for tag).
+-//   opts.delim: delimiter character (default "|").
++//   opts.delim: delimiter form (default "|").
+ //
+ // The helper:
+ //   - Always emits tag 8 (BeginString) first. The caller must include it.
+@@ -27,30 +27,20 @@ export function buildMessage(fields, opts = {}) {
+       // Caller should not supply these; we compute them.
+       continue;
+     } else {
+-      bodyFields.push([t, String(value)]);
++      bodyFields.push(`${t}=${value}`);
+     }
+   }
+   if (beginString === null) {
+     throw new Error("buildMessage: fields must include tag 8 (BeginString)");
+   }
+ 
+-  // Build the body (everything between 9=...<delim> and 10=...).
+-  let body = "";
+-  for (const [t, v] of bodyFields) {
+-    body += `${t}=${v}${delim}`;
+-  }
+-
+-  const bodyLength = new TextEncoder().encode(body).length;
+-
+-  // Build message up to (not including) the checksum field.
+-  let msg = `8=${beginString}${delim}9=${bodyLength}${delim}${body}`;
+-
+-  // Compute checksum: sum of all bytes so far, mod 256, zero-padded to 3 digits.
+-  const bytes = new TextEncoder().encode(delim === "|" ? msg.replaceAll("|", "\x01") : msg);
++  const soh = "\x01";
++  const encoder = new TextEncoder();
++  const serialize = (parts, sep) => parts.map(part => part + sep).join("");
++  const bodyLength = encoder.encode(serialize(bodyFields, soh)).length;
++  const beforeChecksum = [`8=${beginString}`, `9=${bodyLength}`, ...bodyFields];
+   let sum = 0;
+-  for (const b of bytes) sum += b;
++  for (const byte of encoder.encode(serialize(beforeChecksum, soh))) sum += byte;
+   const checksum = (sum % 256).toString().padStart(3, "0");
+-
+-  msg += `10=${checksum}${delim}`;
+-  return msg;
++  return serialize([...beforeChecksum, `10=${checksum}`], delim);
+ }
+diff --git a/test/static-checks.test.js b/test/static-checks.test.js
+index 84a14a9..4282b28 100644
+--- a/test/static-checks.test.js
++++ b/test/static-checks.test.js
+@@ -1,26 +1,7 @@
+ import { test, expect } from 'vitest';
+ import { readFileSync, readdirSync } from 'node:fs';
+-import { JSDOM } from 'jsdom';
+-
+-const forbidden = [
+-  /\bfetch\b/, /\bXMLHttpRequest\b/, /\bWebSocket\b/, /\bsendBeacon\b/, /\bEventSource\b/,
+-  /\bwindow\s*\.\s*open\b/, /(?:\blocation\b|\.\s*href)\s*=(?!=)/, /\bsetAttribute\s*\(/,
+-  /\blocalStorage\b/, /\bsessionStorage\b/, /\bindexedDB\b/, /\bdocument\s*\.\s*cookie\b/,
+-  /\bcookieStore\b/, /\bcaches\b/, /\bopenDatabase\b/, /\bnavigator\s*\.\s*storage\b/,
+-  /\bserviceWorker\b/, /\bWorker\s*\(/, /\bSharedWorker\b/,
+-  /\bconsole\b/, /\binnerHTML\b/, /\bouterHTML\b/, /\binsertAdjacentHTML\b/,
+-  /\bdocument\s*\.\s*write\b/, /\bDOMParser\b/, /\bcreateContextualFragment\b/,
+-  /\bsetHTMLUnsafe\b/, /\bsrcdoc\b/, /\beval\b/, /\bnew\s+Function\b/,
+-];
+-const cspValue = "default-src 'self'; connect-src 'none'; form-action 'none'";
+-function stripComments(source) { return source.replace(/<!--[^]*?-->|\/\*[^]*?\*\/|(^|[^:])\/\/[^\r\n]*/gm, (match, prefix) => prefix || ''); }
+-function auditSource(source) { return [...forbidden, /\bfrom\s*['\"][^'\"]+\.json['\"]/, /\bimport\s*\(\s*['\"][^'\"]+\.json['\"]\s*\)/].filter(pattern => pattern.test(stripComments(source))).map(String); }
+-function auditPage(source) {
+-  const doc = new JSDOM(source).window.document;
+-  const tags = [...doc.querySelectorAll('meta[http-equiv]')].filter(tag => tag.getAttribute('http-equiv').toLowerCase() === 'content-security-policy');
+-  return tags.length === 1 && doc.head.firstElementChild === tags[0] && tags[0].getAttribute('content') === cspValue &&
+-    doc.querySelectorAll('script:not([src]), style, [style]').length === 0;
+-}
++import { auditSource, auditPage, auditDataModule, cspValue } from '../tools/audit-source.mjs';
++
+ function sources(dir) {
+   return readdirSync(dir, { withFileTypes: true }).flatMap(entry => entry.isDirectory() ? sources(`${dir}/${entry.name}`) : entry.name.endsWith('.js') ? [`${dir}/${entry.name}`] : []);
+ }
+@@ -58,3 +39,36 @@ test('test_static_checks_src_json_imports_rejected', () => {
+   expect(auditSource(`// import data from './dictionary/fix42.json'\n/* import('./x.json') */`)).toHaveLength(0);
+   for (const file of sources('src')) expect(auditSource(readFileSync(file, 'utf8')), file).toHaveLength(0);
+ });
++
++test('test_static_checks_forbidden_js_imports_and_assignments_are_rejected', () => {
++  for (const snippet of [
++    `import('./client.js')`, `import /* comment */ (path)`,
++    `import data from './data.json' with { type: 'json' }`, `import './data.json'`,
++    ...['id', 'name', 'title', 'src', 'value', 'style', 'cssText'].map(key => `node . ${key} = input`),
++    'node.value += input',
++  ]) expect(auditSource(snippet), snippet).not.toHaveLength(0);
++  for (const snippet of [`import data from './data.js'`, 'node.title === input', 'node.src == input', 'node.id => input']) {
++    expect(auditSource(snippet), snippet).toHaveLength(0);
++  }
++  for (const file of sources('src')) expect(auditSource(readFileSync(file, 'utf8')), file).toHaveLength(0);
++});
++
++test('test_static_checks_inline_html_code_and_attributes_are_rejected', () => {
++  const page = body => `<html><head><meta http-equiv="Content-Security-Policy" content="${cspValue}"></head><body>${body}</body></html>`;
++  expect(auditPage(page('<script src="./src/main.js" type="module"></script>'))).toBe(true);
++  for (const snippet of ['<script>doWork()</script>', '<style>body { color: blue }</style>', '<div style="color:blue"></div>', '<button onClick="doWork()">Go</button>']) {
++    expect(auditPage(page(snippet)), snippet).toBe(false);
++  }
++  expect(auditPage(readFileSync('index.html', 'utf8'))).toBe(true);
++});
++
++test('test_static_checks_dictionary_modules_require_one_json_value', () => {
++  expect(auditDataModule('export default {"version": 1};\n')).toBe(true);
++  for (const snippet of [
++    'export  default {};', 'export default {invalid};', 'export default {} {};',
++    'export default {}', 'export default {}; doWork();', 'export default {}; // comment\n',
++  ]) expect(auditDataModule(snippet), snippet).toBe(false);
++  for (const name of ['fix42', 'fix44']) {
++    expect(auditDataModule(readFileSync(`src/dictionary/${name}.js`, 'utf8')), name).toBe(true);
++  }
++});
+diff --git a/tools/audit-source.mjs b/tools/audit-source.mjs
+new file mode 100644
+index 0000000..e5450d7
+--- /dev/null
++++ b/tools/audit-source.mjs
+@@ -0,0 +1,53 @@
++// Offline policy checks. Kept separate from both Vitest and the browser bundle.
++import { JSDOM } from 'jsdom';
++
++const forbidden = [
++  /\bfetch\b/, /\bXMLHttpRequest\b/, /\bWebSocket\b/, /\bsendBeacon\b/, /\bEventSource\b/,
++  /\bwindow\s*\.\s*open\b/, /(?:\blocation\b|\.\s*href)\s*=(?!=)/, /\bsetAttribute\s*\(/,
++  /\blocalStorage\b/, /\bsessionStorage\b/, /\bindexedDB\b/, /\bdocument\s*\.\s*cookie\b/,
++  /\bcookieStore\b/, /\bcaches\b/, /\bopenDatabase\b/, /\bnavigator\s*\.\s*storage\b/,
++  /\bserviceWorker\b/, /\bWorker\s*\(/, /\bSharedWorker\b/,
++  /\bconsole\b/, /\binnerHTML\b/, /\bouterHTML\b/, /\binsertAdjacentHTML\b/,
++  /\bdocument\s*\.\s*write\b/, /\bDOMParser\b/, /\bcreateContextualFragment\b/,
++  /\bsetHTMLUnsafe\b/, /\bsrcdoc\b/, /\beval\b/, /\bnew\s+Function\b/,
++];
++export const cspValue = "default-src 'self'; connect-src 'none'; form-action 'none'";
++function stripComments(source) {
++  return source.replace(/<!--[^]*?-->|\/\*[^]*?\*\/|(^|[^:])\/\/[^\r\n]*/gm, (_match, prefix = '') => prefix + ' ');
++}
++const sourcePatterns = [
++  ...forbidden,
++  /\bimport\s*\(/,
++  /\b(?:from\s*|import\s*)['"][^'"\r\n]+\.json['"]/,
++  /\.\s*(?:id|name|title|src|value|style|cssText)\s*(?:=(?![=>])|(?:\*\*|>>>|>>|<<|&&|\|\||\?\?|[+\-*/%&^|])=)/,
++];
++export function auditSource(source) {
++  const code = stripComments(source);
++  return sourcePatterns.filter(pattern => pattern.test(code)).map(String);
++}
++export function auditPage(source) {
++  const doc = new JSDOM(source).window.document;
++  const tags = [...doc.querySelectorAll('meta[http-equiv]')].filter(tag => tag.getAttribute('http-equiv').toLowerCase() === 'content-security-policy');
++  if (tags.length !== 1 || doc.head.firstElementChild !== tags[0] || tags[0].getAttribute('content') !== cspValue) return false;
++  return auditElements(doc);
++}
++function auditElements(root) {
++  if (root.querySelector('script:not([src]), style, [style]')) return false;
++  for (const element of root.querySelectorAll('*')) {
++    if (element.getAttributeNames().some(name => /^on./i.test(name))) return false;
++    if (element.localName === 'template' && !auditElements(element.content)) return false;
++  }
++  return true;
++}
++export function auditDataModule(source) {
++  const prefix = 'export default ';
++  const module = source.replace(/\r?\n$/, '');
++  if (!module.startsWith(prefix) || !module.endsWith(';')) return false;
++  try {
++    JSON.parse(module.slice(prefix.length, -1));
++    return true;
++  } catch (error) {
++    if (!(error instanceof SyntaxError)) throw error;
++    return false;
++  }
++}
+-- 
+2.43.0
+
