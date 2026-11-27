@@ -1,10 +1,10 @@
 # Harness state
 
-Written by the runner at 2026-11-27T19:55:11+0100. Host-only copy: `state.json`.
+Written by the runner at 2026-11-27T19:57:21+0100. Host-only copy: `state.json`.
 Kit: `b483e6d3816cbfe0379fd6314af0cd96b8ad1a88`
 
 ## What changed
-- kit commit is now b483e6d3816cbfe0379fd6314af0cd96b8ad1a88
+- decision applied D-20261127-17: loaded 3 ticket(s) from b50786bfd690. FXL-19: triage t_3d9ab922, gate t_d90b366e, triage waits on nothing. FXL-20: triage t_e31f1f06, gate t_e9db36b3, triage waits on accept FXL-19. FXL-21: triage t_edf3e2d5, gate t_02e46066, triage waits on accept FXL-19, accept FXL-20 [commit ace4e2c716ed, 2026-11-27T18:55:23+00:00, signature: by a listed key]
 
 ## Tickets
 - **SMK-1** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
@@ -19,6 +19,9 @@ Kit: `b483e6d3816cbfe0379fd6314af0cd96b8ad1a88`
 - **FXL-15** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
 - **FXL-16** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
 - **FXL-18** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
+- **FXL-19** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: running
+- **FXL-20** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: todo
+- **FXL-21** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: todo
 
 ## Blocks
 - none
