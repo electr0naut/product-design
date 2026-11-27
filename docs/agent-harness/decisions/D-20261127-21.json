@@ -1,0 +1,7 @@
+{
+  "id": "D-20261127-21",
+  "action": "unblock_once",
+  "key": "FXL-23",
+  "card": "t_b6621679",
+  "reason": "FXL-23-block-t_b6621679-1: the triage says AC9 is truncated in what it was handed. AC9 is whole in the ticket file and in the host copy refreshed by D-20261127-18 (three lines, ending 'the messages in `shown`.'). The ticket needs no change; let the triage card go on once"
+}
