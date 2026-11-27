@@ -34,13 +34,18 @@ all of them 11 s.
 5. `load_tickets` decision for FXL-19, FXL-20, FXL-21, in that order.
 6. Review each landing; real-browser check at 10,000 messages (first page within 3 s, a change within 1 s).
 
+## Answered by Ubay later on 2026-11-27
+- **The BRD route:** "we generate a new BRD with the phases without going through the previous reviewers and it
+  is autoapproved. I just need the BRD updated with the changes". Done: Confluence page 589885, version 4.
+- **Publishing PRD v1.3 and design v1.3 to Confluence:** "Yes". Done: PRD page 557109 version 8, design page
+  1409027 version 5. Both are the repository files as they stand at this commit.
+- **The privacy and markup checks in the validation:** "Phase 2". Recorded in `fix-lens/phase-2-scope.md` and
+  in the BRD; the running validation is not changed.
+
 ## Still open with Ubay
-- Whether the phase 2 PRD (v2.0) needs the BRD sign-off route; I draft it once he has said.
-- Publishing design v1.3 and PRD v1.3 to Confluence: nothing has been sent; it needs his word.
-- Two additions I proposed for the validation: the privacy and markup checks (no answer yet); the beyond-limit
-  measurement is now in the brief as "10,000 is the maximum for now".
 - From earlier today: the root-only token file for the job user; closing the standing VM session; the Qwen
   model for the fallback reviewer (after the bake-off).
+- Before phase 3: whether the tool stays a page that runs entirely in the browser.
 
 ## Running in the background
 The independent validation of v1.2 (a sub-agent of the reviewing session) writes into `fix-lens/validation/`.

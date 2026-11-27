@@ -42,9 +42,14 @@ entirely in the browser.
 clock, read from the messages, and I would put that much in phase 2. Everything about several clocks, time
 zones and latency stays with theme G.
 
-**One decision before the PRD (Ubay's): who signs off the wider purpose?** Phase 1's BRD was approved for a
-decode-and-explain tool. Cross-checking quantities and reconstructing order state (D) moves it towards a
-reconciliation aid, which may need the same approval route as the BRD.
+**The sign-off route (decided by Ubay, 2026-11-27):** "we generate a new BRD with the phases without going
+through the previous reviewers and it is autoapproved. I just need the BRD updated with the changes". The BRD
+(Confluence page 589885, version 4) now carries the four phases, the Risk Committee decisions they change and
+the risks they add. No new round with the role reviewers or the Risk Committee is needed for phase 2.
+
+**Added to the validation in phase 2 (Ubay, 2026-11-27: "Phase 2"):** the privacy check (nothing pasted leaves
+the page) and the markup check (log content cannot inject markup). They are not part of the validation of
+phase 1.
 
 ## Phases 3 and 4: themes A, B, F, G and H (agreed by Ubay)
 - **Phase 3: A and B, with G.** Large logs and files, the other input forms, and time and latency. A is the
@@ -86,5 +91,6 @@ established FIX engine and property-based tests. Kept up, they are the acceptanc
 against: each theme starts by extending the ground truth, before any ticket is written.
 
 ## The route, as for phase 1
-For each phase: a BRD refresh if the sign-off question says so, then the PRD, then the technical design, each
-approved by Ubay before the next; then tickets through the harness. Phase 2's PRD would be v2.0.
+For each phase: the PRD, then the technical design, each approved by Ubay before the next; then tickets
+through the harness. The BRD already covers the four phases (refresh of 2026-11-27); it is refreshed again only
+if the answer to the phase 3 question changes its basis. Phase 2's PRD would be v2.0.
