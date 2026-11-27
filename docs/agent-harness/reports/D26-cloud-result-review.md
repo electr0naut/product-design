@@ -1,4 +1,12 @@
-# D26, step 4b: the `setup-token` CAN start a cloud session. The check failed
+# D26, step 4b: a cloud session was created. Whether the `setup-token` did it is NOT yet shown
+
+> **Correction, same day, after `D26-setup-check.md`.** I concluded too fast. That run reused
+> `cloud-check-home`, which an earlier run at 17:36 had already written to, and the step 3 check at 17:33
+> exited 1, so the token file may not have set `CLAUDE_CODE_OAUTH_TOKEN` at all. A session was created, so
+> some credential worked; it may have been a login stored in that home and not the token. **Read everything
+> below as "a cloud session can be started as `harness-job` as the machine stands", not as a finding about the
+> token.** Ubay is checking: the variable's name in the file, what `auth status` reports in that home, and
+> then 4b again with a home that has never been used. The credential options wait for that.
 
 **Ubay ran the check on 2026-11-27,** as `harness-job`, with only the token from `/etc/harness-job/claude.env`
 and an empty `HOME`:
