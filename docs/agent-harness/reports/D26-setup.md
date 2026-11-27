@@ -24,6 +24,8 @@ First check `ls /usr/local/bin/claude /usr/local/bin/uv`: both should be "No suc
 
 `harness-deploy` does **not** update these root-owned files. After a reviewed change under `jobs/`, repeat the last two lines.
 
+**After replacing `/usr/local/bin/claude` with another version, repeat step 4b before any job runs** (`D26-cloud-result-review2.md`): that the token is refused a cloud session was checked for 2.1.332 only. Stop the job timer first.
+
 ## 3. The job's Claude credential: **a `setup-token`** (your choice "A", `D26-credential-review.md`)
 The job user authenticates with that token and nothing else. **Never run `claude auth login` as `harness-job`.**
 
