@@ -1,0 +1,433 @@
+From ea0b353a04c3195d1ab94f956d14d45960f3b3ca Mon Sep 17 00:00:00 2001
+From: Hermes Agent <hermes@agent.local>
+Date: Fri, 27 Nov 2026 13:29:30 +0100
+Subject: [PATCH] FXL-12: summarize trades after cancels and corrections
+
+---
+ src/summary.js       | 128 ++++++++++++++++++++
+ test/summary.test.js | 278 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 406 insertions(+)
+ create mode 100644 src/summary.js
+ create mode 100644 test/summary.test.js
+
+diff --git a/src/summary.js b/src/summary.js
+new file mode 100644
+index 0000000..afed38c
+--- /dev/null
++++ b/src/summary.js
+@@ -0,0 +1,128 @@
++import { executionKind } from './execution.js';
++
++function tag(message, number) {
++  return message.fields.find(field => field.tag === number)?.value;
++}
++
++function finiteNumber(value) {
++  if (value === undefined || value.trim() === '') return null;
++  const number = Number(value);
++  return Number.isFinite(number) ? number : null;
++}
++
++function tradeSide(side) {
++  if (side === '1' || side === '3') return 'buy';
++  if (side === '2' || side === '4' || side === '5' || side === '6') return 'sell';
++  return null;
++}
++
++function replayExecutions(decoded) {
++  const executions = [];
++  const unmatchedNumbers = [];
++  const orders = new Map();
++
++  for (const message of decoded) {
++    if (!message.supported || tag(message, 35) !== '8') continue;
++    const kind = executionKind(message);
++    if (kind !== 'Fill' && kind !== 'TradeCancel' && kind !== 'TradeCorrect') continue;
++
++    const orderId = tag(message, 37) ?? '';
++    const execId = tag(message, 17);
++    let reports = orders.get(orderId);
++    if (execId && reports?.has(execId)) continue;
++
++    function remember(execution) {
++      if (!execId) return;
++      if (!reports) {
++        reports = new Map();
++        orders.set(orderId, reports);
++      }
++      reports.set(execId, execution);
++    }
++
++    if (kind !== 'Fill') {
++      const refId = tag(message, 19);
++      const execution = refId ? reports?.get(refId) : undefined;
++      if (execution) {
++        if (kind === 'TradeCancel') {
++          if (execution.active) {
++            execution.active = false;
++            remember(execution);
++          }
++        } else if (!execution.active) {
++          remember(execution);
++        } else {
++          const qty = finiteNumber(tag(message, 32));
++          if (qty !== null && qty > 0) {
++            execution.qty = qty;
++            execution.px = finiteNumber(tag(message, 31));
++            remember(execution);
++          }
++        }
++        continue;
++      }
++      unmatchedNumbers.push(message.number);
++      // Reserve the key for resend detection, even if there is no execution to reference.
++      remember(null);
++      if (kind === 'TradeCancel') continue;
++    }
++
++    const symbol = tag(message, 55);
++    const side = tradeSide(tag(message, 54));
++    const qty = finiteNumber(tag(message, 32));
++    if (!symbol || !side || qty === null || qty <= 0) continue;
++
++    // All aliases share one record, so cancellation deactivates them together.
++    const execution = { number: message.number, symbol, side, qty, px: finiteNumber(tag(message, 31)), active: true };
++    executions.push(execution);
++    remember(execution);
++  }
++  return { executions, unmatchedNumbers };
++}
++
++function emptySide() {
++  return { orders: 0, orderedQty: 0, fills: 0, filledQty: 0, notional: 0, pricedQty: 0 };
++}
++
++/** Replay the whole log, then summarize contributions from visible message numbers. */
++export function tradeSummary(decoded, shown) {
++  const { executions, unmatchedNumbers } = replayExecutions(decoded);
++  const visible = number => shown === undefined || shown.has(number);
++  const bySymbol = new Map();
++
++  function totalsFor(symbol, side) {
++    let row = bySymbol.get(symbol);
++    if (!row) {
++      row = { symbol, buy: emptySide(), sell: emptySide() };
++      bySymbol.set(symbol, row);
++    }
++    return row[side];
++  }
++
++  for (const message of decoded) {
++    if (!message.supported || !visible(message.number) || tag(message, 35) !== 'D') continue;
++    const symbol = tag(message, 55);
++    const side = tradeSide(tag(message, 54));
++    if (!symbol || !side) continue;
++    const totals = totalsFor(symbol, side);
++    totals.orders += 1;
++    totals.orderedQty += finiteNumber(tag(message, 38)) ?? 0;
++  }
++
++  for (const { number, symbol, side, qty, px, active } of executions) {
++    if (!active || !visible(number)) continue;
++    const totals = totalsFor(symbol, side);
++    totals.fills += 1;
++    totals.filledQty += qty;
++    if (px !== null) {
++      const notional = totals.notional + qty * px;
++      // Opposite signed overflows would otherwise replace the running total with NaN.
++      if (!Number.isNaN(notional)) totals.notional = notional;
++      totals.pricedQty += qty;
++    }
++  }
++
++  const rows = [...bySymbol.keys()].sort().map(symbol => bySymbol.get(symbol));
++  const unmatched = unmatchedNumbers.filter(visible).length;
++  return { rows, unmatched };
++}
+diff --git a/test/summary.test.js b/test/summary.test.js
+new file mode 100644
+index 0000000..093e335
+--- /dev/null
++++ b/test/summary.test.js
+@@ -0,0 +1,278 @@
++import { expect, test } from 'vitest';
++import { analyse } from '../src/analyse.js';
++import { tradeSummary } from '../src/summary.js';
++import { buildMessage } from './helpers/fix.js';
++
++const logA = [
++  '35=D 11=C1 1=ACC1 55=VOD.L 54=1 38=1000',
++  '35=8 37=O1 11=C1 17=E1 150=F 55=VOD.L 54=1 32=400 31=71.25',
++  '35=8 37=O1 11=C1 17=E2 150=F 55=VOD.L 54=1 32=600 31=71.5',
++  '35=8 43=Y 37=O1 11=C1 17=E2 150=F 55=VOD.L 54=1 32=600 31=71.5',
++  '35=8 37=O1 11=C1 17=E3 19=E1 150=G 55=VOD.L 54=1 32=300 31=71.2',
++  '35=8 37=O1 11=C1 17=E4 19=E2 150=H 55=VOD.L 54=1 32=0 31=0',
++  '35=D 11=C2 1=ACC2 55=VOD.L 54=2 38=500',
++  '35=8 37=O2 11=C2 17=E5 150=F 55=VOD.L 54=2 32=200 31=72',
++  '35=8 37=O2 11=C2 17=E6 19=E5 150=G 55=VOD.L 54=2 32=250 31=72.1',
++  '35=8 37=O2 11=C2 17=E7 19=E6 150=G 55=VOD.L 54=2 32=260 31=72.2',
++  '35=8 37=O9 11=C9 17=E8 19=ZZ 150=H 55=VOD.L 54=1 32=0',
++  '35=8 37=O8 11=C3 17=E9 19=YY 150=G 55=BARC.L 54=5 32=50 31=2.5',
++  '35=D 11=C3 1=ACC1 55=BARC.L 54=5 38=50',
++  '35=8 37=O3 11=C4 17=E10 150=F 55=AZN.L 54=1 32=10',
++  '35=8 37=O3 11=C4 17=E11 150=F 55=AZN.L 54=8 32=10 31=100',
++  '35=8 37=O3 11=C4 17=E12 150=F 54=1 32=10 31=100',
++  '35=8 37=O3 11=C4 17=E13 150=F 55=AZN.L 54=1 32=0 31=100',
++  '35=8 37=O1 11=C1 17=E14 19=E2 150=G 55=VOD.L 54=1 32=999 31=1',
++  '35=8 37=O3 11=C4 17=E15 150=0 55=AZN.L 54=1 32=5 31=100',
++];
++
++const logB = [
++  '35=8 37=O1 11=C1 17=E1 150=F 55=VOD.L 54=1 32=100 31=10',
++  '35=8 37=O1 11=C1 17=E2 19=E1 150=G 55=VOD.L 54=1 32=120 31=10.5',
++  '35=8 37=O1 11=C1 17=E3 19=E2 150=H 55=VOD.L 54=1',
++];
++
++const logC = [
++  '35=8 37=O1 11=C1 17=X1 20=0 150=2 39=2 55=IBM 54=1 32=100 31=50',
++  '35=8 37=O1 11=C1 17=X2 19=X1 20=1 150=2 39=2 55=IBM 54=1 32=100 31=50',
++  '35=8 37=O1 11=C1 17=X3 150=1 39=1 55=IBM 54=1 32=40 31=51',
++  '35=8 37=O1 11=C1 17=X4 19=X3 20=2 150=1 39=1 55=IBM 54=1 32=45 31=51.5',
++  '35=8 37=O1 11=C1 17=0 20=3 150=2 39=1 55=IBM 54=1 32=45 31=51.5',
++];
++
++function frame(line, number, version) {
++  const [type, ...fields] = line.split(' ').map(field => field.split('='));
++  return buildMessage([[8, version], type, [49, 'SENDER'], [56, 'TARGET'], [34, number], ...fields]);
++}
++
++function decodeLog(lines, version = 'FIX.4.4') {
++  const text = lines.map((line, i) => frame(line, i + 1, version)).join('\n');
++  const result = analyse(text);
++  expect(result.ok).toBe(true);
++  expect(result.errors).toEqual([]);
++  expect(result.decoded.map(message => message.number)).toEqual(lines.map((_, i) => i + 1));
++  return result.decoded;
++}
++
++const metrics = (orders = 0, orderedQty = 0, fills = 0, filledQty = 0, notional = 0, pricedQty = 0) =>
++  ({ orders, orderedQty, fills, filledQty, notional, pricedQty });
++const row = (symbol, buy = metrics(), sell = metrics()) => ({ symbol, buy, sell });
++const empty = { rows: [], unmatched: 0 };
++const fill = (qty, notional, pricedQty = qty) => metrics(0, 0, 1, qty, notional, pricedQty);
++const summaryA = (end = logA.length, shown) => tradeSummary(decodeLog(logA.slice(0, end)), shown);
++const azn = row('AZN.L', fill(10, 0, 0));
++const barc = row('BARC.L', metrics(), metrics(1, 50, 1, 50, 125, 50));
++const barcFill = row('BARC.L', metrics(), fill(50, 125));
++const vodBuy = metrics(1, 1000, 1, 300, 21360, 300);
++const vodSell = metrics(1, 500, 1, 260, 18772, 260);
++
++function expectSummary(actual, rows, unmatched = 0) {
++  expect(actual.unmatched).toBe(unmatched);
++  expect(actual.rows.map(entry => entry.symbol)).toEqual(rows.map(entry => entry.symbol));
++  for (const [i, entry] of rows.entries()) {
++    for (const side of ['buy', 'sell']) {
++      for (const [key, expected] of Object.entries(entry[side])) {
++        expect(actual.rows[i][side][key], `${entry.symbol} ${side}.${key}`).toBeCloseTo(expected, 6);
++      }
++    }
++  }
++}
++
++test('test_tradeSummary_decoded_logA_returns_exact_summary_shape', () => {
++  const result = tradeSummary(decodeLog(logA));
++  expect(Reflect.ownKeys(result).sort()).toEqual(['rows', 'unmatched']);
++  expect(Number.isFinite(result.unmatched)).toBe(true);
++  expect(result.rows).toHaveLength(3);
++  for (const entry of result.rows) {
++    expect(Reflect.ownKeys(entry).sort()).toEqual(['buy', 'sell', 'symbol']);
++    for (const side of [entry.buy, entry.sell]) {
++      expect(Reflect.ownKeys(side).sort()).toEqual(['filledQty', 'fills', 'notional', 'orderedQty', 'orders', 'pricedQty']);
++      expect(Object.values(side).every(Number.isFinite)).toBe(true);
++    }
++  }
++});
++
++test('test_tradeSummary_logA_returns_exact_sorted_totals', () => {
++  expectSummary(summaryA(), [azn, barc, row('VOD.L', vodBuy, vodSell)], 2);
++});
++
++test('test_tradeSummary_logA_messages_4_5_6_10_18_replay_resend_corrections_and_cancel', () => {
++  const beforeResend = summaryA(3);
++  expectSummary(beforeResend, [row('VOD.L', metrics(1, 1000, 2, 1000, 71400, 1000))]);
++  expect(summaryA(4)).toEqual(beforeResend);
++  expectSummary(summaryA(5), [row('VOD.L', metrics(1, 1000, 2, 900, 64260, 900))]);
++  expectSummary(summaryA(6), [row('VOD.L', vodBuy)]);
++  expectSummary(summaryA(10), [row('VOD.L', vodBuy, vodSell)]);
++  expect(summaryA(18)).toEqual(summaryA(17));
++});
++
++test('test_tradeSummary_logA_messages_11_12_count_missing_references_once_each', () => {
++  const before = summaryA(10);
++  expect(summaryA(11)).toEqual({ rows: before.rows, unmatched: 1 });
++  expectSummary(summaryA(12), [barcFill, row('VOD.L', vodBuy, vodSell)], 2);
++});
++
++test('test_tradeSummary_logA_messages_14_15_16_17_19_keep_only_unpriced_fill', () => {
++  expectSummary(summaryA(14), [azn, barc, row('VOD.L', vodBuy, vodSell)], 2);
++  for (const number of [15, 16, 17, 19]) {
++    expect(summaryA(number)).toEqual(summaryA(number - 1));
++  }
++});
++
++test('test_tradeSummary_logB_cancel_by_correction_id_removes_execution', () => {
++  expect(tradeSummary(decodeLog(logB.slice(0, 2)))).toEqual({ rows: [row('VOD.L', fill(120, 1260))], unmatched: 0 });
++  expect(tradeSummary(decodeLog(logB))).toEqual(empty);
++});
++
++test('test_tradeSummary_logC_fix42_transactions_cancel_correct_and_ignore_status', () => {
++  const prefix = end => tradeSummary(decodeLog(logC.slice(0, end), 'FIX.4.2'));
++  expect(prefix(1)).toEqual({ rows: [row('IBM', fill(100, 5000))], unmatched: 0 });
++  expect(prefix(2)).toEqual(empty);
++  expect(prefix(3)).toEqual({ rows: [row('IBM', fill(40, 2040))], unmatched: 0 });
++  expect(prefix(4)).toEqual({ rows: [row('IBM', fill(45, 2317.5))], unmatched: 0 });
++  expect(prefix(5)).toEqual(prefix(4));
++});
++
++test('test_tradeSummary_logA_shown_without_2_hides_corrected_original_fill', () => {
++  const shown = new Set(logA.map((_, i) => i + 1).filter(number => number !== 2));
++  expectSummary(summaryA(logA.length, shown), [azn, barc, row('VOD.L', metrics(1, 1000), vodSell)], 2);
++});
++
++test('test_tradeSummary_logA_shown_7_to_12_keeps_only_visible_contributions', () => {
++  expectSummary(summaryA(logA.length, new Set([7, 8, 9, 10, 11, 12])), [barcFill, row('VOD.L', metrics(), vodSell)], 2);
++});
++
++test('test_tradeSummary_logA_hidden_adjustments_apply_but_hidden_unmatched_do_not_count', () => {
++  expectSummary(summaryA(logA.length, new Set([2, 3, 8])), [row('VOD.L', fill(300, 21360), fill(260, 18772))]);
++});
++
++test('test_tradeSummary_valid_sides_route_orders_and_fills_to_the_correct_side', () => {
++  const sides = ['1', '2', '3', '4', '5', '6'];
++  const lines = sides.flatMap(side => [
++    `35=D 55=S${side} 54=${side} 38=7`,
++    `35=8 150=F 37=O${side} 17=E 55=S${side} 54=${side} 32=3 31=2`,
++  ]);
++  const total = metrics(1, 7, 1, 3, 6, 3);
++  expect(tradeSummary(decodeLog(lines))).toEqual({
++    rows: [row('S1', total), row('S2', metrics(), total), row('S3', total),
++      ...['S4', 'S5', 'S6'].map(symbol => row(symbol, metrics(), total))],
++    unmatched: 0,
++  });
++});
++
++test('test_tradeSummary_invalid_side_or_missing_symbol_leaves_no_rows', () => {
++  const lines = ['55=IBM 54=7', '55=IBM 54=8', '55=IBM 54=9', '55=IBM 54=A',
++    '55=IBM 54=', '55=IBM', '54=1'].flatMap(fields => [
++    `35=D ${fields} 38=7`,
++    `35=8 150=F ${fields} 32=3 31=2`,
++  ]);
++  expect(tradeSummary(decodeLog(lines))).toEqual(empty);
++});
++
++test('test_tradeSummary_cancels_of_rejected_fills_are_unmatched', () => {
++  const decoded = decodeLog([
++    '35=8 150=F 37=O1 17=E1 54=1 32=3 31=2',
++    '35=8 150=F 37=O1 17=E2 55=IBM 54=8 32=3 31=2',
++    '35=8 150=H 37=O1 17=C1 19=E1',
++    '35=8 150=H 37=O1 17=C2 19=E2',
++  ]);
++  expect(tradeSummary(decoded)).toEqual({ rows: [], unmatched: 2 });
++});
++
++const noIdFill = '35=8 150=F 37=O1 55=IBM 54=1 32=3 31=2';
++const noRefCancel = '35=8 150=H 37=O1 17=C1';
++const anonymousFills = { rows: [row('IBM', metrics(0, 0, 2, 6, 12, 6))], unmatched: 1 };
++
++test('test_tradeSummary_missing_exec_id_keeps_identical_fills_separate', () => {
++  expect(tradeSummary(decodeLog([noIdFill, noIdFill, noRefCancel]))).toEqual(anonymousFills);
++});
++
++test('test_tradeSummary_unsupported_version_excludes_both_orders_and_reports', () => {
++  const supported = ['35=D 55=IBM 54=1 38=7', noIdFill];
++  const unsupported = ['35=D 55=VOD.L 54=1 38=7', '35=8 150=F 55=VOD.L 54=1 32=3 31=2'];
++  const entries = [...supported, ...unsupported];
++  const text = entries.map((line, i) =>
++    frame(line, i + 1, i < supported.length ? 'FIX.4.4' : 'FIX.4.3')).join('\n');
++  const { decoded, errors } = analyse(text);
++  expect(errors).toEqual([]);
++  expect(decoded.map(message => message.number)).toEqual([1, 2, 3, 4]);
++  expect(decoded.map(message => message.supported)).toEqual([true, true, false, false]);
++  expect(tradeSummary(decoded)).toEqual({ rows: [row('IBM', metrics(1, 7, 1, 3, 6, 3))], unmatched: 0 });
++});
++
++test('test_tradeSummary_mixed_case_symbols_sort_by_string_comparison', () => {
++  const result = tradeSummary(decodeLog(['35=D 55=alpha 54=1 38=7', '35=D 55=Zeta 54=2 38=7']));
++  expect(result.rows.map(entry => entry.symbol)).toEqual(['Zeta', 'alpha']);
++});
++
++test('test_tradeSummary_matched_correct_with_invalid_last_qty_preserves_execution', () => {
++  for (const quantity of [undefined, '', '0', '-2', 'abc', 'Infinity']) {
++    const correction = '35=8 150=G 37=O1 17=E2 19=E1 55=VOD.L 54=2 31=10';
++    const decoded = decodeLog([`${noIdFill} 17=E1`, quantity === undefined ? correction : `${correction} 32=${quantity}`]);
++    expect(tradeSummary(decoded), `LastQty=${quantity}`).toEqual({ rows: [row('IBM', fill(3, 6))], unmatched: 0 });
++  }
++});
++
++test('test_tradeSummary_nonfinite_numeric_inputs_do_not_poison_totals', () => {
++  const decoded = decodeLog([
++    '35=D 55=IBM 54=1', '35=D 55=IBM 54=1 38=Infinity', '35=D 55=IBM 54=1 38=bogus',
++    '35=D 55=IBM 54=1 38=7', noIdFill, '35=8 150=F 55=IBM 54=1 32=4 31=bogus',
++    '35=8 150=F 55=IBM 54=1 32=5 31=Infinity',
++  ]);
++  expect(tradeSummary(decoded)).toEqual({ rows: [row('IBM', metrics(4, 7, 3, 12, 6, 3))], unmatched: 0 });
++});
++
++test('test_tradeSummary_unmatched_resends_are_deduplicated_per_order_and_exec_id', () => {
++  const reports = orderId => {
++    const cancel = `35=8 150=H 37=${orderId} 17=CANCEL 19=missing`;
++    const correct = `35=8 150=G 37=${orderId} 17=CORRECT 19=missing 55=IBM 54=1 32=3 31=2`;
++    return [cancel, correct, `${cancel} 43=Y`, `${correct} 43=Y`];
++  };
++  expect(tradeSummary(decodeLog(reports('O1')))).toEqual({ rows: [row('IBM', fill(3, 6))], unmatched: 2 });
++  expect(tradeSummary(decodeLog([...reports('O1'), ...reports('O2')]))).toEqual({ ...anonymousFills, unmatched: 4 });
++});
++
++test('test_tradeSummary_empty_symbol_excludes_orders_and_fills', () => {
++  expect(tradeSummary(decodeLog(['35=D 55= 54=1 38=7', '35=8 150=F 55= 54=1 32=3 31=2']))).toEqual(empty);
++});
++
++test('test_tradeSummary_empty_exec_and_ref_ids_behave_as_missing', () => {
++  const blank = decodeLog([`${noIdFill} 17=`, `${noIdFill} 17=`, `${noRefCancel} 19=`]);
++  const omitted = decodeLog([noIdFill, noIdFill, noRefCancel]);
++  expect(tradeSummary(blank)).toEqual(anonymousFills);
++  expect(tradeSummary(blank)).toEqual(tradeSummary(omitted));
++});
++
++test('test_tradeSummary_decoded_messages_and_shown_remain_unchanged', () => {
++  const decoded = decodeLog(logA);
++  const shown = new Set([10, 2, 14, 12, 1]);
++  const messagesBefore = structuredClone(decoded);
++  const shownBefore = [...shown];
++  for (const message of decoded) {
++    for (const field of message.fields) Object.freeze(field);
++    Object.freeze(message.fields);
++    Object.freeze(message);
++  }
++  Object.freeze(decoded);
++  tradeSummary(decoded, shown);
++  expect(decoded).toEqual(messagesBefore);
++  expect([...shown]).toEqual(shownBefore);
++});
++
++test('test_tradeSummary_one_thousand_valid_orders_summarize_under_one_second', () => {
++  const decoded = decodeLog(Array.from({ length: 1000 }, (_, i) => `35=D 11=C${i} 55=IBM 54=1 38=7`));
++  expect(decoded).toHaveLength(1000);
++  const start = performance.now();
++  const summary = tradeSummary(decoded);
++  expect(performance.now() - start).toBeLessThan(1000);
++  expect(summary).toEqual({ rows: [row('IBM', metrics(1000, 7000))], unmatched: 0 });
++});
++
++test('test_tradeSummary_opposing_overflowing_notionals_do_not_produce_nan', () => {
++  const decoded = decodeLog([
++    '35=8 150=F 55=IBM 54=1 32=1e308 31=10',
++    '35=8 150=F 55=IBM 54=1 32=1e308 31=-10',
++  ]);
++  const { rows } = tradeSummary(decoded);
++  expect(rows[0].buy.fills).toBe(2);
++  expect(rows[0].buy.notional).not.toBeNaN();
++});
+-- 
+2.43.0
+
