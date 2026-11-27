@@ -63,7 +63,8 @@ export async function renderText(result, view = { orderId: null, filters: {} }, 
   if (!jsdomWindow) {
     const require = createRequire(path.join(PRODUCT, 'package.json'));
     const { JSDOM } = require('jsdom');
-    const html = fs.readFileSync(path.join(PRODUCT, 'index.html'), 'utf8').replace(/<script[^>]*><\/script>/, '');
+    // jsdom runs no script unless asked to (`runScripts`), so the page's own script tag can stay
+    const html = fs.readFileSync(path.join(PRODUCT, 'index.html'), 'utf8');
     jsdomWindow = new JSDOM(html).window;
     globalThis.document = jsdomWindow.document;
   }
