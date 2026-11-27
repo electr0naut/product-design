@@ -34,8 +34,13 @@ The job user authenticates with that token and nothing else. **Never run `claude
 | `claude setup-token` | run **as yourself**: signs you in through the browser and shows a long-lived token. Copy it; type it into no other command. **(untested** whether it changes anything about your own login) | revoke it in your Claude account, if offered there |
 | `sudo install -d -o root -g harness-job -m 750 /etc/harness-job` | a folder only root and the job user can enter | `sudo rm -r /etc/harness-job` |
 | `sudo install -o root -g harness-job -m 440 /dev/null /etc/harness-job/claude.env` | an empty file only `harness-job` (and root) can read, and the job cannot change | (with the folder) |
-| `sudoedit /etc/harness-job/claude.env` | type **one** line: `CLAUDE_CODE_OAUTH_TOKEN=` followed by the token; save. (`sudoedit` keeps a temporary copy only while the editor is open) | empty the file |
-| `clear; tmux clear-history 2>/dev/null; history -c` | removes the token from the screen; also close that terminal | |
+
+**Write the token with a silent prompt, not an editor** (the editor route lost it without any sign: the file stayed empty). Paste this line as it is, press Enter, **then** paste the token at the prompt and press Enter. Nothing shows as you paste. The token is on no command line and in no history. (Its logic was tried here on a scratch file with a made-up value, without `sudo`; it needs `bash`, not `sh`.)
+```
+sudo bash -c 'IFS= read -rs -p "Paste the token, then press Enter (nothing will show): " T; echo; T=${T//[[:space:]]/}; if [ -z "$T" ]; then echo "NOTHING ENTERED: the file was not changed"; exit 1; fi; printf "CLAUDE_CODE_OAUTH_TOKEN=%s\n" "$T" > /etc/harness-job/claude.env; echo written'
+```
+**Check that it is there, without showing it:** `sudo grep -o '^[A-Z_]*=' /etc/harness-job/claude.env` **must print `CLAUDE_CODE_OAUTH_TOKEN=`.** If it prints nothing, the file does not hold it: do not go on. (If `setup-token` showed the token over two screen lines, only the first may have been pasted: widen the terminal. Step 4b's `ready` call catches a cut token.)
+Then `clear; tmux clear-history 2>/dev/null` and close that terminal. Undo: `sudo truncate -s 0 /etc/harness-job/claude.env`, and revoke the token.
 
 **Check the login (untested).** The first must say you are not logged in; the second must show `authMethod` `oauth_token`. **`claude.ai` in either is wrong: stop and tell the reviewer.**
 ```
@@ -60,18 +65,32 @@ Then do **4**, and then **4b**, which needs both.
 **No GitHub credential for `product-design`:** the job does not need one and must not get one.
 
 ## 4b. Your one check: this token must be **refused** a cloud session (do it once; **untested**, the VM has not run it)
-> **On hold after the first runs (`D26-cloud-result-review.md`): a session was created, and which credential made it is not yet shown. Repeat this only as the reviewer says.**
-> **If the screen ever asks you to sign in, do not sign in:** quit. A sign-in stores a full account login in that folder, and the check would then test that login, not the token.
-> **Always start from a home folder that has never been used:** do the clean-up in "After the home fix" first.
+> The first runs tested **a login stored in the check folder, not the token** (the token file was empty, and the first run signed in through the browser: `D26-setup-review3.md`). Nothing is yet known about what a `setup-token` can do.
+> ## **IF THE SCREEN OFFERS OR ASKS YOU TO SIGN IN: STOP. DO NOT SIGN IN.** Quit and tell the reviewer. A sign-in stores a full account login, and the check would then test that login instead of the token.
+> **The check counts only if no other credential can take part:** a home that has never been used, no stored login in it before or after, and `auth status` **in that very home** showing the token.
 
-It needs a git clone with a GitHub remote, so that a refusal cannot be about a missing repository. First prove the token works at all, or everything would be refused and the check would "pass" for the wrong reason: the second command below **must answer `ready`** (one tiny model call). If it does not, stop.
+First do the log-out and clean-up in "After the home fix". It needs a git clone with a GitHub remote, so that a refusal cannot be about a missing repository. **Run these one at a time; go on only when each shows what is written.**
+
+**1. A never-used home** (must print `unused`; then make it and the clone):
 ```
-sudo -u harness-job -H git clone -q git@github.com:electr0naut/agent-harness.git /home/harness-job/cloud-check
+sudo test ! -e /home/harness-job/cloud-check-home && echo unused || echo "STOP: it exists"
 sudo -u harness-job mkdir /home/harness-job/cloud-check-home
+sudo -u harness-job -H git clone -q git@github.com:electr0naut/agent-harness.git /home/harness-job/cloud-check
+```
+**2. In that very home, the login must be the token.** `auth status` must show `"authMethod": "oauth_token"`, **not** `claude.ai`, and no stored claude.ai login; and the second command must print `no stored login`:
+```
+sudo systemd-run --pipe --wait -p User=harness-job -p EnvironmentFile=/etc/harness-job/claude.env -E HOME=/home/harness-job/cloud-check-home /usr/local/bin/claude auth status
+sudo test -e /home/harness-job/cloud-check-home/.claude/.credentials.json && echo "STOP: a stored login" || echo "no stored login"
+```
+**3. The token must work at all,** or everything would be refused and the check would "pass" for the wrong reason. This **must answer `ready`** (one tiny model call):
+```
 sudo systemd-run --pipe --wait -p User=harness-job -p EnvironmentFile=/etc/harness-job/claude.env -p WorkingDirectory=/home/harness-job/cloud-check -E HOME=/home/harness-job/cloud-check-home /usr/local/bin/claude -p --model sonnet --tools "" -- "Reply with the single word ready." < /dev/null
+```
+**4. The check itself.** (If it first asks whether you trust the folder, say yes: it is that clone. **Any sign-in: stop.**)
+```
 sudo systemd-run --pty --wait -p User=harness-job -p EnvironmentFile=/etc/harness-job/claude.env -p WorkingDirectory=/home/harness-job/cloud-check -E HOME=/home/harness-job/cloud-check-home /usr/local/bin/claude --cloud "Reply with the single word ready. Change nothing."
 ```
-(If it first asks whether you trust the folder, say yes: it is that clone.)
+**5. Afterwards,** run the `no stored login` line of step 2 again. **If it now says a stored login, the result counts for nothing:** log it out (as in "After the home fix") and tell the reviewer.
 
 | what you see | meaning | what to do |
 |---|---|---|
@@ -79,7 +98,7 @@ sudo systemd-run --pty --wait -p User=harness-job -p EnvironmentFile=/etc/harnes
 | it **creates a session** (a session id or a claude.ai/code link) | **failed: this token can start cloud sessions** | open the link or claude.ai/code and stop and delete that session; **stop the setup here**, start no timer, tell the reviewer. The fallback is B below, **which is then a new choice of yours**, not covered by "A" |
 | any **other** error (repository, GitHub connection, network, unknown option, an organisation policy) | **not shown either way** | stop here and send the reviewer the message |
 
-(It runs with an empty home folder, as a job does.) Afterwards: `sudo rm -rf /home/harness-job/cloud-check /home/harness-job/cloud-check-home`.
+(It runs with its own empty home folder, as a job does.) When done: `sudo rm -rf /home/harness-job/cloud-check /home/harness-job/cloud-check-home`.
 
 **Fallback B (only on a new choice of yours): a Console API key.** The documentation states it cannot use cloud sessions; it is billed per use. Same file and permissions, with the one line `ANTHROPIC_API_KEY=` followed by the key; remove the `setup-token` line, revoke that token, and repeat the login check (`authMethod` `api_key`).
 
@@ -114,7 +133,10 @@ Undo all: `sudo rm -r /var/lib/harness-jobs` (this also deletes the ledger and a
 
 ## After the home fix (`6ff69fa`, once it is approved and deployed)
 1. **Stop the job timer** if it is on (do this now, not only after the fix): `sudo systemctl disable --now harness-job-dispatch.timer`
-2. **Clean the job's home** of what the first setup run left there (one line; the cloud-check folders may hold a login):
+2. **Log out the login the first cloud check stored** (it is a full account login, and a job could read it), then **clean the job's home** of what the first setup run left there (one line each):
+```
+sudo -u harness-job env HOME=/home/harness-job/cloud-check-home /usr/local/bin/claude auth logout
+```
 ```
 sudo rm -rf /home/harness-job/cloud-check /home/harness-job/cloud-check-home /home/harness-job/.probe /home/harness-job/.probe2 /home/harness-job/.probe3 /home/harness-job/.claude /home/harness-job/.claude.json /home/harness-job/.claude.json.lock
 ```

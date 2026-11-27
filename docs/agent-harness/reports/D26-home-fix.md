@@ -25,3 +25,10 @@ identical: 68 files, 50 folders, same checksums before and after
 ## One more fact for `D26-cloud-result-review.md`
 The journal shows **two** `--cloud` runs, both reusing `cloud-check-home`: **17:36:38, ran 31 s,** and **17:45:21, ran 3 s,** both ending with success. The second finished a few seconds before I pushed `D26-setup-check.md`, which therefore names only the first. One reading, **not shown:** a sign-in during the 31 s stored a full login in that folder, which the second run used. **If so, that login is still in the job user's home, which a job can read:** the clean-up line removes the folder, and the session should also be signed out in the Claude account.
 **At 17:47 the dispatch timer was still enabled and active.** The queue was empty at 17:45.
+
+## Added after `D26-setup-review3.md`
+The review confirms the reading above: the token file was empty, and a claude.ai login stored by the first run made the cloud session. **Nothing is yet known about a `setup-token`.** `D26-setup.md` now:
+- step 3 writes the token with a **silent prompt** (no editor) and requires `grep -o` to print the variable's name. The command's logic was run here on a scratch file with a made-up value, without `sudo`: an empty entry changes nothing, stray spaces and a carriage return are removed, the file's mode is kept; it needs `bash`;
+- step 4b can pass or fail **only on the token:** a home that must not exist yet; `auth status` in that very home showing `oauth_token`; no `.credentials.json` there before **and after**; the `ready` call; and in bold, **stop on any sign-in**;
+- "After the home fix" logs the stored login out before deleting the folders.
+`D26-cloud-route.md` (also asked) is pushed: session creation uses the same host as model requests, and the docs do not rule out that such a session reaches `product-design`.
