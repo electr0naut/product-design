@@ -1,12 +1,16 @@
 # FIX Lens - Technical Design
 
-**Version:** 1.3, for PRD v1.3. **The v1.3 changes (sections 4, 9, 10, 15 and the new section 16, each marked
+**Version:** 1.4 (draft), for PRD v1.4. **The v1.4 changes (in sections 2, 3, 7, 8.2, 10, 11, 12, 13 and 15,
+each marked "v1.4") wait for approval.** Their scope, seven findings of the validation of 2026-11-27, was
+approved by Ubay Gonzalez on 2026-11-27 ("as recommended"); their wording has not been approved yet.
+**The v1.3 changes (sections 4, 9, 10, 15 and the new section 16, each marked
 "v1.3") were approved by Ubay Gonzalez on 2026-11-27 ("approved").** Everything else is v1.2.2, unchanged.
 **Status of v1.2.2:** v1.2 approved by Ubay Gonzalez (2026-11-26); it replaces v1.1, which was approved under delegation on
 2026-11-25. The v1.2.1 clarifications (four corrections and seven additions, none changing the PRD) were approved
 by Ubay Gonzalez on 2026-11-27. The v1.2.2 clarification (one addition in section 13, on a report that names an
 unmatched report; it changes neither the PRD nor the code as built) was approved by Ubay Gonzalez on 2026-11-27.
-**Built by:** the agent delivery harness. Tickets FXL-1 to FXL-18 are built. v1.3 adds FXL-19 to FXL-21.
+**Built by:** the agent delivery harness. Tickets FXL-1 to FXL-18 are built. v1.3 adds FXL-19 to FXL-21. v1.4
+adds FXL-22 to FXL-26.
 
 Sections marked **(changed)** differ from v1.1. Sections marked **(new)** are additions. Everything else is
 unchanged from v1.1.
@@ -67,8 +71,9 @@ user as 1-based. A ParseError's `position` is the exception: it is already 1-bas
 - **Execution:** `{ number, symbol, side, qty, px }`, with `side` `"buy"` or `"sell"` (section 13).
 - **TradeSummary:** `{ rows, unmatched }`. A row is `{ symbol, buy, sell }`, and each side is
   `{ orders, orderedQty, fills, filledQty, notional, pricedQty }`.
-- **View:** `{ orderId: string | null, filters: { account, senderCompId, senderSubId, targetCompId,
-  targetSubId } }`, each filter a string or null. It lives in `main.js`, in memory only.
+- **View:** `{ orderId: string | null, orderMessage: number | null, filters: { account, senderCompId,
+  senderSubId, targetCompId, targetSubId } }`, each filter a string or null. `orderMessage` is the number of the
+  message whose id button was pressed (v1.4). It lives in `main.js`, in memory only.
 
 ## 3. Framing (TR-002) (changed)
 
@@ -100,6 +105,14 @@ textarea already turns CRLF into LF; `\r\n`, `\n` and `\r` all end a line. A mes
 7. **Byte counts.** Nothing is normalised in place, so offsets never move. For a field, its bytes are the UTF-8
    bytes of its text in the paste (`tag=value`, the value including any delimiter text that is not a separator),
    plus one byte, 0x01, for the separator that ends it.
+
+   **Single-byte text (v1.4).** A paste holds characters, not the bytes that were on the wire, and many FIX
+   links send accented names in ISO-8859-1, one byte per character. So when rule 5 or rule 6 of step 8 fails
+   with the UTF-8 count, and the candidate (from its `start` to its `end`) holds at least one character from
+   U+0080 to U+00FF and no character above U+00FF, both rules are checked once more with every character
+   counted as one byte, whose value is its code point. When both hold that way, the message is valid.
+   Otherwise the error of the UTF-8 count is reported, unchanged. Nothing on the page says which count held.
+   Windows-1252 text (a euro sign, curly quotes) is not covered.
 8. **Rules, checked in this order; only the first failure is reported:**
    1. a field without `=`: `field_without_equals`;
    2. a tag that isn't a positive integer (digits only, no leading zero, at most 9 digits): `bad_tag`;
@@ -168,8 +181,10 @@ pair (SenderCompID 49, TargetCompID 56); a missing 49 or 56 is the empty string 
 **seen** only after its first message has been processed.
 
 For each message (`seq` is 34 as a number; if 34 is missing or not a number, skip steps 1 to 3):
-1. **Logon (35=A) with 141=Y, when 43 isn't `Y`:** set `expected[dir] = 1`. A PossDup message never advances or
-   resets (PRD TR-003).
+1. **Logon (35=A) with 141=Y, or with `seq` 1 (v1.4), when 43 isn't `Y`:** set `expected[dir] = 1`. A PossDup
+   message never advances or resets (PRD TR-003). A session that starts again at 1 without the flag (a daily
+   reset, or an engine set to reset on logout or on disconnect) is so followed from 1, in that direction only;
+   the other direction restarts with its own Logon. No timeline event is added for the restart.
 2. **SequenceGap check:** only if the direction has been seen, 43 isn't `Y`, the message isn't a SequenceReset
    in Reset mode (35=4 without 123=Y; FIX ignores its MsgSeqNum), and `seq > expected[dir]`. The gap event comes
    **before** the message's own event, with `detail: "expected N, received M"`. The first message of a direction
@@ -239,13 +254,14 @@ sees then.
 
 ### 8.2 What `render(result, view, handlers)` builds
 
-`handlers` is `{ pick(id), clear(), setFilter(key, value) }`. `render.js` builds every node with
+`handlers` is `{ pick(id, number), clear(), setFilter(key, value) }`. `render.js` builds every node with
 `document.createElement`, sets text with `textContent` only, and never calls `setAttribute`. The only element
 properties it sets are `textContent`, `className` (from fixed strings, never from pasted text), `type`,
 `disabled` and `selectedIndex`. It creates no links.
 
 What is shown: `passing = applyFilters(decoded, view.filters)`; with `view.orderId`, `shown` is the messages of
-`passing` that are in that order's group; otherwise `shown = passing`. The timeline shows the events whose
+`passing` that are in that order's group, which is `findOrder(groups, view.orderId, view.orderMessage)`
+(section 12; v1.4); otherwise `shown = passing`. The timeline shows the events whose
 message number is in `shown`. `narrowed` is true when a filter is set or an order is selected.
 
 **Over a size limit** (`result.ok` is false), `#summary` and `#timeline` are empty apart from the heading, and
@@ -297,8 +313,11 @@ Inside `#decode`, in log order: one `article.card` per shown message, and, when 
 - With nothing to show: `p.empty`, `No messages match the current filters.` when narrowed, otherwise
   `No FIX messages found in the pasted text.`
 
-Every `button.order-link` calls `handlers.pick(id)` with the id alone. An OrderID that is not an identifier
-(section 12) is plain text, not a button. `SendingTime` is shown as its time part: the text after the first `-`.
+Every `button.order-link` calls `handlers.pick(id, number)`: the id, and the number of the message the button
+is on, which is the event's message in the timeline and the card's message in a card (v1.4; it was the id
+alone, so a value that is the ClOrdID of one order and the OrderID of another opened the first of the two). In
+`main.js`, `pick` sets `view.orderId` and `view.orderMessage`; `clear` and pressing Decode set both to null. An
+OrderID that is not an identifier (section 12) is plain text, not a button. `SendingTime` is shown as its time part: the text after the first `-`.
 
 ### 8.3 Themes (AC-031, AC-032)
 
@@ -364,7 +383,10 @@ Every `button.order-link` calls `handlers.pick(id)` with the id alone. An OrderI
 ## 10. Ticket order (changed)
 
 FXL-1 to FXL-18 are built. FXL-19 to FXL-21 follow the PRD v1.3 delivery plan, tickets 19 to 21 (v1.3):
-FXL-19 the limits, FXL-20 `src/paging.js`, FXL-21 the pager on the page. FXL-9 to FXL-16 followed the PRD v1.2
+FXL-19 the limits, FXL-20 `src/paging.js`, FXL-21 the pager on the page. FXL-22 to FXL-26 follow the PRD v1.4
+delivery plan, tickets 22 to 26 (v1.4): FXL-22 `src/orders.js`, FXL-23 `src/summary.js`, FXL-24
+`src/timeline.js`, FXL-25 `src/framing.js`, FXL-26 the page (`src/render.js`, `src/main.js`), after FXL-21 and
+FXL-22. FXL-9 to FXL-16 followed the PRD v1.2
 delivery plan, tickets 9 to 16, in that order.
 The harness runs them one at a time, each after its blockers. Each ticket lists its acceptance criteria as
 testable statements taken from the PRD, starts with its interface criterion, and names the test files it is
@@ -382,9 +404,10 @@ expected to change.
 | `<soh>` in lower case, `\x01` or `\u0001` written as text | Not delimiters |
 | Leading-zero or very long tags | `bad_tag` (stricter than "positive integer") |
 | CheckSum present but not 3 digits | `checksum_format` |
-| MsgSeqNum lower than expected | Ignored: no event, expected number unchanged |
+| MsgSeqNum lower than expected | Ignored: no event, expected number unchanged. The one exception is a Logon numbered 1 (section 7, step 1; v1.4) |
 | PossDupFlag on a SequenceReset | PossDupFlag wins: nothing changes |
-| Missing 34, 49 or 56 | No sequence check; empty string in the direction key; shown blank |
+| Missing 34, 49 or 56 | No sequence check; empty string in the direction key and as a party (sections 12 and 13); shown blank |
+| Whose id it is (v1.4) | A ClOrdID belongs to the client and an OrderID or ExecID to the executing party, told apart by SenderCompID and TargetCompID alone (section 12). SubIDs, OnBehalfOfCompID and DeliverToCompID are not read |
 | Repeated 35 | The first value counts |
 | Repeated 11, 37, 41, 17, 19, 32, 31, 54, 55, 1 | The first value counts, in grouping, the summary and the filters |
 | Dictionary source at build time | Vendored XML at a pinned commit; no network |
@@ -398,8 +421,19 @@ expected to change.
 
 `orderGroups(decoded)` in `src/orders.js` returns the OrderGroups in order of first appearance. It is pure.
 
-- **Keys of a message:** `C:<value>` for its ClOrdID 11 and for its OrigClOrdID 41, and `O:<value>` for its
-  OrderID 37. An empty value gives no key.
+- **The parties of a message (v1.4).** For an ExecutionReport (35=8) or an OrderCancelReject (35=9), the
+  **executing party** is its SenderCompID 49 and the **client** is its TargetCompID 56. For every other
+  message the client is its 49 and the executing party is its 56. A missing 49 or 56 is the empty string.
+- **Keys of a message:** the pair (client, value) for its ClOrdID 11 and for its OrigClOrdID 41, and the pair
+  (executing party, value) for its OrderID 37. An empty value gives no key. (v1.4; a key was the value alone,
+  so two clients that both used ClOrdID `1` were one order.) Two keys are the same only when both parts are
+  equal, exactly and case-sensitively; a ClOrdID key is never the same as an OrderID key.
+- **What that gives.** An order sent by `CLI` to `BRK` and the reports `BRK` sends to `CLI` share the client
+  `CLI` and the executing party `BRK`, so they join as before. A copy of a report that `BRK` sends to a third
+  CompID (a drop copy) joins through the OrderID, which is `BRK`'s on both.
+- **Known limits.** A drop-copy session that carries reports for two clients who reuse a ClOrdID joins them,
+  because on it both have the same TargetCompID. Message types other than 8 and 9 that a broker sends (a
+  ListStatus, a mass cancel report) are read as sent by the client. Both are phase 2.
 - **OrderID `NONE` is not an identifier.** FIX uses `37=NONE` when there is no order to name, for example in a
   CancelReject for an unknown order. It gives no key and is never a button. The comparison is exact and
   case-sensitive.
@@ -407,7 +441,9 @@ expected to change.
   no key is in no group.
 - **A group** lists its ClOrdIDs (from 11 and 41) and OrderIDs in order of first appearance, without repeats,
   and its message numbers in log order.
-- `findOrder(groups, id)` returns the first group whose `clOrdIds` or `orderIds` contains `id`, or null.
+- `findOrder(groups, id, number)` returns the group whose `numbers` include `number`. When `number` is null or
+  left out, or no group holds that message, it returns the first group whose `clOrdIds` or `orderIds` contains
+  `id`, or null. (v1.4; it took the id alone.)
 
 Grouping always runs on the whole `decoded` list (AC-038, AC-056).
 
@@ -418,8 +454,19 @@ message numbers, or `undefined` for all. It returns `{ rows, unmatched }`.
 
 **Step 1: executions, over the whole `decoded` list, in log order.** Only supported versions take part. The
 state is a list of executions and a map from a report key to an execution or to `cancelled`. A report's key is
-`<37>|<17>`; a missing 37 is the empty string; a report with no 17 has no key and is never matched or
-deduplicated. For each ExecutionReport, by `executionKind`:
+the triple (its SenderCompID 49, its OrderID 37, its ExecID 17); a missing 49 or 37 is the empty string; a
+report with no 17 has no key and is never matched or deduplicated. (v1.4; the key was `<37>|<17>`, so two
+venues that both used OrderID `1` and ExecID `1` were one execution.) A lookup by ExecRefID uses the looking
+report's own 49 and 37 with its 19. A copy of a report that the same sender sends to another CompID has the
+same key and is still counted once.
+
+**Two passes (v1.4).** The reports are taken in two passes over the whole list, each in log order: first every
+Fill, then every TradeCorrect and TradeCancel. So a cancel or a correction finds its execution whether that
+execution stands before or after it in the log (logs merged from two sources, or sorted by another clock, hold
+them in either order). The list of executions is kept in log order of `number`. One limit stays: a TradeCancel
+or TradeCorrect that names a TradeCorrect standing after it in the log does not find it, and is unmatched.
+
+For each ExecutionReport, by `executionKind`:
 
 - **Fill** with LastQty 32 a finite number above zero: if its key is already in the map, skip it (a resend).
   Otherwise add an Execution `{ number, symbol: 55, side, qty: 32, px: 31 }` and map its key to it.
@@ -463,6 +510,12 @@ unmatched reports whose number is in it.
 **Figures** (in `render.js`):
 - `format(n)`: `n` rounded to 4 decimal places, written without trailing zeros and without a thousands
   separator. `1500` is `1500`; `71.25` is `71.25`; `0.1 + 0.2` is `0.3`.
+- **Rounding (v1.4).** A half is rounded away from zero, in decimal: `1.00255` is `1.0026`, `-1.00255` is
+  `-1.0026`, and `34.17865 / 11` is `3.1072`. A quotient such as 1.00255 is stored a hair below the half, so
+  `toFixed(4)` alone gives `1.0025`. The method: write the absolute value with 15 significant digits
+  (`toPrecision(15)`), which removes that noise; take its digits up to the fourth decimal place and add one in
+  the last place when the fifth decimal digit is 5 or more; put the sign back. A value that `toPrecision(15)`
+  writes with an exponent (below 0.000001, or 1e15 and above) is rounded with `toFixed(4)` as before.
 - Bought and Sold: `format(filledQty)`. Average: `format(notional / pricedQty)`, or `–` (an en dash) when
   `pricedQty` is zero. Net: `format(buy.filledQty - sell.filledQty)`, with a leading `+` when the rounded value is above
   zero. A value that rounds to zero is written `0`, never `-0` or `+0`.
@@ -503,6 +556,18 @@ These are deliberate, and the tests that describe the old behaviour change with 
 |---|---|
 | A log over 1,048,576 bytes or 1,000 messages is refused | The limits are 10,485,760 bytes and 10,000 messages (section 4) |
 | Every shown message has its card and its timeline rows on the page at once | 200 messages at a time (section 16) |
+
+**v1.4 changes these:**
+
+| v1.3 | v1.4 |
+|---|---|
+| Messages with the same ClOrdID or the same OrderID are one order, whoever sent them | The ids are read within their parties (section 12) |
+| An execution is identified by OrderID and ExecID | By the report's SenderCompID, OrderID and ExecID (section 13) |
+| A trade cancel or correction that stands before its execution is unmatched | It is applied (section 13, two passes) |
+| An id button opens the first order that holds that value | It opens the order of its message (sections 8.2 and 12) |
+| A Logon numbered 1 without 141=Y is a lower number, and ignored | It restarts the direction at 1 (section 7) |
+| A message with accented text counted one byte per character is malformed | It is valid (section 3, step 7) |
+| An average exactly on a half is rounded down | It is rounded away from zero (section 13, "Figures") |
 
 ## 16. Paging (US-010) (new in v1.3)
 

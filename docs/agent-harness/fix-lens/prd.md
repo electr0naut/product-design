@@ -1,10 +1,12 @@
 # Product Requirements Document: FIX Lens
 
 **Product:** FIX Lens
-**Version:** 1.3 (Proof of Concept)
-**Status:** v1.3 approved by Ubay Gonzalez on 2026-11-27. v1.2 was approved at Gate 3 on 2026-11-26.
+**Version:** 1.4 (Proof of Concept), draft
+**Status:** v1.4 is a draft that waits for approval. Its scope was approved by Ubay Gonzalez on 2026-11-27 ("as recommended": seven findings of the validation); its wording has not been approved yet. v1.3 was approved by Ubay Gonzalez on 2026-11-27. v1.2 was approved at Gate 3 on 2026-11-26.
 **BRD Status:** Approved by Risk Committee (2026-11-24). Refreshed on 2026-11-27 for the phased plan and the limits of v1.3; that refresh was approved by Ubay Gonzalez.
 
+> **Changes in v1.4 (draft):** seven findings of the independent validation of 2026-11-27 are fixed. Order ids are read within the parties they belong to, so two clients that reuse a ClOrdID, or two venues that reuse an OrderID and ExecID, are no longer merged (AC-035, AC-041). An id button opens the order of the message it is on (AC-036). A trade cancel or correction finds its execution wherever it stands in the log (AC-042, AC-043). Averages round a half up (AC-045). A session that starts again at 1 is followed from 1 (TR-003). A message with accented single-byte text is no longer called malformed (TR-002). The other nine findings are phase 2.
+>
 > **Changes in v1.3:** the largest log the tool accepts goes from 1,000 messages and 1,048,576 bytes to 10,000 messages and 10,485,760 bytes. So that a log of that size stays readable and quick, the timeline and the message cards are shown 200 messages at a time (US-010). Nothing else changes: every result is still computed on the whole log.
 >
 > **Changes in v1.2:** logs that show the delimiter as `^A` or `<SOH>` are accepted, and a delimiter character inside a value no longer breaks the message. A page that was not opened through a web server says so. Cancel and replace requests, trade cancels, trade corrections and order status reports become timeline events, and a FIX 4.2 trade cancel or correction is no longer shown as a fill. Four stories are new: a designed presentation with light and dark themes (US-006), the story of one order (US-007), buys, sells and net per symbol (US-008), and filters (US-009). Tickets 9 to 16 are added to the delivery plan.
@@ -35,6 +37,7 @@ FIX Lens is a static web application that lets FIX support and client onboarding
 - Field-level validation against the FIX specification: required fields per message type, field formats and value ranges. Framing checks (TR-002) are in scope.
 - Network connectivity or FIX engine functionality.
 - Data persistence or storage, including remembering the theme, the filters or the selected order between visits.
+- The findings of the validation of 2026-11-27 that v1.4 does not fix (FL-06 to FL-12, FL-14 and FL-16 in `validation/reports/defects.md`), among them sessions told apart only by SubIDs, sequence numbers that are too low, and number formats. They are phase 2.
 - Length-prefixed data fields (for example RawData 95/96 and XmlData 212/213) whose content contains a delimiter. Pasted text cannot carry binary content reliably. Such a field is read like any other value.
 
 ## User Stories
@@ -149,8 +152,10 @@ FIX Lens is a static web application that lets FIX support and client onboarding
 **Acceptance Criteria:**
 
 - AC-034: Every ClOrdID (11), OrigClOrdID (41) and OrderID (37) value shown in the timeline or in a message card is a button.
-- AC-035: Messages belong to the same order when they share a ClOrdID (11) or an OrderID (37), or are linked by an OrigClOrdID (41) that equals another message's ClOrdID, directly or through other messages. A cancel/replace chain is therefore one order.
-- AC-036: Activating an id shows only that order's messages and timeline events, under a banner with:
+- AC-035: Messages belong to the same order when they share a ClOrdID (11) of the same client or an OrderID (37) of the same executing party, or are linked by an OrigClOrdID (41) that equals another message's ClOrdID of the same client, directly or through other messages. A cancel/replace chain is therefore one order.
+    - The executing party of an ExecutionReport (35=8) or an OrderCancelReject (35=9) is its SenderCompID (49), and the client is its TargetCompID (56). For every other message the client is its SenderCompID and the executing party is its TargetCompID.
+    - So two clients that use the same ClOrdID have separate orders, and so have two venues that use the same OrderID.
+- AC-036: Activating an id shows only the messages and timeline events of the order that the message carrying that id belongs to, under a banner with:
     - every ClOrdID and OrderID of the order;
     - its terms, from its first message: side, quantity, symbol, price when present, order type;
     - its latest state, from its last ExecutionReport: OrdStatus (39) and, when CumQty (14) is above zero, the filled quantity and AvgPx (6).
@@ -167,11 +172,11 @@ FIX Lens is a static web application that lets FIX support and client onboarding
 
 - AC-039: After a decode, a table has one row per Symbol (55), sorted by symbol, with: buy orders, bought, average buy price, sell orders, sold, average sell price, net.
 - AC-040: Buy orders and sell orders count NewOrderSingle messages (35=D) by Side (54).
-- AC-041: Bought and sold are sums over executions as they stand at the end of the log. An execution is an ExecutionReport that is a Fill (TR-003) with LastQty (32) above zero. It is identified by its OrderID (37) and ExecID (17), and counted once, so a resent report is not counted twice.
-- AC-042: A TradeCancel removes the execution that its ExecRefID (19) names.
-- AC-043: A TradeCorrect replaces the quantity and price of the execution that its ExecRefID (19) names with its own LastQty (32) and LastPx (31). A later TradeCancel or TradeCorrect may name the original ExecID or the ExecID of an earlier correction of the same execution.
+- AC-041: Bought and sold are sums over executions as they stand at the end of the log. An execution is an ExecutionReport that is a Fill (TR-003) with LastQty (32) above zero. It is identified by its executing party (the SenderCompID (49) of the report), its OrderID (37) and its ExecID (17), and counted once. So a resent report is not counted twice, and two venues that use the same OrderID and ExecID each count.
+- AC-042: A TradeCancel removes the execution that its ExecRefID (19) names, of the same executing party and OrderID, whether that execution stands before or after it in the log.
+- AC-043: A TradeCorrect replaces the quantity and price of the execution that its ExecRefID (19) names with its own LastQty (32) and LastPx (31), whether that execution stands before or after it in the log. A later TradeCancel or TradeCorrect may name the original ExecID or the ExecID of an earlier correction of the same execution.
 - AC-044: When the execution a report names is not in the log, a TradeCorrect counts as an execution with its own quantity and price, and a TradeCancel changes nothing. The table's note says how many such reports there were.
-- AC-045: The average price is the sum of quantity times price over the side's executions, divided by the sum of their quantities, shown to at most 4 decimal places. A side with no executions shows a dash.
+- AC-045: The average price is the sum of quantity times price over the side's executions, divided by the sum of their quantities, shown to at most 4 decimal places. A value exactly halfway between two such figures is rounded away from zero: 1.00255 is shown as 1.0026. A side with no executions shows a dash.
 - AC-046: Net is bought minus sold.
 - AC-047: Side 1 (Buy) and 3 (Buy minus) are buys. Side 2 (Sell), 4 (Sell plus), 5 (Sell short) and 6 (Sell short exempt) are sells. Messages with any other side, or with no Symbol, are not counted.
 - AC-048: A note under the table says: "Bought and sold are filled quantities from execution reports in this log, counted once per ExecID, after trade cancels and corrections."
@@ -223,6 +228,7 @@ FIX Lens is a static web application that lets FIX support and client onboarding
 - **Delimiters:** fields are separated by SOH (0x01), `|`, the text `^A` or the text `<SOH>`. The delimiter is chosen per message: it is whichever of the four follows the BeginString value of that message. Only that delimiter separates fields in that message.
 - **A delimiter inside a value:** when the delimiter is one of the three text forms, an occurrence of it separates fields only if a tag and `=` follow it (one or more digits, then `=`), or if it ends the CheckSum field. Any other occurrence is part of the value of the field it is in. With the SOH byte itself, every occurrence separates fields, as the protocol requires.
 - **Byte counts:** in length and checksum calculations, each occurrence that separates fields counts as the single byte 0x01. An occurrence that is part of a value counts as its own bytes.
+- **Text outside ASCII:** bytes are counted in UTF-8. A message whose BodyLength or CheckSum fails that way, and which has no character above U+00FF, is checked again with one byte per character (ISO-8859-1, which many FIX links use for accented names). It is valid when both match that way.
 - **The one case that text cannot settle:** a value that contains the delimiter followed by digits and `=` reads as a new field. BodyLength still matches and CheckSum does not, so the message is reported with a CheckSum error.
 - **Message boundaries:** a message starts at `8=FIX` and ends after its CheckSum field (`10=` followed by 3 digits). Text before `8=FIX` on a line (timestamps, direction markers) is ignored. Several messages on one line, and one message per line, are both supported.
 - **Malformed:** a message is malformed if any of these holds:
@@ -251,7 +257,7 @@ FIX Lens is a static web application that lets FIX support and client onboarding
     - A **SequenceGap** is a message whose MsgSeqNum is greater than the expected next number, which is the last MsgSeqNum seen for that direction plus one.
     - Messages with PossDupFlag (43)=Y don't advance or reset the expected number.
     - A SequenceReset (35=4) sets the expected next number to NewSeqNo (36).
-    - A Logon with ResetSeqNumFlag (141)=Y resets the direction's expected next number to 1.
+    - A Logon with ResetSeqNumFlag (141)=Y, or with MsgSeqNum 1, resets the direction's expected next number to 1. So a session that starts again at 1 without the flag (a daily reset, or an engine set to reset on logout) is followed from 1, and a gap after the restart is found.
 
 ### TR-004: User Interface
 
@@ -295,7 +301,7 @@ Time from paste to understandable decode: under 5 seconds for a 100-message log.
 
 ## Delivery Plan
 
-The agent delivery harness builds FIX Lens as ordered tickets. Each one goes through triage, planning, implementation, the deterministic gates, the cross-lab review and a handoff. Tickets 1 to 8 are v1.1 and are built. Tickets 9 to 16 are v1.2 and are built, with two corrections (17 and 18). Tickets 19 to 21 are v1.3.
+The agent delivery harness builds FIX Lens as ordered tickets. Each one goes through triage, planning, implementation, the deterministic gates, the cross-lab review and a handoff. Tickets 1 to 8 are v1.1 and are built. Tickets 9 to 16 are v1.2 and are built, with two corrections (17 and 18). Tickets 19 to 21 are v1.3. Tickets 22 to 26 are v1.4.
 
 | # | Ticket | Depends on |
 | --- | --- | --- |
@@ -320,6 +326,11 @@ The agent delivery harness builds FIX Lens as ordered tickets. Each one goes thr
 | 19 | Limits of 10,485,760 bytes and 10,000 messages, with performance tests at that size (AC-016, TR-005) |  |
 | 20 | Paging module: which messages are on a page, and the page line (AC-057, AC-058, AC-060) |  |
 | 21 | Paging on the page: the page line and buttons, the timeline and the cards in step, the return to the first page (US-010) | 19, 20 |
+| 22 | Order grouping within the parties, and finding the order of a message (AC-035, AC-036) |  |
+| 23 | Trading summary: executions identified with their executing party; cancels and corrections applied wherever the execution stands (AC-041 to AC-043) |  |
+| 24 | A Logon with MsgSeqNum 1 restarts the expected number (TR-003) |  |
+| 25 | Messages with single-byte text outside ASCII are valid (TR-002) |  |
+| 26 | On the page: an id button opens the order of its message; figures round a half up (AC-036, AC-045) | 21, 22 |
 
 Deployment to the internal web server follows after the user has tested with real FIX logs.
 
@@ -350,6 +361,11 @@ Deployment to the internal web server follows after the user has tested with rea
 - **Risk:** the v1.1 acceptance tests describe the v1.1 page, so the presentation ticket would be reported as a regression.
 - **Mitigation:** the harness gains a way to retire named hidden tests on purpose (harness change D19) before ticket 14 is loaded.
 
+### Risk 6: Identifiers Are Scoped by CompID Only
+
+- **Risk:** v1.4 tells parties apart by SenderCompID and TargetCompID. A drop-copy session that carries the orders of two clients who reuse a ClOrdID still merges them, and sessions that differ only by SubID are still one.
+- **Mitigation:** phase 2 (session identity and order identity in depth). The validation found every result right on logs where the identifiers of different parties do not collide.
+
 ## Dependencies
 
 - **FIX Trading Community Orchestra files** (`OrchestraFIX42.xml` and `OrchestraFIX44.xml`, in github.com/FIXTradingCommunity/orchestrations, Apache-2.0): the source for the field dictionary
@@ -362,4 +378,5 @@ Deployment to the internal web server follows after the user has tested with rea
 - **PRD:** v1.2 approved by Ubay Gonzalez (2026-11-26). v1.1 approved by Ubay Gonzalez (2026-11-25).
 - **Technical Design:** v1.2 approved by Ubay Gonzalez (2026-11-26) (see the child page FIX Lens - Technical Design). It replaces v1.1, which was approved under delegation on 2026-11-25. The v1.3 changes were approved by Ubay Gonzalez on 2026-11-27.
 - **PRD v1.3:** approved by Ubay Gonzalez on 2026-11-27 ("approved", in answer to the request to approve PRD v1.3 and technical design v1.3). He had set the change the same day: "10000 is the max for now", "v1.3 is fine".
+- **PRD v1.4:** draft. Scope approved by Ubay Gonzalez on 2026-11-27 ("as recommended", in answer to the recommendation to fix FL-01, FL-02, FL-03, FL-04, FL-05, FL-13 and FL-15 in phase 1). The wording waits for his approval.
 - **Implementation:** v1.2 is built: tickets 1 to 18 are on the trusted main (2026-11-27), with 173 of 173 acceptance tests passing. It has not yet been tested with real logs or deployed. v1.3 is pending.
