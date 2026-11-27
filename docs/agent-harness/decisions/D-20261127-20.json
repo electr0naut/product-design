@@ -1,7 +1,0 @@
-{
-  "id": "D-20261127-20",
-  "action": "unblock_once",
-  "key": "FXL-22",
-  "card": "t_e6592dfb",
-  "reason": "FXL-22-block-t_e6592dfb-1: the triage asks what findOrder takes and returns and calls the opening paragraph 'AC10'. The ticket states it: AC0 gives the signature findOrder(groups, id, number) with number optional, and AC8 gives the result for each case with a worked example. Nothing is missing from the ticket; let the triage card go on once"
-}
