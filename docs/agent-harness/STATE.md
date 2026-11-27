@@ -1,19 +1,20 @@
 # Harness state
 
-Written by the runner at 2026-11-27T13:41:19+0100. Host-only copy: `state.json`.
+Written by the runner at 2026-11-27T14:02:47+0100. Host-only copy: `state.json`.
 Kit: `6c483e64d2f0fc26a787f51c7b39cf4c8b2d7953`
 
 ## What changed
-- finished: FXL-12
+- finished: FXL-13
 
 ## Tickets
 - **SMK-1** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
 - **SMK-2** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
 - **FXL-9** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
+  - **mutation run errored** (report-only, no result): stryker wrote no report (exit 1): Item.execute (file:///srv/lab/agent-harness/deps/fix-lens/node_modules/(at)stryker-mutator/core/dist/src/concurrent/pool.js:34:28) at async file:///srv/lab/agent-harness
 - **FXL-10** (finished): gatekeeper (fix 1): done, implementer: done, implementer (fix 1): done, planner: done, reviewer (fix 1): done, scribe: done, triage: done
 - **FXL-11** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
 - **FXL-12** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
-- **FXL-13** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: ready
+- **FXL-13** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
 
 ## Blocks
 - none
@@ -22,7 +23,7 @@ Kit: `6c483e64d2f0fc26a787f51c7b39cf4c8b2d7953`
 - none
 
 ## Last hidden-suite result
-{'ticket': 'FXL-12', 'enabled': True, 'passed': 115, 'total': 166, 'regressions': [], 'trusted_main': 'ea0b353a04c3195d1ab94f956d14d45960f3b3ca'}
+{'ticket': 'FXL-13', 'enabled': True, 'passed': 121, 'total': 166, 'regressions': [], 'trusted_main': '8881fce6a69d5a4b504ea27ef03848aa0acb1e22'}
 
 ## Profiles
 | profile | default | fallbacks |
