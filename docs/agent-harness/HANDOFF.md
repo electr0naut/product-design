@@ -19,7 +19,7 @@ Read `RULES.md` first. This file holds only what the repositories don't. No secr
 
 **Development clones** of `electr0naut/agent-harness` (all clean; commit identity `electr0naut` / `electr0naut@users.noreply.github.com`):
 - `~/dev/agent-harness`: branch `d6-driver` @ `31401b1`, **the evidence driver** (`tools/fixlens_driver.py`, never merged).
-- `~/dev/agent-harness-d12`: on branch `d20-runner-evidence` @ `c06cd27`; `master` is `c06cd27`. The newest clone: use it for loading tickets and for the next branch (fetch first).
+- `~/dev/agent-harness-d12`: on branch `d21-import-fix` @ `7c190a2`; `master` is `c06cd27`. The newest clone: use it for loading tickets and for the next branch (fetch first).
 - `~/dev/agent-harness-d7`, `-d10`, `-d11`: old branches, no longer needed.
 - Tests: `uv run --with pytest --with ruff --no-project python -m pytest -q -p no:cacheprovider`; `uv run --with ruff --no-project ruff check .` and `ruff format --check .`. Fresh-clone them into `/tmp/fc` before posting a sha.
 
@@ -59,11 +59,12 @@ Read `RULES.md` first. This file holds only what the repositories don't. No secr
 | **AUDIT (HIDDEN-suite-review)** | done: `reports/AUDIT-hidden-suite.md`. Its fix is part of D20; **load no ticket until D20 is deployed.** |
 | **BAKEOFF round 2 (both reviews)** | done: `reports/BAKEOFF-round2.md`. Waiting for the reviewer's recommendation and Ubay's decision; no live profile changed. |
 | **D19-review** | done and deployed (`76b094f`). **Copies are recorded:** `D-20261127-1` (`refresh_copies`, commit `db3b087`: design v1.2 and 17 hidden files, host and all four worker reading copies) and `D-20261127-2` (two tests retired; 57 remain in `passed`) applied 01:52. The five `acc-render` tests are retired after FXL-13 lands. |
-| **D20-review** (+ HIDDEN-suite-review §2) | deployed (`c06cd27`) **but the loader cannot be imported** (import circle from D20): `reports/V12-live-checks.md`. The runner works. **Waiting for the reviewer** to order the fix (proposed there; needs a fresh-process import test, review and Ubay's deploy). |
+| **D20-review** (+ HIDDEN-suite-review §2) | deployed (`c06cd27`), but its loader cannot be imported (`V12-live-checks.md`). Fix = D21. |
+| **D21-review** | **built, waiting for review:** `d21-import-fix` at `7c190a2` (`reports/D21-import-fix.md`). Not deployed. |
 | **D6 "Done means"** (D6-review.md) | all tickets are on the trusted main. **Still owed: `D6-fixlens.md`** (per-ticket table and totals) and the container run of the full Vitest suite on the final main (FXL-8's fix head ran 123/123). The browser check was done by the reviewer. |
 | Backlog without its own file | **Gate cards:** stop a worker with Kanban tools completing one (a board permission or a separate owner; today detected only). **Next kit change:** no emoji in anything the harness prints or sends (`alert.py`; `harness_notify.py` has some too); `deploy.py` must not print a re-run's own sha as the undo, and its host undo needs the container `sudo ... reset` first (a deploy of an older sha is refused as not a fast-forward). Also D16 (spec paths in cards and copied at deploy; spec_ref notes into fix feedback; a high finding under the confidence threshold is not just a note), D17 (browser smoke gate; needs Chromium, a user-approved install), finder retry on the next model, transient block retries once, triage check for computation ACs without fixed values, `vendor/*` in high-risk globs. D20 step 6 (delete the driver and `d6-driver`) waits for the first FIX Lens ticket through D20. |
 | Done, no action | all other `*-review.md` files up to FXL-8-landed-review, including MODELS-review/2, FALLBACK-review, D18-code-review. |
-| Waiting on others | Reviewer: the loader fix. Then `V12-go-review.md` + `V12-go-review2.md`: check 1 (fixture ticket; Ubay approved, quoted there), report in `V12-live-checks.md`, and only if everything holds load FXL-9 to FXL-13 (files from `1b47d32` or later). **If anything differs: load nothing, report, wait.** Design v1.2.1 is approved and recorded (`D-20261127-3`). |
+| Waiting on others | Reviewer: D21. Ubay: its deploy. Then `V12-go-review.md` + `V12-go-review2.md` (fixture ticket first: it is the first real run of the load path; report in `V12-live-checks.md`; load FXL-9 to FXL-13, files from `1b47d32` or later, only if everything holds; otherwise load nothing and wait). |
 
 ## 4. Recurring jobs, as commands
 
