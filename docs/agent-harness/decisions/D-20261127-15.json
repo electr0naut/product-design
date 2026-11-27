@@ -1,0 +1,12 @@
+{
+  "id": "D-20261127-15",
+  "action": "retire_hidden",
+  "key": "FXL-19",
+  "tests": [
+    "test/acc-analyse.test.js > over a limit nothing is decoded",
+    "test/acc-limits.test.js > byte limit is UTF-8 and inclusive at 1,048,576",
+    "test/acc-limits.test.js > message limit: 1,000 accepted, 1,001 refused, warning names both numbers",
+    "test/acc-presentation.test.js > empty states and the size warning"
+  ],
+  "reason": "acceptance/README.md (v1.3): these four pin the limits of 1,048,576 bytes and 1,000 messages, which FXL-19 raises on purpose (PRD v1.3 AC-016, approved by Ubay Gonzalez on 2026-11-27). Each is replaced in the same file in b50786b"
+}
