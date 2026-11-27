@@ -328,6 +328,9 @@ validation phases, producing tangible evidence and reproducible results rather t
 strategy.
 
 ## Taken out as out of scope (not to be tested)
+These are not dropped: on Ubay's instruction they are the candidate scope of phase 2
+(`../phase-2-scope.md`), after this first deliverable.
+
 | From | Removed | Why |
 |---|---|---|
 | 3 | Wireshark sample captures; the two hosted sandboxes | PCAP is not an input the tool reads; the sandboxes need an account |
