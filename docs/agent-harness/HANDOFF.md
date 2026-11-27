@@ -19,11 +19,11 @@ Read `RULES.md` first. This file holds only what the repositories don't. No secr
 
 **Development clones** of `electr0naut/agent-harness` (all clean; commit identity `electr0naut` / `electr0naut@users.noreply.github.com`):
 - `~/dev/agent-harness`: branch `d6-driver` @ `31401b1`, **the evidence driver** (`tools/fixlens_driver.py`, never merged).
-- `~/dev/agent-harness-d12`: now on branch `d20-runner-evidence` @ `0458287`; `master` is still `0f8acf4`. The newest clone: use it for loading tickets and for the next branch (fetch first).
+- `~/dev/agent-harness-d12`: on branch `d20-runner-evidence` @ `c06cd27`; `master` is `76b094f`. The newest clone: use it for loading tickets and for the next branch (fetch first).
 - `~/dev/agent-harness-d7`, `-d10`, `-d11`: old branches, no longer needed.
 - Tests: `uv run --with pytest --with ruff --no-project python -m pytest -q -p no:cacheprovider`; `uv run --with ruff --no-project ruff check .` and `ruff format --check .`. Fresh-clone them into `/tmp/fc` before posting a sha.
 
-**Deployed:** host kit `~/.local/share/agent-harness/kit` and container copy `/srv/lab/agent-harness` are both `0f8acf4`. Also there: `reviewed-sha`, `local.toml` (container mounts). Wrapper `~/.local/bin/harness-deploy`. Running a kit tool by hand: `cd <kit> && PYTHONPATH=src python3 -B tools/<tool>.py` (`-B` so nothing is written into the kit).
+**Deployed:** host kit `~/.local/share/agent-harness/kit` and container copy `/srv/lab/agent-harness` are both `76b094f`. Also there: `reviewed-sha`, `local.toml` (container mounts). Wrapper `~/.local/bin/harness-deploy`. Running a kit tool by hand: `cd <kit> && PYTHONPATH=src python3 -B tools/<tool>.py` (`-B` so nothing is written into the kit).
 
 **Host-only state** `~/.local/state/agent-harness/`:
 | entry | what it is |
@@ -58,8 +58,8 @@ Read `RULES.md` first. This file holds only what the repositories don't. No secr
 | **FXL-8** | **Landed** (`e721f31`), hidden 59/59, accepted (FXL-8-landed-review). Evidence and my reporting section are pushed. |
 | **AUDIT (HIDDEN-suite-review)** | done: `reports/AUDIT-hidden-suite.md`. Its fix is part of D20; **load no ticket until D20 is deployed.** |
 | **BAKEOFF round 2 (both reviews)** | done: `reports/BAKEOFF-round2.md`. Waiting for the reviewer's recommendation and Ubay's decision; no live profile changed. |
-| **D19-review** | **built, waiting for review:** `d19-retire-refresh` at `76b094f` (`reports/D19-retire-refresh.md`). After its deploy, fix-lens reviews and acceptance refuse until a `refresh_copies` decision records the copies. |
-| **D20-review** (+ HIDDEN-suite-review §2) | **built on top of D19, waiting for review:** `d20-runner-evidence` at `0458287` (`reports/D20-runner-evidence.md`). Deploy needs `--install-unit` (two units). After one ticket through it, retire the driver (its section 6). **Load no ticket until D20 is deployed.** |
+| **D19-review** | **done:** approved (D19-code-review), `master` fast-forwarded to `76b094f`, **deployed** (host kit and container, runner log from 01:39 on 27 November). Until the reviewer's `refresh_copies` decision is applied, fix-lens reviews and acceptance runs refuse. The seven exact test ids it asked for are on PR #47; it will push a refresh and a retire together. |
+| **D20-review** (+ HIDDEN-suite-review §2) | **built on top of D19, waiting for review:** `d20-runner-evidence` at `c06cd27` (`reports/D20-runner-evidence.md`). Deploy needs `--install-unit` (two units). After one ticket through it, retire the driver (its section 6). **Load no ticket until D20 is deployed.** |
 | **D6 "Done means"** (D6-review.md) | all tickets are on the trusted main. **Still owed: `D6-fixlens.md`** (per-ticket table and totals) and the container run of the full Vitest suite on the final main (FXL-8's fix head ran 123/123). The browser check was done by the reviewer. |
 | Backlog without its own file | D16 (spec paths in cards and copied at deploy; spec_ref notes into fix feedback; a high finding under the confidence threshold is not just a note), D17 (browser smoke gate; needs Chromium, a user-approved install), finder retry on the next model, transient block retries once, triage check for computation ACs without fixed values, `vendor/*` in high-risk globs, runner sends its own "failed 5 times" alert. |
 | Done, no action | all other `*-review.md` files up to FXL-8-landed-review, including MODELS-review/2, FALLBACK-review, D18-code-review. |

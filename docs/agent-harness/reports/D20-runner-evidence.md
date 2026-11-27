@@ -1,13 +1,14 @@
 # D20: the runner does the evidence driver's job (D20-review.md and HIDDEN-suite-review.md section 2)
 
-Branch `d20-runner-evidence` in agent-harness, **on top of D19** (`76b094f`, itself not yet reviewed), at **`0458287e25d122daf91ab74845a6cbe392e8195f`**. Not merged, not deployed. No ticket loaded; nothing new written to live host state; nothing published by the new code.
+Branch `d20-runner-evidence` in agent-harness, **on top of D19** (`76b094f`, itself not yet reviewed), at **`c06cd273c5c47dec63a9c008c4206f9e5c53525f`**. D19 has since been approved and deployed; `master` is `76b094f`, and this branch is on top of it. Not merged, not deployed. No ticket loaded; nothing new written to live host state; nothing published by the new code.
 
 ## Test output (fresh clone)
 ```
-522 passed, 3 skipped in 33.76s
+523 passed, 3 skipped in 34.45s
 ruff check: All checks passed!      ruff format --check: 93 files already formatted
-tests/test_d20.py: 43 passed in 1.86s
 ```
+
+**Added after D19-code-review:** decisions are applied before any acceptance run of a pass. The code already did this; two tests now pin it: the real `_pass` calls decisions, then the finishing step, then the gate and review work, then the finishing step again; and a `refresh_copies` plus a `retire_hidden` pushed in one commit are both applied by the same pass. One nuance: a decision pushed **while** a pass is already running waits for the next pass, and the pass's second finishing step does not re-read them. The two of yours cannot be split by that, because one fetch takes both.
 
 ## How the order is guaranteed
 The dispatcher claims a ready card within seconds, so a once-a-minute pass cannot win a race. The order is built into the board:
@@ -39,7 +40,7 @@ The dispatcher claims a ready card within seconds, so a once-a-minute pass canno
 - **Alert:** `OnFailure=harness-reviewer-alert.service` runs host code (`harness.alert`), sends the last journal lines (credential-like strings removed) with `hermes send`, once per run of failures; a good pass re-arms it. A pipeline-finish failure now fails the pass, so it alerts.
 
 ## Before and during deploy
-1. Order: D19 review, then this; `harness-deploy <sha> --install-unit` (**both** units are installed; installing services is Ubay's).
+1. Order: D19 is deployed; after this branch's review, `harness-deploy <sha> --install-unit` (**both** units are installed; installing services is Ubay's).
 2. Then the D19 order: `refresh_copies`, then `retire_hidden`. **Until the copies are recorded, the hidden suite cannot run and a gate would stay shut.**
 3. **Tickets must be loaded with the D20 loader.** A ticket loaded by an older clone has no gate, and the runner does not see it. The old tickets (FXL-1 to FXL-8) are therefore left alone; FXL-9 `blocked_by` FXL-8 falls back to FXL-8's scribe.
 4. **Do not start the old driver** once D20 is deployed. Deleting it and `d6-driver` is step 6 of your instruction, **after** one ticket has gone through D20: not done.
