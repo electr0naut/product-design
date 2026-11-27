@@ -23,19 +23,25 @@ First check `ls /usr/local/bin/claude /usr/local/bin/uv`: both should be "No suc
 
 `harness-deploy` does **not** update these root-owned files. After a reviewed change under `jobs/`, repeat the last two lines.
 
-## 3. The job's Claude credential: **your choice first** (see `D26-cloud-check.md`)
-- **Recommended: a Console API key.** Per the documentation it cannot use cloud sessions. Billed per use; make a key only for this, and set a spending limit in the Console if it offers one.
-- Or a `claude setup-token` token: stays on your subscription; that it cannot start cloud sessions is an inference.
-- **Never run `claude auth login` as `harness-job`.**
+## 3. The job's Claude credential: **a `setup-token`** (your choice "A", `D26-credential-review.md`)
+The job user authenticates with that token and nothing else. **Never run `claude auth login` as `harness-job`.**
+
+**Where to type this:** a fresh terminal of your own (a new SSH login), **not** inside the `tmux` session the VM agent runs in. The value must not reach a repository, a report, a log, a unit file's text or your shell history. (The standing VM session runs as `ubay`, which has `sudo`, so it *could* read the file; it is not to, and it is closed after two jobs.)
 
 | command | does | undo |
 |---|---|---|
-| `sudo install -d -o root -g root -m 700 /etc/harness-job` | a root-only folder | `sudo rm -r /etc/harness-job` |
-| `sudo install -o root -g root -m 600 /dev/null /etc/harness-job/claude.env` | an empty root-only file | (with the folder) |
-| `sudoedit /etc/harness-job/claude.env` | type **one** line: `ANTHROPIC_API_KEY=` or `CLAUDE_CODE_OAUTH_TOKEN=`, followed by your value. Do not paste it anywhere else | empty the file, and revoke the key where you made it |
-| `sudo -u harness-job -H /usr/local/bin/claude auth status` | **check:** no `claude.ai` login (this command does not get the file) | |
+| `claude setup-token` | run **as yourself**: signs you in through the browser and shows a long-lived token. Copy it; type it into no other command. **(untested** whether it changes anything about your own login) | revoke it in your Claude account, if offered there |
+| `sudo install -d -o root -g harness-job -m 750 /etc/harness-job` | a folder only root and the job user can enter | `sudo rm -r /etc/harness-job` |
+| `sudo install -o root -g harness-job -m 440 /dev/null /etc/harness-job/claude.env` | an empty file only `harness-job` (and root) can read, and the job cannot change | (with the folder) |
+| `sudoedit /etc/harness-job/claude.env` | type **one** line: `CLAUDE_CODE_OAUTH_TOKEN=` followed by the token; save. (`sudoedit` keeps a temporary copy only while the editor is open) | empty the file |
+| `clear; tmux clear-history 2>/dev/null; history -c` | removes the token from the screen; also close that terminal | |
 
-**(untested)** whether the job's command works with either credential: only your subscription login was available. The first job will show it.
+**Check the login (untested).** The first must say you are not logged in; the second must show `authMethod` `oauth_token`. **`claude.ai` in either is wrong: stop and tell the reviewer.**
+```
+sudo -u harness-job -H /usr/local/bin/claude auth status
+sudo systemd-run --pipe --wait -p User=harness-job -p EnvironmentFile=/etc/harness-job/claude.env -E HOME=/home/harness-job /usr/local/bin/claude auth status
+```
+Then do **4**, and then **4b**, which needs both.
 
 ## 4. A deploy key for `agent-harness` only (untested)
 | command / action | does | undo |
@@ -48,6 +54,24 @@ First check `ls /usr/local/bin/claude /usr/local/bin/uv`: both should be "No suc
 | `sudo -u harness-job -H git config --global user.name harness-job` and `... user.email harness-job@localhost` | the name on its commits | `git config --global --unset ...` |
 
 **No GitHub credential for `product-design`:** the job does not need one and must not get one.
+
+## 4b. Your one check: this token must be **refused** a cloud session (do it once; **untested**, the VM has not run it)
+It needs a git clone with a GitHub remote, so that a refusal cannot be about a missing repository:
+```
+sudo -u harness-job -H git clone -q git@github.com:electr0naut/agent-harness.git /home/harness-job/cloud-check
+sudo systemd-run --pty --wait -p User=harness-job -p EnvironmentFile=/etc/harness-job/claude.env -p WorkingDirectory=/home/harness-job/cloud-check -E HOME=/home/harness-job /usr/local/bin/claude --cloud "Reply with the single word ready. Change nothing."
+```
+(If it first asks whether you trust the folder, say yes: it is that clone.)
+
+| what you see | meaning | what to do |
+|---|---|---|
+| a refusal **about the sign-in**: it needs a claude.ai sign-in, or says to run `claude auth login`, or cloud sessions "aren't available with this ... sign-in" (the exact words for this token are not documented) | **passed** | note the message for the reviewer (it holds no secret; check before pasting) and go on. **Do not run `auth login`**, even though the message may suggest it |
+| it **creates a session** (a session id or a claude.ai/code link) | **failed: this token can start cloud sessions** | open the link or claude.ai/code and stop and delete that session; **stop the setup here**, start no timer, tell the reviewer. The fallback is B below, **which is then a new choice of yours**, not covered by "A" |
+| any **other** error (repository, GitHub connection, network, unknown option, an organisation policy) | **not shown either way** | stop here and send the reviewer the message |
+
+Afterwards: `sudo rm -rf /home/harness-job/cloud-check`.
+
+**Fallback B (only on a new choice of yours): a Console API key.** The documentation states it cannot use cloud sessions; it is billed per use. Same file and permissions, with the one line `ANTHROPIC_API_KEY=` followed by the key; remove the `setup-token` line, revoke that token, and repeat the login check (`authMethod` `api_key`).
 
 ## 5. Branch protection for `agent-harness` `master`: **not available as things are**
 GitHub's API answered: "Upgrade to GitHub Pro or make this repository public to enable this feature." So the deploy key **can push `master`.** What that cannot do: deploy. `harness-deploy` takes one exact commit that you copy from a review, and only fast-forwards. What it could do: move or rewrite `master` and branches. With GitHub Pro you could restrict `master` to yourself; otherwise accept this.

@@ -19,7 +19,7 @@ Read `RULES.md` first. This file holds only what the repositories don't. No secr
 
 **Development clones** of `electr0naut/agent-harness` (all clean; commit identity `electr0naut` / `electr0naut@users.noreply.github.com`):
 - `~/dev/agent-harness`: branch `d6-driver` @ `31401b1`, **the evidence driver** (`tools/fixlens_driver.py`, never merged).
-- `~/dev/agent-harness-d12`: on branch `d26-jobs` @ `f531cb1`; `origin/master` = `5b6c863` (= deployed). The newest clone: use it for loading tickets and for the next branch (fetch first). **Loading from it uses branch code:** check out the deployed commit first.
+- `~/dev/agent-harness-d12`: on branch `d26-jobs` @ `b9d4518`; `origin/master` = `5b6c863` (= deployed). The newest clone: use it for loading tickets and for the next branch (fetch first). **Loading from it uses branch code:** check out the deployed commit first.
 - `~/dev/agent-harness-d7`, `-d10`, `-d11`: old branches, no longer needed.
 - Tests: `uv run --with pytest --with ruff --no-project python -m pytest -q -p no:cacheprovider`; `uv run --with ruff --no-project ruff check .` and `ruff format --check .`. Fresh-clone them into `/tmp/fc` before posting a sha.
 
@@ -78,7 +78,7 @@ Read `RULES.md` first. This file holds only what the repositories don't. No secr
 | **FXL-18** (styling) | loaded 16:25 on 2026-11-27 by `D-20261127-12`, the first real `load_tickets` decision (triage `t_234b7022`, gate `t_87984637`). Watch as usual: report blocks, do not unblock, report its mutation line. |
 | **D24 and the test guard** | approved and **deployed: `b20b702` at 15:22:58 on 2026-11-27**, while FXL-15's scribe ran; checked, nothing off (`reports/D24-deploy-check.md`). D24 judged FXL-15: `acc-order-story` 12 of 12. Suite runs stay in throwaway containers. |
 | **D25** | **deployed `5b6c863` at 15:58:00 on 2026-11-27** with nothing running; confirmed, and the refused load `D-20261127-11` behaved (`reports/D25-deploy-confirm.md`). The first real `load_tickets` is FXL-18 (the reviewer writes and loads it). |
-| **D26** | **built and reported:** `d26-jobs` @ `f531cb1` (not merged or deployed), `reports/D26-jobs.md`, Ubay's commands in `reports/D26-setup.md` (**the VM never runs them**). **Waiting for the reviewer; then Ubay's choice of job credential** (`reports/D26-cloud-check.md`: API key recommended) and setup. The standing session stays until two jobs have run to the end. |
+| **D26** | **built and reported:** `d26-jobs` @ `b9d4518` (not merged or deployed), `reports/D26-jobs.md`, Ubay's commands in `reports/D26-setup.md` (**the VM never runs them**). **Ubay chose the credential: A, a `setup-token`** (`D26-credential-review.md`), with a one-time `claude --cloud` check he runs (setup step 4b). **Waiting for the reviewer.** A job's "For HANDOFF.md" section is applied by the reviewer. The standing session stays until two jobs have run to the end. |
 
 ## 4. Recurring jobs, as commands
 
