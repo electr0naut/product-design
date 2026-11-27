@@ -42,6 +42,8 @@ The job user authenticates with that token and nothing else. **Never run `claude
 sudo -u harness-job -H /usr/local/bin/claude auth status
 sudo systemd-run --pipe --wait -p User=harness-job -p EnvironmentFile=/etc/harness-job/claude.env -E HOME=/home/harness-job /usr/local/bin/claude auth status
 ```
+**If the second one says `loggedIn: false` / `authMethod: none` (it then exits with status 1), the file did not set the variable.** Check the names only, never the value: `sudo ls -la /etc/harness-job` (there must be only `claude.env`; remove any other file there, such as a `claude.env5~`, and if it held the token revoke that token) and `sudo grep -o '^[A-Z_]*=' /etc/harness-job/claude.env` (it must print exactly `CLAUDE_CODE_OAUTH_TOKEN=`). **`oauth_token` does not show that the token is valid:** any value, even a wrong one, shows it. Step 4b starts by proving it works.
+
 Then do **4**, and then **4b**, which needs both.
 
 ## 4. A deploy key for `agent-harness` only (untested)
@@ -58,10 +60,15 @@ Then do **4**, and then **4b**, which needs both.
 **No GitHub credential for `product-design`:** the job does not need one and must not get one.
 
 ## 4b. Your one check: this token must be **refused** a cloud session (do it once; **untested**, the VM has not run it)
-It needs a git clone with a GitHub remote, so that a refusal cannot be about a missing repository:
+> **On hold after the first runs (`D26-cloud-result-review.md`): a session was created, and which credential made it is not yet shown. Repeat this only as the reviewer says.**
+> **If the screen ever asks you to sign in, do not sign in:** quit. A sign-in stores a full account login in that folder, and the check would then test that login, not the token.
+> **Always start from a home folder that has never been used:** do the clean-up in "After the home fix" first.
+
+It needs a git clone with a GitHub remote, so that a refusal cannot be about a missing repository. First prove the token works at all, or everything would be refused and the check would "pass" for the wrong reason: the second command below **must answer `ready`** (one tiny model call). If it does not, stop.
 ```
 sudo -u harness-job -H git clone -q git@github.com:electr0naut/agent-harness.git /home/harness-job/cloud-check
 sudo -u harness-job mkdir /home/harness-job/cloud-check-home
+sudo systemd-run --pipe --wait -p User=harness-job -p EnvironmentFile=/etc/harness-job/claude.env -p WorkingDirectory=/home/harness-job/cloud-check -E HOME=/home/harness-job/cloud-check-home /usr/local/bin/claude -p --model sonnet --tools "" -- "Reply with the single word ready." < /dev/null
 sudo systemd-run --pty --wait -p User=harness-job -p EnvironmentFile=/etc/harness-job/claude.env -p WorkingDirectory=/home/harness-job/cloud-check -E HOME=/home/harness-job/cloud-check-home /usr/local/bin/claude --cloud "Reply with the single word ready. Change nothing."
 ```
 (If it first asks whether you trust the folder, say yes: it is that clone.)
@@ -105,6 +112,16 @@ Undo all: `sudo rm -r /var/lib/harness-jobs` (this also deletes the ledger and a
 | `~/.local/bin/uv pip install --target ~/.local/share/agent-harness/proof-site pytest` | `pytest` for the test containers | delete that folder |
 | `cp $KIT/systemd/harness-proof.service $KIT/systemd/harness-proof.timer ~/.config/systemd/user/ && systemctl --user daemon-reload && systemctl --user enable --now harness-proof.timer` | installs and starts it | `systemctl --user disable --now harness-proof.timer`, then delete the two files |
 
+## After the home fix (`6ff69fa`, once it is approved and deployed)
+1. **Stop the job timer** if it is on (do this now, not only after the fix): `sudo systemctl disable --now harness-job-dispatch.timer`
+2. **Clean the job's home** of what the first setup run left there (one line; the cloud-check folders may hold a login):
+```
+sudo rm -rf /home/harness-job/cloud-check /home/harness-job/cloud-check-home /home/harness-job/.probe /home/harness-job/.probe2 /home/harness-job/.probe3 /home/harness-job/.claude /home/harness-job/.claude.json /home/harness-job/.claude.json.lock
+```
+Removing the folder does not end a login: if you signed in during a check, also sign that session out in your Claude account, and delete any cloud session it created.
+3. **Repeat the unit install line of step 9 and `daemon-reload`** (with `KIT` set as at the top), then run all of step 9's checks again. Only then start the timer.
+Between 2 and 3 you will need step 4b again (as the reviewer says), which makes new check folders: clean them the same way afterwards. Step 3's login check also writes `.claude` files into the job's real home: remove them with the same line.
+
 ## 9. The job units. Check first, then start the timer (untested)
 | command | does | undo |
 |---|---|---|
@@ -116,19 +133,24 @@ sudo -u harness-job cat /home/ubay/.local/state/agent-harness/pipeline.json     
 sudo -u harness-job docker ps                                                   # permission denied
 sudo -u harness-job sudo -n true                                                # not allowed
 id harness-job                                                                  # no sudo, docker, ubay
-sudo systemd-run --wait --pipe -p User=harness-job -p NoNewPrivileges=yes -p ProtectSystem=strict -p ReadWritePaths=/home/harness-job/jobs -p 'InaccessiblePaths=-/home/ubay -/srv -/run/docker.sock' sh -c 'ls /home/ubay; ls /srv; curl -sS --unix-socket /run/docker.sock http://localhost/version; touch /var/lib/harness-jobs/outbox/probe; touch /home/harness-job/.probe; crontab -l; echo true | at now; ls /var/lib/harness-jobs/sealed'
+sudo systemd-run --wait --pipe -p User=harness-job -p NoNewPrivileges=yes -p ProtectSystem=strict -p ProtectHome=read-only -p ReadWritePaths=/home/harness-job/jobs -p 'InaccessiblePaths=-/home/ubay -/srv -/run/docker.sock' sh -c 'ls /home/ubay; ls /srv; curl -sS --unix-socket /run/docker.sock http://localhost/version; touch /var/lib/harness-jobs/outbox/probe; touch /home/harness-job/.probe; crontab -l; echo true | at now; ls /var/lib/harness-jobs/sealed'
 ```
 The last one tries the unit's protections on this Ubuntu: **each of the eight commands inside must print an error.**
 1. and 2. the blocked paths;
 3. must not print Docker's version;
-4. and 5. `ProtectSystem`: the job user may normally write both places (step 7; its own home), so only the protection can stop it. The home must be read-only to a job, so that one job cannot leave files that act on the next;
+4. and 5. `ProtectSystem` (the outbox) and `ProtectHome` (the home; `ProtectSystem=strict` alone leaves `/home` writable): the job user may normally write both places (step 7; its own home), so only the protections can stop it. The home must be read-only to a job, so that one job cannot leave files that act on the next;
 6. `crontab -l` must fail with a **permission** error. **`no crontab for harness-job` counts as NOT failed:** it means cron's store could be reached;
 7. `at` must be refused (`command not found` is also fine: then there is nothing to leave a job with). With 6, this shows a job cannot leave something that runs after it;
 8. the job user must not be able to look into `sealed/` (step 7).
 
 **If any of the eight succeeds, do not start the timer**, and send the reviewer the output. (If `curl` is missing, say so instead of counting that as a failure.) If `at` did accept the command, remove it with `sudo -u harness-job atrm <number it printed>`.
 
-**One that must succeed:** `sudo -u harness-job touch /var/lib/harness-jobs/proof/requests/<full sha of the deployed commit>`, then within a few minutes `cat /var/lib/harness-jobs/proof/results/<sha>.txt` shows the test report.
+**One inside the unit that must succeed** (the one part of the home a job may write); it prints `jobs-folder-is-writable`:
+```
+sudo systemd-run --wait --pipe -p User=harness-job -p NoNewPrivileges=yes -p ProtectSystem=strict -p ProtectHome=read-only -p ReadWritePaths=/home/harness-job/jobs sh -c 'touch /home/harness-job/jobs/.probe && rm /home/harness-job/jobs/.probe && echo jobs-folder-is-writable'
+```
+
+**One more that must succeed:** `sudo -u harness-job touch /var/lib/harness-jobs/proof/requests/<full sha of the deployed commit>`, then within a few minutes `cat /var/lib/harness-jobs/proof/results/<sha>.txt` shows the test report.
 
 Then: `sudo systemctl enable --now harness-job-dispatch.timer` (undo: `sudo systemctl disable --now harness-job-dispatch.timer`).
 
