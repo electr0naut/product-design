@@ -94,7 +94,7 @@ Checked here, read-only: all 13 decision files on the branch verify against exac
 | `sudo install -d -o root -g root -m 755 /var/lib/harness-jobs /var/lib/harness-jobs/proof /var/lib/harness-jobs/ledger` | the ledger is root's: no job can write it |
 | `sudo install -d -o ubay -g ubay -m 755 /var/lib/harness-jobs/queue /var/lib/harness-jobs/proof/results` | written by the harness, read by the job |
 | `sudo install -d -o ubay -g harness-job -m 1770 /var/lib/harness-jobs/outbox` | a running job leaves reports here |
-| `sudo install -d -o root -g root -m 755 /var/lib/harness-jobs/sealed` | the launcher moves an ended job's reports here, where no job can change them; the harness reads them from here |
+| `sudo install -d -o root -g ubay -m 750 /var/lib/harness-jobs/sealed` | the launcher moves an ended job's reports here. **The job user cannot even enter it** (a moved folder is still the job user's, so the mode of `sealed` is what keeps jobs out); the harness reads it through the `ubay` group |
 | `sudo install -d -o harness-job -g ubay -m 750 /var/lib/harness-jobs/proof/requests` | the job asks for test runs here |
 
 Undo all: `sudo rm -r /var/lib/harness-jobs` (this also deletes the ledger and any unpublished report).
@@ -116,16 +116,17 @@ sudo -u harness-job cat /home/ubay/.local/state/agent-harness/pipeline.json     
 sudo -u harness-job docker ps                                                   # permission denied
 sudo -u harness-job sudo -n true                                                # not allowed
 id harness-job                                                                  # no sudo, docker, ubay
-sudo systemd-run --wait --pipe -p User=harness-job -p NoNewPrivileges=yes -p ProtectSystem=strict -p ReadWritePaths=/home/harness-job/jobs -p 'InaccessiblePaths=-/home/ubay -/srv -/run/docker.sock' sh -c 'ls /home/ubay; ls /srv; curl -sS --unix-socket /run/docker.sock http://localhost/version; touch /var/lib/harness-jobs/outbox/probe; touch /home/harness-job/.probe; crontab -l; echo true | at now'
+sudo systemd-run --wait --pipe -p User=harness-job -p NoNewPrivileges=yes -p ProtectSystem=strict -p ReadWritePaths=/home/harness-job/jobs -p 'InaccessiblePaths=-/home/ubay -/srv -/run/docker.sock' sh -c 'ls /home/ubay; ls /srv; curl -sS --unix-socket /run/docker.sock http://localhost/version; touch /var/lib/harness-jobs/outbox/probe; touch /home/harness-job/.probe; crontab -l; echo true | at now; ls /var/lib/harness-jobs/sealed'
 ```
-The last one tries the unit's protections on this Ubuntu: **each of the seven commands inside must print an error.**
+The last one tries the unit's protections on this Ubuntu: **each of the eight commands inside must print an error.**
 1. and 2. the blocked paths;
 3. must not print Docker's version;
 4. and 5. `ProtectSystem`: the job user may normally write both places (step 7; its own home), so only the protection can stop it. The home must be read-only to a job, so that one job cannot leave files that act on the next;
 6. `crontab -l` must fail with a **permission** error. **`no crontab for harness-job` counts as NOT failed:** it means cron's store could be reached;
-7. `at` must be refused (`command not found` is also fine: then there is nothing to leave a job with). With 6, this shows a job cannot leave something that runs after it.
+7. `at` must be refused (`command not found` is also fine: then there is nothing to leave a job with). With 6, this shows a job cannot leave something that runs after it;
+8. the job user must not be able to look into `sealed/` (step 7).
 
-**If any of the seven succeeds, do not start the timer**, and send the reviewer the output. (If `curl` is missing, say so instead of counting that as a failure.) If `at` did accept the command, remove it with `sudo -u harness-job atrm <number it printed>`.
+**If any of the eight succeeds, do not start the timer**, and send the reviewer the output. (If `curl` is missing, say so instead of counting that as a failure.) If `at` did accept the command, remove it with `sudo -u harness-job atrm <number it printed>`.
 
 **One that must succeed:** `sudo -u harness-job touch /var/lib/harness-jobs/proof/requests/<full sha of the deployed commit>`, then within a few minutes `cat /var/lib/harness-jobs/proof/results/<sha>.txt` shows the test report.
 
