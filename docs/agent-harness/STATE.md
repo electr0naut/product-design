@@ -1,10 +1,10 @@
 # Harness state
 
-Written by the runner at 2026-11-27T15:58:40+0100. Host-only copy: `state.json`.
+Written by the runner at 2026-11-27T16:25:05+0100. Host-only copy: `state.json`.
 Kit: `5b6c863f6cb4b61d41333d79b32e40276820238a`
 
 ## What changed
-- kit commit is now 5b6c863f6cb4b61d41333d79b32e40276820238a
+- decision applied D-20261127-12: loaded 1 ticket(s) from 604e56eea199. FXL-18: triage t_234b7022, gate t_87984637, triage waits on accept FXL-16
 
 ## Tickets
 - **SMK-1** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
@@ -18,6 +18,7 @@ Kit: `5b6c863f6cb4b61d41333d79b32e40276820238a`
 - **FXL-14** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
 - **FXL-15** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
 - **FXL-16** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
+- **FXL-18** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: ready
 
 ## Blocks
 - none
