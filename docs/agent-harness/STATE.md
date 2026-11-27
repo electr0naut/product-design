@@ -1,10 +1,10 @@
 # Harness state
 
-Written by the runner at 2026-11-27T01:53:30+0100. Host-only copy: `state.json`.
+Written by the runner at 2026-11-27T02:03:18+0100. Host-only copy: `state.json`.
 Kit: `c06cd273c5c47dec63a9c008c4206f9e5c53525f`
 
 ## What changed
-- kit commit is now c06cd273c5c47dec63a9c008c4206f9e5c53525f
+- decision applied D-20261127-3: refreshed the fix-lens copies from ae216b0f82e0: design sha256 4c2cb3fd5236, 17 hidden test files
 
 ## Tickets
 - none loaded
