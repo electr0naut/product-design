@@ -1,5 +1,11 @@
 # V12-go-review6: FXL-9 mutation rerun, the two decisions, and the load of FXL-17 then FXL-14 to FXL-16
 
+## CORRECTION: the copies changed between my step 2 re-check and the load
+**Sections 2 and 3 below describe the copies at 14:14:55. They were already replaced when I loaded.** `D-20261127-8` (design v1.2.2 and one more hidden test) was applied before FXL-17 was loaded. My 14:15:16 pull had brought in the design commit `23952fd`; I did not look at what was new, did not re-read the go file after that pull, and loaded on the earlier check.
+- **Applied:** 14:15:19 by `decisions-state.json` and `copies-state.json` (its journal line is at 14:15:43). **No card was running:** FXL-17's first card was created at 14:15:50 or later.
+- FXL-17's triage started 14:16:50 and its planner 14:17:51, **both after the refresh.** No card read the old design.
+- **Checked now (about 14:20):** copies verify at **`23952fd05985`**, design **`023e2adfdb09`**, 17 hidden files, no `acc-render`, `acc-framing-rules` present; all four worker reading copies are `023e2adfdb09`. These are the values the updated go file names, so the load matches its instruction, **but by timing, not because I checked it.** I did not stop anything.
+
 ## 1. `tools/rerun_mutation.py FXL-9` (official, from the deployed kit `6c483e6`, no card on the board unfinished)
 Exit 0, 14:12:29 to 14:14:45. Output, verbatim:
 ```
