@@ -10,6 +10,7 @@ First, in your shell: `KIT=~/.local/share/agent-harness/kit`
 | `sudo adduser --disabled-password --gecos "Harness job" harness-job` | creates the user, with no password login | `sudo deluser --remove-home harness-job` (deletes its home) |
 | `sudo chmod 750 /home/harness-job` | keeps other users out of its home | `sudo chmod 755 /home/harness-job` |
 | `id harness-job` | **check:** the groups must not include `sudo`, `docker`, `adm`, `lxd` or `ubay` | |
+| `sudo install -d -o harness-job -g harness-job -m 750 /home/harness-job/jobs` | the job's work folders, **owned by the job user**: the one part of its home a job can write | `sudo rm -r /home/harness-job/jobs` |
 
 ## 2. The programs the job uses (root-owned copies it cannot change) (untested)
 First check `ls /usr/local/bin/claude /usr/local/bin/uv`: both should be "No such file". If one exists, stop.
@@ -19,7 +20,7 @@ First check `ls /usr/local/bin/claude /usr/local/bin/uv`: both should be "No suc
 | `sudo install -o root -g root -m 755 ~/.local/bin/uv /usr/local/bin/uv` | `uv` | `sudo rm /usr/local/bin/uv` |
 | `sudo install -d -o root -g root -m 755 /usr/local/lib/harness-jobs` | the launcher's folder | `sudo rm -r /usr/local/lib/harness-jobs` |
 | `sudo install -o root -g root -m 755 $KIT/jobs/dispatch.py $KIT/jobs/run-job /usr/local/lib/harness-jobs/` | launcher and job script | (with the folder) |
-| `sudo install -o root -g root -m 644 $KIT/jobs/settings.json $KIT/jobs/prompt.txt $KIT/jobs/jobs.env /usr/local/lib/harness-jobs/` | permissions, fixed prompt, settings (`MAX_BUDGET_USD=5` per job; edit here to change) | (with the folder) |
+| `sudo install -o root -g root -m 644 $KIT/jobs/settings.json $KIT/jobs/prompt.txt $KIT/jobs/jobs.env $KIT/jobs/gitconfig /usr/local/lib/harness-jobs/` | permissions, fixed prompt, the job's git identity, settings (`MAX_BUDGET_USD=5` per job; edit here to change) | (with the folder) |
 
 `harness-deploy` does **not** update these root-owned files. After a reviewed change under `jobs/`, repeat the last two lines.
 
@@ -51,7 +52,8 @@ Then do **4**, and then **4b**, which needs both.
 | GitHub: `agent-harness` → Settings → Deploy keys → Add; paste it; tick **Allow write access** | the job can push branches to this one repository | delete the key on that page |
 | `sudo -u harness-job -H sh -c 'ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts && ssh-keygen -lf ~/.ssh/known_hosts'` | records GitHub's host key. **Check** the fingerprint shown against GitHub's page "GitHub's SSH key fingerprints" before going on | remove `known_hosts` |
 | `sudo -u harness-job -H sh -c 'printf "Host github.com\n  IdentityFile ~/.ssh/harness-kit\n  IdentitiesOnly yes\n" >> ~/.ssh/config'` | tells git to use the key | remove those lines |
-| `sudo -u harness-job -H git config --global user.name harness-job` and `... user.email harness-job@localhost` | the name on its commits | `git config --global --unset ...` |
+
+(The job's git name and address come from the root-owned `gitconfig` of step 2. You set none here. A running job can read `~/.ssh` and cannot change it.)
 
 **No GitHub credential for `product-design`:** the job does not need one and must not get one.
 
@@ -59,7 +61,8 @@ Then do **4**, and then **4b**, which needs both.
 It needs a git clone with a GitHub remote, so that a refusal cannot be about a missing repository:
 ```
 sudo -u harness-job -H git clone -q git@github.com:electr0naut/agent-harness.git /home/harness-job/cloud-check
-sudo systemd-run --pty --wait -p User=harness-job -p EnvironmentFile=/etc/harness-job/claude.env -p WorkingDirectory=/home/harness-job/cloud-check -E HOME=/home/harness-job /usr/local/bin/claude --cloud "Reply with the single word ready. Change nothing."
+sudo -u harness-job mkdir /home/harness-job/cloud-check-home
+sudo systemd-run --pty --wait -p User=harness-job -p EnvironmentFile=/etc/harness-job/claude.env -p WorkingDirectory=/home/harness-job/cloud-check -E HOME=/home/harness-job/cloud-check-home /usr/local/bin/claude --cloud "Reply with the single word ready. Change nothing."
 ```
 (If it first asks whether you trust the folder, say yes: it is that clone.)
 
@@ -69,7 +72,7 @@ sudo systemd-run --pty --wait -p User=harness-job -p EnvironmentFile=/etc/harnes
 | it **creates a session** (a session id or a claude.ai/code link) | **failed: this token can start cloud sessions** | open the link or claude.ai/code and stop and delete that session; **stop the setup here**, start no timer, tell the reviewer. The fallback is B below, **which is then a new choice of yours**, not covered by "A" |
 | any **other** error (repository, GitHub connection, network, unknown option, an organisation policy) | **not shown either way** | stop here and send the reviewer the message |
 
-Afterwards: `sudo rm -rf /home/harness-job/cloud-check`.
+(It runs with an empty home folder, as a job does.) Afterwards: `sudo rm -rf /home/harness-job/cloud-check /home/harness-job/cloud-check-home`.
 
 **Fallback B (only on a new choice of yours): a Console API key.** The documentation states it cannot use cloud sessions; it is billed per use. Same file and permissions, with the one line `ANTHROPIC_API_KEY=` followed by the key; remove the `setup-token` line, revoke that token, and repeat the login check (`authMethod` `api_key`).
 
@@ -90,7 +93,8 @@ Checked here, read-only: all 13 decision files on the branch verify against exac
 |---|---|
 | `sudo install -d -o root -g root -m 755 /var/lib/harness-jobs /var/lib/harness-jobs/proof /var/lib/harness-jobs/ledger` | the ledger is root's: no job can write it |
 | `sudo install -d -o ubay -g ubay -m 755 /var/lib/harness-jobs/queue /var/lib/harness-jobs/proof/results` | written by the harness, read by the job |
-| `sudo install -d -o ubay -g harness-job -m 1770 /var/lib/harness-jobs/outbox` | the job leaves reports here |
+| `sudo install -d -o ubay -g harness-job -m 1770 /var/lib/harness-jobs/outbox` | a running job leaves reports here |
+| `sudo install -d -o root -g root -m 755 /var/lib/harness-jobs/sealed` | the launcher moves an ended job's reports here, where no job can change them; the harness reads them from here |
 | `sudo install -d -o harness-job -g ubay -m 750 /var/lib/harness-jobs/proof/requests` | the job asks for test runs here |
 
 Undo all: `sudo rm -r /var/lib/harness-jobs` (this also deletes the ledger and any unpublished report).
@@ -112,14 +116,21 @@ sudo -u harness-job cat /home/ubay/.local/state/agent-harness/pipeline.json     
 sudo -u harness-job docker ps                                                   # permission denied
 sudo -u harness-job sudo -n true                                                # not allowed
 id harness-job                                                                  # no sudo, docker, ubay
-sudo systemd-run --wait --pipe -p User=harness-job -p NoNewPrivileges=yes -p ProtectSystem=strict -p 'InaccessiblePaths=-/home/ubay -/srv -/run/docker.sock' sh -c 'ls /home/ubay; ls /srv; curl -sS --unix-socket /run/docker.sock http://localhost/version; touch /var/lib/harness-jobs/outbox/probe'
+sudo systemd-run --wait --pipe -p User=harness-job -p NoNewPrivileges=yes -p ProtectSystem=strict -p ReadWritePaths=/home/harness-job/jobs -p 'InaccessiblePaths=-/home/ubay -/srv -/run/docker.sock' sh -c 'ls /home/ubay; ls /srv; curl -sS --unix-socket /run/docker.sock http://localhost/version; touch /var/lib/harness-jobs/outbox/probe; touch /home/harness-job/.probe; crontab -l; echo true | at now'
 ```
-The last one tries the unit's protections on this Ubuntu: **each of the four commands inside must print an error.** The first two test the blocked paths. The third must not print Docker's version. The fourth tests `ProtectSystem`: the job user may normally write that folder (step 7), so only the protection can stop it. **If any of the four succeeds, do not start the timer.** (If `curl` is missing, say so to the reviewer instead of counting that as a failure.)
+The last one tries the unit's protections on this Ubuntu: **each of the seven commands inside must print an error.**
+1. and 2. the blocked paths;
+3. must not print Docker's version;
+4. and 5. `ProtectSystem`: the job user may normally write both places (step 7; its own home), so only the protection can stop it. The home must be read-only to a job, so that one job cannot leave files that act on the next;
+6. `crontab -l` must fail with a **permission** error. **`no crontab for harness-job` counts as NOT failed:** it means cron's store could be reached;
+7. `at` must be refused (`command not found` is also fine: then there is nothing to leave a job with). With 6, this shows a job cannot leave something that runs after it.
+
+**If any of the seven succeeds, do not start the timer**, and send the reviewer the output. (If `curl` is missing, say so instead of counting that as a failure.) If `at` did accept the command, remove it with `sudo -u harness-job atrm <number it printed>`.
 
 **One that must succeed:** `sudo -u harness-job touch /var/lib/harness-jobs/proof/requests/<full sha of the deployed commit>`, then within a few minutes `cat /var/lib/harness-jobs/proof/results/<sha>.txt` shows the test report.
 
 Then: `sudo systemctl enable --now harness-job-dispatch.timer` (undo: `sudo systemctl disable --now harness-job-dispatch.timer`).
 
 ## 10. The first jobs
-Ask the reviewer for a first job that only writes a report. **The standing VM session stays until two jobs have run to the end.**
+Ask the reviewer for a first job that only writes a report. **It is also the first proof that the CLI starts with an empty home folder and only the token:** that could not be tried before this setup. If the job fails at its start, tell the reviewer. **The standing VM session stays until two jobs have run to the end.**
 **To stop everything at once:** `sudo systemctl disable --now harness-job-dispatch.timer && sudo systemctl stop 'harness-job@*'`.

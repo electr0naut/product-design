@@ -19,7 +19,7 @@ Read `RULES.md` first. This file holds only what the repositories don't. No secr
 
 **Development clones** of `electr0naut/agent-harness` (all clean; commit identity `electr0naut` / `electr0naut@users.noreply.github.com`):
 - `~/dev/agent-harness`: branch `d6-driver` @ `31401b1`, **the evidence driver** (`tools/fixlens_driver.py`, never merged).
-- `~/dev/agent-harness-d12`: on branch `d26-jobs` @ `b9d4518`; `origin/master` = `5b6c863` (= deployed). The newest clone: use it for loading tickets and for the next branch (fetch first). **Loading from it uses branch code:** check out the deployed commit first.
+- `~/dev/agent-harness-d12`: on branch `d26-jobs` @ `25a315e`; `origin/master` = `5b6c863` (= deployed). The newest clone: use it for loading tickets and for the next branch (fetch first). **Loading from it uses branch code:** check out the deployed commit first.
 - `~/dev/agent-harness-d7`, `-d10`, `-d11`: old branches, no longer needed.
 - Tests: `uv run --with pytest --with ruff --no-project python -m pytest -q -p no:cacheprovider`; `uv run --with ruff --no-project ruff check .` and `ruff format --check .`. Fresh-clone them into `/tmp/fc` before posting a sha.
 
@@ -78,7 +78,7 @@ Read `RULES.md` first. This file holds only what the repositories don't. No secr
 | **FXL-18** (styling) | **landed clean** (`6f2f554`; hidden 173 of 173; no block; on the fallback models; mutation not run: no source line changed). **v1.2 is built: FXL-9 to FXL-18 landed.** Left, per `FXL-18-landed-review.md`: Ubay's own test with real logs; open with Ubay: the design section 15 line on the missing-CheckSum position, the "kill or justify" proposal, FXL-12's 19 and FXL-14's 12 unclassified survivors. |
 | **D24 and the test guard** | approved and **deployed: `b20b702` at 15:22:58 on 2026-11-27**, while FXL-15's scribe ran; checked, nothing off (`reports/D24-deploy-check.md`). D24 judged FXL-15: `acc-order-story` 12 of 12. Suite runs stay in throwaway containers. |
 | **D25** | **deployed `5b6c863` at 15:58:00 on 2026-11-27** with nothing running; confirmed, and the refused load `D-20261127-11` behaved (`reports/D25-deploy-confirm.md`). The first real `load_tickets` is FXL-18 (the reviewer writes and loads it). |
-| **D26** | **built and reported:** `d26-jobs` @ `b9d4518` (not merged or deployed), `reports/D26-jobs.md`, Ubay's commands in `reports/D26-setup.md` (**the VM never runs them**). **Ubay chose the credential: A, a `setup-token`** (`D26-credential-review.md`), with a one-time `claude --cloud` check he runs (setup step 4b). **Waiting for the reviewer.** A job's "For HANDOFF.md" section is applied by the reviewer. The standing session stays until two jobs have run to the end. |
+| **D26** | `b9d4518` not approved (`D26-code-review.md`); **R1 to R4 done at `25a315e`**, waiting for review of `b9d4518..25a315e` (`reports/D26-jobs.md`). Not merged or deployed. Ubay's commands: `reports/D26-setup.md` (**the VM never runs them**); credential A, a `setup-token`, with his one `claude --cloud` check (step 4b). **After approval:** a job's "For HANDOFF.md" section is applied by the reviewer; the review branch name is fixed in the root-owned `jobs.env`, so **a new review branch needs Ubay**. Next kit change: `run-job` uses the launcher's full id pattern; clean up old proof requests and results and limit requests; clean up `sealed/`. The standing session stays until two jobs have run to the end. |
 
 ## 4. Recurring jobs, as commands
 

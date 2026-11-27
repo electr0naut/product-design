@@ -1,6 +1,6 @@
 # D26: one-shot jobs (D26-go-review, D26-signing-review)
 
-`agent-harness` branch `d26-jobs`, **commit `b9d4518c7bff20c81ace5a903d72d9e33ff74fc8`** (updated after `D26-cloud-review.md` and `D26-credential-review.md`), on `5b6c863`. **Not merged, not deployed.** Nothing was installed; no user, credential, folder or unit was made. Your commands for Ubay: **`D26-setup.md`**. Ready for your review.
+`agent-harness` branch `d26-jobs`, **commit `25a315e398522e0cf4b89fe51b6b70c2685b3a28`** (after `D26-code-review.md`; the difference to review is `b9d4518..25a315e`), on `5b6c863`. **Not merged, not deployed.** Nothing was installed; no user, credential, folder or unit was made. Your commands for Ubay: **`D26-setup.md`**. Ready for your review.
 
 **Off until Ubay acts:** signing needs a host-only file no deploy touches; the job queue and the proof runner start only when their folders exist.
 
@@ -16,9 +16,25 @@
 
 **How you sign:** you do not need to change anything. Your commits already carry the platform's SSH signature; its public half goes into `allowed_signers` (step 6). It covers a commit made on this VM and nothing more.
 
+## After `D26-code-review.md`: the four changes (`b9d4518..25a315e`)
+| | change |
+|---|---|
+| **R1** | The unit's `PATH` is `/usr/local/bin:/usr/bin:/bin` |
+| **R2** | `ReadWritePaths` names `/home/harness-job/jobs`, not the home. `run-job` sets `HOME` to a new folder inside the job's folder, with the `XDG_*` and `uv` cache folders under it, and `GIT_CONFIG_GLOBAL` to the root-owned `jobs/gitconfig`. SSH still reads the real `~/.ssh`, now read-only to jobs. **Also:** `PrivateIPC=yes` and a private `/dev/shm`, because `ProtectSystem=strict` does not cover `/dev` |
+| **R3** | The launcher records `refused` for a job whose work folder, outbox or sealed outbox already exists (a link too), and goes on to the next. The runner reads no report unless the ledger says the job ran **and** this runner queued that id |
+| **R3, a gap beside it** | The launcher can start job B before the runner has collected job A's reports, and both are one user: **B could rewrite A's waiting reports.** So the launcher now **moves an ended job's outbox to `sealed/`** (root's folder, not writable by any job) before it records the end, also for an interrupted job. Reports are read only from there. One more folder in setup step 7 |
+| **R4** | A report holding `sk-ant-` or `PRIVATE KEY-----` is refused, naming the file and never the match. A file **name** holding one is refused without repeating the name (refusals are published too). `Bash(env*)` and `Bash(printenv*)` denied. It catches those two marks only: an encoded or split secret passes |
+
+**Test of R2** (`what_one_job_leaves_behind...`): the real `run-job` twice, with the unit's `PATH`. Job 1's stand-in plants programs on the old `PATH`, git settings (that would break job 2's clone if read) in the old home, in `~/.config/git` and in its own `HOME`, a `CLAUDE.md` in both, and a `.profile`. Job 2 sees none, runs none, and its git config is the two root-owned lines. The test home stays writable there, so this shows what job 2 **reads**; that a job **cannot** write the home rests on the unit, which is untested (setup step 9 now tries it).
+**Not tried:** whether the real CLI starts with an empty `HOME` and only the token. It cannot be before Ubay's setup; **the first job is that proof** (said in the setup).
+
+**Each new guard broken one at a time** (throwaway container, `tests/test_d26.py`): **14 breaks, 14 caught:** old `PATH`; whole home writable; no fresh `HOME`; no root git config; prepared folders accepted; no sealing after a run; none when interrupted; reading `outbox/`; publishing for any ledger state; no content check; no name check; either mark dropped; `env` not denied.
+
+**For the next change (not done, as you say):** `run-job` uses the launcher's full id pattern; old proof requests and results are removed and requests limited; **also old `sealed/` folders** (nothing removes them). `BRANCH` is in `HANDOFF.md`.
+
 ## Your three items (`D26-cloud-review.md`), and `HANDOFF.md`
 ### The copy step: exactly what is copied
-Only **after** the launcher's ledger says the job ended. From `<spool>/outbox/<job id>/` only, at most the first 10 entries. An entry is copied to `docs/agent-harness/reports/<name>` **only if all hold**: its name is `<job id>.md` or `<job id>-<letters, digits, . _ ->.md` (up to 80), without "review" in any case; it opens without following a link, inside the job's folder, itself opened without following a link from the outbox; it is a plain file with **one** name, owned by the owner of that folder; it is at most 200,000 bytes of UTF-8; **no file of that name is on the branch.** The destination is built from the fixed folder and that name, so nothing else can be reached. Everything else is refused and named in the end-of-job comment.
+Only **after** the launcher's ledger says the job ran and ended. From `<spool>/sealed/<job id>/` only, at most the first 10 entries. An entry is copied to `docs/agent-harness/reports/<name>` **only if all hold**: its name is `<job id>.md` or `<job id>-<letters, digits, . _ ->.md` (up to 80), without "review" in any case; it opens without following a link, inside the job's folder, itself opened without following a link from `sealed/`; it is a plain file with **one** name, owned by the owner of that folder; it is at most 200,000 bytes of UTF-8; **no file of that name is on the branch.** The destination is built from the fixed folder and that name, so nothing else can be reached. Everything else is refused and named in the end-of-job comment.
 Tests for each refusal you listed: a link (`nothing_in_an_outbox_is_followed...[symlink]`, `[hardlink]`, `a_linked_outbox_folder...`), a path outside `reports/` (`no_name_can_leave_the_reports_folder`, 8 names), no job id and not `.md` (`a_job_cannot_write...`), another job's existing report (`another_jobs_report_cannot_be_touched`), over the size cap (`[large]`).
 
 ### What a job can read, and who can read the job's files
@@ -28,21 +44,21 @@ Tests for each refusal you listed: a link (`nothing_in_an_outbox_is_followed...[
 - On the host, the bundle is readable by any local account (mode 644), and it contains the hidden tests.
 
 ### A job still running when its time is up
-`TimeoutStartSec=2h`: systemd stops the unit, `Result=timeout`, signalling the whole control group (SIGTERM, then SIGKILL). `start --wait` returns 1, and the launcher records **`state: failed, result: timeout, exit: 15`**, comments it through the runner, **publishes whatever valid reports are already in the outbox**, removes the bundle, and never runs the job again. If the launcher itself dies, the next run records `interrupted`, but only when the job unit is no longer active. Seen here with a 2 s transient **user** unit: `Result=timeout`, `ExecMainStatus=15`, `KillMode=control-group`, `start --wait` exit 1. **The system unit is untested.** The launcher's side is tested with a stand-in `systemctl`.
+`TimeoutStartSec=2h`: systemd stops the unit, `Result=timeout`, signalling the whole control group (SIGTERM, then SIGKILL). `start --wait` returns 1, and the launcher records **`state: failed, result: timeout, exit: 15`**, comments it through the runner, **publishes whatever valid reports it had left (sealed first)**, removes the bundle, and never runs the job again. If the launcher itself dies, the next run records `interrupted`, but only when the job unit is no longer active. Seen here with a 2 s transient **user** unit: `Result=timeout`, `ExecMainStatus=15`, `KillMode=control-group`, `start --wait` exit 1. **The system unit is untested.** The launcher's side is tested with a stand-in `systemctl`.
 
 ### Who applies "For HANDOFF.md"
 **You.** I have the runner copy reports only. Having it copy that section would put text a job wrote straight into the file that later jobs obey.
 
 ### One more limit
-The job's token is in its environment, so a job can read it, and could put it in a report (which gets published) or its unit's log, or send it out. Nothing screens for that.
+The job's token is in its environment, so a job can read it. Reports are now screened for two marks (R4); its unit's log, a branch it pushes and the network are not screened.
 
 ## Tests
-Fresh clone of `b9d4518` in the proof container (ruff and format clean):
+Fresh clone of `25a315e` in the proof container (ruff and format clean):
 ```
 SKIPPED [1] tests/test_mutation.py:301: mutmut is installed in the container's .venv-mutation only
 SKIPPED [1] tests/test_mutation.py:511: Stryker is exercised inside the container (node 26), not on the host
 SKIPPED [1] tests/test_mutation.py:563: Stryker is exercised inside the container (node 26), not on the host
-747 passed, 3 skipped in 84.69s (0:01:24)
+762 passed, 3 skipped in 85.28s (0:01:25)
 -- files at the live paths:
 identical: 68 files, 50 folders, same checksums before and after
 -- live paths read, written or named to a child process: 0
