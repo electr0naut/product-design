@@ -23,7 +23,7 @@ Read `RULES.md` first. This file holds only what the repositories don't. No secr
 - `~/dev/agent-harness-d7`, `-d10`, `-d11`: old branches, no longer needed.
 - Tests: `uv run --with pytest --with ruff --no-project python -m pytest -q -p no:cacheprovider`; `uv run --with ruff --no-project ruff check .` and `ruff format --check .`. Fresh-clone them into `/tmp/fc` before posting a sha.
 
-**Deployed:** host kit `~/.local/share/agent-harness/kit` and container copy `/srv/lab/agent-harness` are both `25a315e` (since 17:20:14 on 2026-11-27). Also there: `reviewed-sha`, `local.toml` (container mounts). Wrapper `~/.local/bin/harness-deploy`. Running a kit tool by hand: `cd <kit> && PYTHONPATH=src python3 -B tools/<tool>.py` (`-B` so nothing is written into the kit).
+**Deployed:** host kit `~/.local/share/agent-harness/kit` and container copy `/srv/lab/agent-harness` are both `be46d02` (since 18:35:51 on 2026-11-27). Also there: `reviewed-sha`, `local.toml` (container mounts). Wrapper `~/.local/bin/harness-deploy`. Running a kit tool by hand: `cd <kit> && PYTHONPATH=src python3 -B tools/<tool>.py` (`-B` so nothing is written into the kit).
 
 **Host-only state** `~/.local/state/agent-harness/`:
 | entry | what it is |
