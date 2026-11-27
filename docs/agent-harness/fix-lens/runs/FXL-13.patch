@@ -1,0 +1,272 @@
+From 8881fce6a69d5a4b504ea27ef03848aa0acb1e22 Mon Sep 17 00:00:00 2001
+From: Hermes Agent <hermes@agent.local>
+Date: Fri, 27 Nov 2026 13:49:11 +0100
+Subject: [PATCH] FXL-13: Filter FIX messages by account and party IDs
+
+---
+ src/filters.js       |  56 +++++++++++++
+ test/filters.test.js | 189 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 245 insertions(+)
+ create mode 100644 src/filters.js
+ create mode 100644 test/filters.test.js
+
+diff --git a/src/filters.js b/src/filters.js
+new file mode 100644
+index 0000000..c36c95e
+--- /dev/null
++++ b/src/filters.js
+@@ -0,0 +1,56 @@
++import { orderGroups } from './orders.js';
++
++export const FILTERS = [
++  { key: 'account', tag: 1, label: 'Account' },
++  { key: 'senderCompId', tag: 49, label: 'SenderCompID' },
++  { key: 'senderSubId', tag: 50, label: 'SenderSubID' },
++  { key: 'targetCompId', tag: 56, label: 'TargetCompID' },
++  { key: 'targetSubId', tag: 57, label: 'TargetSubID' },
++];
++
++const [accountFilter, ...partyFilters] = FILTERS;
++
++function firstValue({ fields }, tag) {
++  return fields.find(field => field.tag === tag)?.value;
++}
++
++/** List the distinct nonempty raw values of each filter tag. */
++export function filterOptions(decoded) {
++  return Object.fromEntries(FILTERS.map(({ key, tag }) => {
++    const values = new Set();
++    for (const message of decoded) {
++      const value = firstValue(message, tag);
++      if (value !== undefined && value !== '') values.add(value);
++    }
++    return [key, [...values].sort()];
++  }));
++}
++
++function accountMatches(decoded, account) {
++  const matchingNumbers = new Set();
++  for (const message of decoded) {
++    if (firstValue(message, accountFilter.tag) === account) matchingNumbers.add(message.number);
++  }
++  // Expand Account matches over the original log before testing party fields.
++  for (const { numbers } of orderGroups(decoded)) {
++    if (numbers.some(number => matchingNumbers.has(number))) {
++      for (const number of numbers) matchingNumbers.add(number);
++    }
++  }
++  return matchingNumbers;
++}
++
++/** Return the original messages that pass all active filters, in log order. */
++export function applyFilters(decoded, chosen) {
++  const account = chosen.account;
++  const activeParties = partyFilters.filter(({ key }) => chosen[key] != null);
++  if (account == null && activeParties.length === 0) return decoded;
++
++  const accountNumbers = account == null ? null : accountMatches(decoded, account);
++  return decoded.filter(message => {
++    if (accountNumbers !== null && (!accountNumbers.has(message.number) || firstValue(message, 35) === '0')) {
++      return false;
++    }
++    return activeParties.every(({ key, tag }) => firstValue(message, tag) === chosen[key]);
++  });
++}
+diff --git a/test/filters.test.js b/test/filters.test.js
+new file mode 100644
+index 0000000..c27aac0
+--- /dev/null
++++ b/test/filters.test.js
+@@ -0,0 +1,189 @@
++import { expect, test } from 'vitest';
++import { analyse } from '../src/analyse.js';
++import { FILTERS, filterOptions, applyFilters } from '../src/filters.js';
++import { buildMessage } from './helpers/fix.js';
++
++const definitions = [
++  { key: 'account', tag: 1, label: 'Account' },
++  { key: 'senderCompId', tag: 49, label: 'SenderCompID' },
++  { key: 'senderSubId', tag: 50, label: 'SenderSubID' },
++  { key: 'targetCompId', tag: 56, label: 'TargetCompID' },
++  { key: 'targetSubId', tag: 57, label: 'TargetSubID' },
++];
++const party = definitions.slice(1);
++
++function decodeLog(...rows) {
++  const raw = rows.map(([type, ...fields]) => buildMessage([[8, 'FIX.4.4'], [35, type], ...fields])).join('\n');
++  const result = analyse(raw);
++  expect(result.ok).toBe(true);
++  expect(result.errors).toEqual([]);
++  expect(result.decoded).toHaveLength(rows.length);
++  return result.decoded;
++}
++
++function expectSelection(selected, decoded, ...indices) {
++  expect(selected).toHaveLength(indices.length);
++  indices.forEach((index, i) => expect(selected[i]).toBe(decoded[index]));
++}
++
++function deepFreeze(value) {
++  if (value !== null && typeof value === 'object') {
++    Object.values(value).forEach(deepFreeze);
++    Object.freeze(value);
++  }
++  return value;
++}
++
++test('test_filters_named_exports_expose_exact_filter_definitions', () => {
++  expect(FILTERS).toStrictEqual(definitions);
++  expect(typeof filterOptions).toBe('function');
++  expect(typeof applyFilters).toBe('function');
++});
++
++test('test_filter_options_mixed_values_returns_sorted_distinct_nonempty_lists', () => {
++  const fields = prefix => definitions.map(({ tag }) => [tag, prefix ? `${prefix}${tag}` : '']);
++  const decoded = decodeLog(['A', ...fields('alpha')], ['0', ...fields('Zeta')],
++    ['A', ...fields('alpha')], ['A', ...fields('')]);
++  expect(filterOptions(decoded)).toStrictEqual({
++    account: ['Zeta1', 'alpha1'], senderCompId: ['Zeta49', 'alpha49'], senderSubId: ['Zeta50', 'alpha50'],
++    targetCompId: ['Zeta56', 'alpha56'], targetSubId: ['Zeta57', 'alpha57'],
++  });
++});
++
++test('test_filter_options_absent_tag_returns_empty_list', () => {
++  expect(filterOptions(decodeLog(['A', [56, 'TARGET']]))).toStrictEqual({
++    account: [], senderCompId: [], senderSubId: [], targetCompId: ['TARGET'], targetSubId: [],
++  });
++});
++
++test('test_apply_filters_all_null_returns_every_message_in_order', () => {
++  const decoded = decodeLog(['D', [11, 'C1'], [1, 'ACC1']], ['0', [49, 'S']], ['A']);
++  const chosen = { account: null, senderCompId: null, senderSubId: null, targetCompId: null, targetSubId: null };
++  expectSelection(applyFilters(decoded, chosen), decoded, 0, 1, 2);
++});
++
++test('test_apply_filters_empty_chosen_returns_every_message_in_order', () => {
++  const decoded = decodeLog(['0'], ['D', [11, 'C1'], [1, 'ACC1']], ['A']);
++  expectSelection(applyFilters(decoded, {}), decoded, 0, 1, 2);
++});
++
++test('test_apply_filters_party_choices_match_exact_own_fields', () => {
++  for (const [i, { key, tag }] of party.entries()) {
++    const otherTag = party[(i + 1) % party.length].tag;
++    const decoded = decodeLog(
++      ['D', [11, 'C1'], [tag, 'Party']],
++      ['8', [11, 'C1'], [tag, 'party']],
++      ['8', [11, 'C1'], [tag, ' Party ']],
++      ['8', [11, 'C1'], [otherTag, 'Party']],
++    );
++    expectSelection(applyFilters(decoded, { [key]: 'Party' }), decoded, 0);
++  }
++});
++
++test('test_apply_filters_account_choice_keeps_only_matching_order_members', () => {
++  const decoded = decodeLog(
++    ['D', [11, 'C1'], [1, 'ACC1']], ['8', [11, 'C1'], [37, 'O1']],
++    ['D', [11, 'C2'], [1, 'ACC2']], ['8', [11, 'C2'], [37, 'O2']],
++  );
++  expectSelection(applyFilters(decoded, { account: 'ACC1' }), decoded, 0, 1);
++});
++
++test('test_apply_filters_account_on_report_keeps_earlier_order_members', () => {
++  const decoded = decodeLog(['D', [11, 'C1']], ['8', [11, 'C1'], [37, 'O1'], [1, 'ACC1']]);
++  expectSelection(applyFilters(decoded, { account: 'ACC1' }), decoded, 0, 1);
++});
++
++test('test_apply_filters_ungrouped_matching_account_keeps_message', () => {
++  const decoded = decodeLog(['A', [1, 'ACC1']], ['A', [1, 'ACC2']]);
++  expectSelection(applyFilters(decoded, { account: 'ACC1' }), decoded, 0);
++});
++
++test('test_apply_filters_heartbeat_with_matching_account_is_excluded', () => {
++  const decoded = decodeLog(['0', [1, 'ACC1']], ['A', [1, 'ACC1']]);
++  expectSelection(applyFilters(decoded, { account: 'ACC1' }), decoded, 1);
++});
++
++test('test_apply_filters_account_and_sender_returns_intersection', () => {
++  const decoded = decodeLog(
++    ['D', [11, 'C1'], [1, 'ACC1'], [49, 'KEEP']], ['8', [11, 'C1'], [49, 'OTHER']],
++    ['D', [11, 'C2'], [1, 'ACC2'], [49, 'KEEP']],
++  );
++  expectSelection(applyFilters(decoded, { account: 'ACC1', senderCompId: 'KEEP' }), decoded, 0);
++});
++
++test('test_apply_filters_sender_exclusions_preserve_full_log_order_links', () => {
++  const decoded = decodeLog(
++    ['D', [11, 'C1'], [1, 'ACC1'], [49, 'OTHER']],
++    ['8', [37, 'O1'], [49, 'KEEP']],
++    ['8', [37, 'O2'], [49, 'KEEP']],
++    ['8', [11, 'C1'], [37, 'O1'], [49, 'OTHER']],
++  );
++  expectSelection(applyFilters(decoded, { account: 'ACC1', senderCompId: 'KEEP' }), decoded, 1);
++});
++
++test('test_apply_filters_interleaved_matching_orders_return_original_log_subsequence', () => {
++  const decoded = decodeLog(
++    ['D', [11, 'A'], [1, 'ACC1']], ['D', [11, 'B'], [1, 'ACC2']], ['D', [11, 'C'], [1, 'ACC1']],
++    ['8', [11, 'A']], ['8', [11, 'B']], ['8', [11, 'C']],
++  );
++  expectSelection(applyFilters(decoded, { account: 'ACC1' }), decoded, 0, 2, 3, 5);
++});
++
++test('test_filters_frozen_inputs_remain_unchanged', () => {
++  const decoded = deepFreeze(decodeLog(
++    ['D', [11, 'C1'], [1, 'ACC1'], [49, 'OTHER']], ['8', [11, 'C1'], [49, 'KEEP']],
++  ));
++  const chosen = Object.freeze({ account: 'ACC1', senderCompId: 'KEEP' });
++  const beforeDecoded = structuredClone(decoded);
++  const beforeChosen = structuredClone(chosen);
++  for (let i = 0; i < 2; i++) {
++    expect(filterOptions(decoded)).toStrictEqual({
++      account: ['ACC1'], senderCompId: ['KEEP', 'OTHER'], senderSubId: [], targetCompId: [], targetSubId: [],
++    });
++    expectSelection(applyFilters(decoded, chosen), decoded, 1);
++  }
++  expect(decoded).toStrictEqual(beforeDecoded);
++  expect(chosen).toStrictEqual(beforeChosen);
++});
++
++test('test_filter_options_repeated_tags_use_first_occurrence_even_if_empty', () => {
++  const fields = first => definitions.flatMap(({ tag }) => [[tag, first], [tag, 'LATER']]);
++  const decoded = decodeLog(['A', ...fields('FIRST')], ['A', ...fields('')]);
++  expect(filterOptions(decoded)).toStrictEqual({
++    account: ['FIRST'], senderCompId: ['FIRST'], senderSubId: ['FIRST'],
++    targetCompId: ['FIRST'], targetSubId: ['FIRST'],
++  });
++});
++
++test('test_apply_filters_repeated_party_tag_matches_only_first_occurrence', () => {
++  for (const { key, tag } of party) {
++    const decoded = decodeLog(['A', [tag, 'FIRST'], [tag, 'SECOND']], ['A', [tag, ''], [tag, 'FIRST']]);
++    expectSelection(applyFilters(decoded, { [key]: 'FIRST' }), decoded, 0);
++    expectSelection(applyFilters(decoded, { [key]: 'SECOND' }), decoded);
++  }
++});
++
++test('test_apply_filters_repeated_account_tag_propagates_only_first_occurrence', () => {
++  const decoded = decodeLog(
++    ['D', [11, 'C1'], [1, 'FIRST'], [1, 'SECOND']], ['8', [11, 'C1']],
++    ['D', [11, 'C2'], [1, ''], [1, 'FIRST']], ['8', [11, 'C2']],
++  );
++  expectSelection(applyFilters(decoded, { account: 'FIRST' }), decoded, 0, 1);
++  expectSelection(applyFilters(decoded, { account: 'SECOND' }), decoded);
++});
++
++test('test_apply_filters_thousand_order_messages_completes_under_one_second', () => {
++  const rows = [];
++  const expectedIndices = [];
++  for (let i = 0; i < 500; i++) {
++    const matching = i % 2 === 0;
++    if (matching) expectedIndices.push(rows.length, rows.length + 1);
++    rows.push(['D', [11, `C${i}`], [1, matching ? 'ACC1' : 'ACC2']], ['8', [11, `C${i}`], [37, `O${i}`]]);
++  }
++  const decoded = decodeLog(...rows);
++  const start = performance.now();
++  const selected = applyFilters(decoded, { account: 'ACC1' });
++  const elapsed = performance.now() - start;
++  expect(elapsed).toBeLessThan(1000);
++  expectSelection(selected, decoded, ...expectedIndices);
++});
+-- 
+2.43.0
+
