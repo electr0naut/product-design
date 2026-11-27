@@ -1,0 +1,1080 @@
+diff --git a/harness.host.toml b/harness.host.toml
+index d7f6d1a..6ba8625 100644
+--- a/harness.host.toml
++++ b/harness.host.toml
+@@ -78,6 +78,19 @@ other_lab_cmd = ""
+ # The proving test runs inside the container as `hermes`, never on the host.
+ prove_cmd = "docker exec --user hermes --workdir {cwd} hermes /srv/lab/agent-harness/.venv-container/bin/python -m pytest -q {{id}} --junitxml={xml}"
+ 
++# D27 part 2: while Claude is at its usage limit, one Hermes profile answers the review's Claude
++# steps (src/harness/fallback.py says when, and when not). Off until the profile exists: exactly
++# this model, no fallback_providers, tools.tool_search.enabled off.
++[review.fallback]
++enabled = false
++profile = "reviewer-fallback"
++model = "qwen4-max"
++switch_after_minutes = 60
++max_calls_per_card = 12
++timeout_s = 900
++pack_max_chars = 200000
++author_profiles = ["triage", "planner", "implementer", "reviewer"]
++
+ [budget]
+ ticket_max_usd = 8.0
+ eval_max_usd = 40.0
+diff --git a/pyproject.toml b/pyproject.toml
+index 320bcd7..8d1dc32 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -19,6 +19,7 @@ select = ["E", "F", "I", "B", "UP"]
+ # the fixture `world` is imported from test_reviewer and then used as an argument
+ "tests/test_fixloop.py" = ["F811"]
+ "tests/test_d27.py" = ["F811"]
++"tests/test_d27_fallback.py" = ["F811"]
+ "tests/test_risk.py" = ["F811"]
+ "tests/test_repos.py" = ["F811"]
+ "tests/test_review_diff.py" = ["F811"]
+diff --git a/src/harness/evidence.py b/src/harness/evidence.py
+index 30c2cfe..41b9843 100644
+--- a/src/harness/evidence.py
++++ b/src/harness/evidence.py
+@@ -8,7 +8,7 @@ import subprocess
+ import time
+ from pathlib import Path
+ 
+-from . import HarnessError, acceptance, publish, records, trusted
++from . import HarnessError, acceptance, fallback, publish, records, trusted
+ from .gates import GIT_SAFE
+ 
+ _USAGE = (
+@@ -124,7 +124,8 @@ def ticket_report(ctx, entry: dict) -> tuple[str, str]:
+         for s in mut.get("survivors", [])[:12]
+     )
+     earlier = "".join(
+-        f"\n### review {n} (cost ${r.get('cost_usd')}, decision {r.get('decision')})\n"
++        f"\n### review {n} (cost ${r.get('cost_usd')}, decision {r.get('decision')})"
++        f"{fallback.said(r)}\n"
+         f"{_findings(r, 200)}\n{_proofs(r)}\n"
+         for n, r in enumerate(reviews[:-1], 1)
+     )
+@@ -194,7 +195,7 @@ Claude on the review(s): **${claude:.4f}**.
+ 
+ ## Reviews that led to a fix pass{earlier or " (none)"}
+ 
+-## Findings and proofs (final review)
++## Findings and proofs (final review){fallback.said(review)}
+ Findings:
+ {_findings(review, 160)}
+ 
+@@ -354,7 +355,8 @@ def block_report(ctx, entry: dict, info: dict) -> str:
+     if reviews:
+         r = reviews[-1]["data"]
+         parts.append(
+-            f"## Latest review (cost ${r.get('cost_usd')}, decision {r.get('decision')})\n"
++            f"## Latest review (cost ${r.get('cost_usd')}, decision {r.get('decision')})"
++            f"{fallback.said(r)}\n"
+             f"{_findings(r, 300)}\n{_proofs(r)}"
+         )
+     from . import fixloop
+diff --git a/src/harness/fallback.py b/src/harness/fallback.py
+new file mode 100644
+index 0000000..dc0e8c7
+--- /dev/null
++++ b/src/harness/fallback.py
+@@ -0,0 +1,325 @@
++"""D27 part 2: a review on a second model while Claude is at its usage limit.
++
++Off unless `[review.fallback] enabled = true`. When Claude refuses a review call for a usage limit
++(part 1 decides what a limit is; nothing else leads here), the review is run again from its start
++with every Claude step answered by one Hermes profile instead. One reviewer per review, never half
++and half. The switch is refused, and the card waits for Claude as in part 1, when:
++
++- the limit's named reset is `switch_after_minutes` away or less (no readable reset: switch);
++- the ticket is in the high tier;
++- the fallback model planned, implemented or found in this ticket, or that cannot be established;
++- the profile is not exactly one model with no fallback of its own;
++- a fallback review was already tried during this wait.
++
++Anything that goes wrong on the fallback (a refused or malformed answer after one re-ask, a tool
++call, another model than the intended one, a time-out, too many calls, sources too large for one
++prompt) is a fault of the fallback: nothing lands and the card waits for Claude.
++
++The model gets text and returns text. It has no file tool: the host puts the sources at the
++reviewed commit into the prompt, and for the prove step writes the test the model returns into one
++new file. The design, the ticket and the sources go to the fallback's provider, as they do when a
++model of that provider plans or implements.
++"""
++
++from __future__ import annotations
++
++import json
++import re
++import subprocess
++import time
++from collections.abc import Callable
++from dataclasses import dataclass
++
++from . import HarnessError
++
++NO_TOOLS = (
++    "You have no tools and cannot open files or run anything. Where the instructions below say "
++    "that the repository is your working directory or that you can read files, use the sources "
++    "printed at the end instead: they are the whole repository at the change, apart from the "
++    "files listed as left out.\n\n"
++)
++Ask = Callable[[str], tuple[int, str, str]]  # text in; exit code, stdout, stderr
++Check = Callable[[float], dict]  # start time in; what the profile's sessions since then did
++
++
++PROVE_NOTE = (
++    " Put the whole source of that file in test_source: it will be written for you, to a file "
++    "that does not exist yet. That you cannot run the test is no reason to fill "
++    "could_not_prove_because; fill it only when no test can show the finding."
++)
++
++
++class FallbackFault(HarnessError):
++    """The fallback could not give a usable answer. The review waits for Claude."""
++
++
++@dataclass(frozen=True)
++class Settings:
++    enabled: bool
++    profile: str
++    model: str
++    switch_after_s: float
++    max_calls: int
++    timeout_s: int
++    pack_max_chars: int
++    author_profiles: tuple[str, ...]
++
++
++def settings(cfg: dict) -> Settings:
++    f = cfg.get("review", {}).get("fallback", {})
++    return Settings(
++        enabled=bool(f.get("enabled", False)),
++        profile=str(f.get("profile", "reviewer-fallback")),
++        model=str(f.get("model", "")),
++        switch_after_s=float(f.get("switch_after_minutes", 60)) * 60,
++        max_calls=int(f.get("max_calls_per_card", 12)),
++        timeout_s=int(f.get("timeout_s", 900)),
++        pack_max_chars=int(f.get("pack_max_chars", 200000)),
++        author_profiles=tuple(
++            f.get("author_profiles", ["triage", "planner", "implementer", "reviewer"])
++        ),
++    )
++
++
++@dataclass(frozen=True)
++class Second:
++    """The second reviewer, as the runner uses it."""
++
++    settings: Settings
++    call: Callable[[str, dict], dict]
++    used: Callable[[float], dict | None]  # the authors' models since a time
++    profiles: Callable[[list[str]], dict]  # name -> {"default", "fallbacks"} or {"error"}
++
++
++def proof_schema(schema: dict) -> dict:
++    """The proof answer plus the test's source, which the host writes."""
++    return {
++        **schema,
++        "properties": {**schema["properties"], "test_source": {"type": "string"}},
++        "required": [*schema["required"], "test_source"],
++    }
++
++
++def said(review: dict) -> str:
++    """Empty for a review by Claude; else the words every report of the review carries."""
++    who = review.get("reviewer")
++    if not who:
++        return ""
++    since = time.strftime("%Y-%m-%d %H:%M %z", time.localtime(who["claude_limited_since"]))
++    authors = ", ".join(who.get("authors_models", [])) or "none recorded"
++    return (
++        f" (reviewed on the fallback model {who['fallback_model']}, Claude at its usage limit "
++        f"since {since}; the ticket's authors ran on: {authors})"
++    )
++
++
++def should_switch(resets_at: float | None, now: float, s: Settings) -> bool:
++    """A reset that is near keeps Claude as the reviewer. No readable reset: switch."""
++    return resets_at is None or resets_at - now > s.switch_after_s
++
++
++def profile_refusal(s: Settings, profiles: dict) -> str | None:
++    """The profile must be the one model and nothing else, so no call can move silently."""
++    p = profiles.get(s.profile, {"error": "not read"})
++    if "error" in p:
++        return f"the profile {s.profile} could not be read: {p['error']}"
++    if not s.model or p.get("default") != s.model:
++        return f"the profile {s.profile} runs {p.get('default')!r}, not {s.model!r}"
++    if p.get("fallbacks"):
++        return f"the profile {s.profile} has fallbacks of its own: {', '.join(p['fallbacks'])}"
++    return None
++
++
++def independence_refusal(s: Settings, used: dict | None) -> str | None:
++    """`used`: {"models": [...], "unknown": [...]} for the ticket's authors, or None."""
++    if used is None:
++        return "the models this ticket used could not be established"
++    if used.get("unknown"):
++        return "a model switch in this ticket names no model: " + ", ".join(used["unknown"])
++    if s.model in used.get("models", []):
++        return f"{s.model} planned, implemented or found in this ticket"
++    return None
++
++
++def source_pack(git: Callable[..., str], sha: str, left_out: Callable[[str], bool], limit: int):
++    """The text files at `sha`, each under its path, and the names of what was left out."""
++    names = [n for n in git("ls-tree", "-r", "--name-only", "-z", sha).split("\0") if n]
++    parts, skipped, size = [], [], 0
++    for name in names:
++        if left_out(name):
++            skipped.append(name)
++            continue
++        try:
++            text = git("show", f"{sha}:{name}")
++        except (HarnessError, UnicodeDecodeError):
++            skipped.append(name)  # not text, or not a file (a submodule)
++            continue
++        if "\0" in text:
++            skipped.append(name)
++            continue
++        size += len(text)
++        if size > limit:
++            raise FallbackFault(
++                f"the sources at the change are over {limit} characters, too large for one prompt"
++            )
++        parts.append(f"\n\n--- File: {name} ---\n{text}")
++    note = (
++        f"\n\nLeft out (generated, vendored or not text): {', '.join(skipped)}." if skipped else ""
++    )
++    return "\n\n=== The repository at the change ===" + "".join(parts) + note
++
++
++def make_call(s: Settings, ask: Ask, check: Check, parse, validate, clock=time.time):
++    """`call(prompt, schema) -> answer`: one question, at most one re-ask, every answer checked.
++
++    `parse(text)` gives the JSON objects in a reply and `validate(obj, schema)` raises on a wrong
++    shape (the reviewer's own two functions). After every exchange the profile's sessions since
++    its start are read: a tool call, or any model but the intended one, discards the answer.
++    """
++    calls = 0
++
++    def call(prompt: str, schema: dict) -> dict:
++        nonlocal calls
++        why = ""
++        for n in (1, 2):
++            if calls >= s.max_calls:
++                raise FallbackFault(f"the fallback made {calls} calls for this card, the limit")
++            calls += 1
++            text = (
++                prompt
++                + "\n\nOutput ONLY one JSON object that matches this schema, with no prose and no "
++                "code fence:\n" + json.dumps(schema)
++            )
++            if n == 2:
++                text += (
++                    f"\n\nYour previous reply was rejected: {why}. Reply with only the JSON object."
++                )
++            start = clock()
++            try:
++                code, out, err = ask(text)
++            except subprocess.TimeoutExpired as exc:
++                raise FallbackFault(f"the fallback timed out after {s.timeout_s} s") from exc
++            except OSError as exc:
++                raise FallbackFault(f"the fallback could not be started: {exc}") from exc
++            if code != 0:
++                raise FallbackFault(f"the fallback call failed ({code}): {err.strip()[-200:]}")
++            seen = check(start)
++            if seen.get("tool_calls"):
++                raise FallbackFault(f"the fallback made {seen['tool_calls']} tool call(s)")
++            if seen.get("models") != [s.model]:
++                raise FallbackFault(
++                    f"the fallback ran on {seen.get('models')}, not on {s.model} alone"
++                )
++            why = "no JSON object in the reply"
++            for obj in parse(out):
++                try:
++                    validate(obj, schema)
++                except HarnessError as exc:
++                    why = str(exc)
++                    continue
++                return obj
++        raise FallbackFault(f"the fallback's reply is invalid after one re-ask: {why}")
++
++    return call
++
++
++# ---------- real backends ----------
++
++_IN_CONTAINER = ["docker", "exec", "-i", "-u", "hermes"]
++
++
++def hermes_ask(s: Settings) -> Ask:
++    """One question to the profile: no tool set, no rules file, one turn and a spare."""
++
++    def ask(text: str) -> tuple[int, str, str]:
++        p = subprocess.run(
++            [*_IN_CONTAINER, "-w", "/tmp", "hermes", "hermes", "-p", s.profile, "chat",
++             "--query-file", "-", "--oneshot", "-Q", "-t", "context_engine", "--ignore-rules",
++             "--max-turns", "2"],
++            input=text, capture_output=True, text=True, check=False, timeout=s.timeout_s,
++        )  # fmt: skip
++        return p.returncode, p.stdout, p.stderr
++
++    return ask
++
++
++_SESSIONS = (
++    "import json,sqlite3\n"
++    "c=sqlite3.connect('file:/opt/data/profiles/NAME/state.db?mode=ro',uri=True)\n"
++    "rows=list(c.execute('select model,coalesce(tool_call_count,0) from sessions '\n"
++    "    'where started_at>=?',(T0,)))\n"
++    "print(json.dumps({'models':sorted({r[0] or '' for r in rows}),"
++    "'tool_calls':sum(r[1] for r in rows),'sessions':len(rows)}))"
++)
++_USED = r"""
++import json, re, sqlite3, time
++models, unknown = set(), []
++for name in NAMES:
++    root = Path('/opt/data/profiles') / name
++    con = sqlite3.connect(f'file:{root}/state.db?mode=ro', uri=True)
++    models |= {r[0] for r in con.execute(
++        'select distinct model from sessions where started_at>=?', (T0,)) if r[0]}
++    con.close()
++    log = root / 'logs' / 'agent.log'
++    if not log.exists():
++        continue
++    for line in log.read_text(errors='replace').splitlines():
++        if 'Fallback activated:' not in line:
++            continue
++        at = re.match(r'(\d{4}-\d\d-\d\d)[ T](\d\d:\d\d:\d\d)', line)
++        if at and time.mktime(time.strptime(' '.join(at.groups()), '%Y-%m-%d %H:%M:%S')) < T0:
++            continue
++        to = re.search(r'Fallback activated: .*?(?:→|->)\s*(\S+)', line)
++        if to:
++            models.add(to.group(1))
++        else:
++            unknown.append(name)
++print(json.dumps({'models': sorted(models), 'unknown': unknown}))
++"""
++
++
++def _python_in_container(code: str) -> dict:
++    p = subprocess.run(
++        [*_IN_CONTAINER, "hermes", "python3", "-I", "-c", code],
++        capture_output=True, text=True, check=False, timeout=120,
++    )  # fmt: skip
++    if p.returncode != 0:
++        raise FallbackFault(f"Hermes's records could not be read ({p.returncode})")
++    try:
++        return json.loads(p.stdout)
++    except ValueError as exc:
++        raise FallbackFault("Hermes's records gave no JSON") from exc
++
++
++def _name(profile: str) -> str:
++    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", profile):
++        raise FallbackFault(f"not a profile name: {profile!r}")
++    return profile
++
++
++def hermes_check(s: Settings) -> Check:
++    """Models and tool calls of the profile's sessions since a call began (one or more)."""
++
++    def check(start: float) -> dict:
++        code = _SESSIONS.replace("NAME", _name(s.profile)).replace("T0", repr(float(start) - 1))
++        seen = _python_in_container(code)
++        if not seen.get("sessions"):
++            raise FallbackFault("the fallback's call left no session to check")
++        return seen
++
++    return check
++
++
++def hermes_used(s: Settings) -> Callable[[float], dict | None]:
++    """The models of the ticket's authors since `t0`: every session's model, and every model a
++    profile's log says it fell back to. None when that cannot be read."""
++
++    def used(t0: float) -> dict | None:
++        names = [_name(n) for n in s.author_profiles]
++        code = _USED.replace("NAMES", repr(names)).replace("T0", repr(float(t0)))
++        try:
++            return _python_in_container(code)
++        except (FallbackFault, OSError, subprocess.SubprocessError):
++            return None
++
++    return used
+diff --git a/src/harness/reviewer.py b/src/harness/reviewer.py
+index bf5f429..b4b8655 100644
+--- a/src/harness/reviewer.py
++++ b/src/harness/reviewer.py
+@@ -31,6 +31,7 @@ from . import (
+     claude_wait,
+     copies,
+     decisions,
++    fallback,
+     fixloop,
+     hostkit,
+     jobs,
+@@ -617,8 +618,13 @@ class Runner:
+         code_root: Path | None = None,
+         send: Callable[[str], None] | None = None,
+         clock: Callable[[], float] = time.time,
++        second: fallback.Second | None = None,
+     ):
+         self.trusted_root = trusted_root
++        # D27 part 2: `second` reviews when Claude is at its limit; `second_since` is set while
++        # it does (the time Claude's limit began), and `second_pack` holds the sources it reads
++        self.second, self.second_since, self.second_pack = second, None, ""
++        self.second_tried, self.second_authors = False, []
+         self.send, self.clock = send, clock
+         self.events: list[str] = []  # D27: what STATE.md's "what changed" should say
+         self.cfg, self.kanban, self.find, self.claude = cfg, kanban, find, claude
+@@ -637,7 +643,10 @@ class Runner:
+         budget: float | None = None,
+     ):
+         """One Claude call. `budget` (the spec pass only) replaces the per-call limit for this call;
+-        the card's overall budget still applies."""
++        the card's overall budget still applies. On the fallback (D27 part 2) the same question
++        goes to the second model, with the sources in place of the file tool, and costs nothing."""
++        if self.second_since is not None:
++            return self.second.call(fallback.NO_TOOLS + prompt + self.second_pack, schema)
+         cap = float(self.cfg.get("review", {}).get("max_usd_per_card", 3.0))
+         per_call = budget or float(self.cfg.get("claude", {}).get("max_usd_per_call", 0.75))
+         if self.cost + per_call > cap:
+@@ -795,14 +804,27 @@ class Runner:
+                 f"example `{c.get('id_example', 'tests/test_money.py::test_add')}`), not just its "  # noqa: E501
+                 f"title. Finding: {json.dumps(f)}"
+             )
++            written = self.second_since is not None  # the host writes the second model's test
++            if written:
++                schema = fallback.proof_schema(schema)
++                prompt += fallback.PROVE_NOTE
+             res = self._claude(prompt, schema, scratch, tools)
+             validate(res, schema)
++            test_source = res.pop("test_source", "")
+             if res["could_not_prove_because"] or not res["test_id"]:
+                 return none(res, "the prover could not write a failing test")
+             tid, tfile = res["test_id"], res["test_file"]
+             sep = self.cfg["commands"].get("id_sep", "::")
+             if tid.startswith("-") or tid.split(sep)[0] != tfile:
+                 return none(res, "test_id does not belong to test_file")
++            if written:
++                new = safe_rel_path(scratch, tfile, globs)
++                if new is None or new.exists() or new.is_symlink() or not test_source.strip():
++                    return none(res, "test_file is not one new file on a test path, or is empty")
++                try:
++                    write_nofollow(scratch, tfile, test_source)
++                except OSError as exc:
++                    return none(res, f"could not write the test safely: {exc.strerror}")
+             with worktree(self.tr, self.sha, prove_dir, deps_dir(self.cfg)) as clean:
+                 src = safe_rel_path(scratch, tfile, globs)
+                 dest = safe_rel_path(clean, tfile, globs)
+@@ -876,6 +898,18 @@ class Runner:
+         return {k: used[k] for k in ("commit", "design_sha256", "hidden_files")}
+ 
+     # --- the whole review of one card ---
++    def tier(self, key: str) -> dict:
++        base = self.base
++        return risk.classify(
++            self.cfg,
++            changed_paths(self.tr, base, self.sha),
++            risk.read_labels(self.trusted_root).get(key, []),
++            changed_line_count(self.tr, base, self.sha),
++            touched_base_tests(
++                self.tr, base, self.sha, self.cfg.get("commands", {}).get("test_globs", ["tests/*"])
++            ),
++        )
++
+     def review(self, key: str, run_dir: Path) -> dict:
+         self.repo, self.head, base = read_run_files(
+             run_dir, key, self.kit, self.default_repo, tuple(repos.registry(self.base_cfg))
+@@ -930,15 +964,7 @@ class Runner:
+             found["findings"], self.cfg, changed_lines(self.tr, base, self.sha)
+         )
+         refutations, proofs, skipped = {}, {}, []
+-        tier = risk.classify(
+-            self.cfg,
+-            changed_paths(self.tr, base, self.sha),
+-            risk.read_labels(self.trusted_root).get(key, []),
+-            changed_line_count(self.tr, base, self.sha),
+-            touched_base_tests(
+-                self.tr, base, self.sha, self.cfg.get("commands", {}).get("test_globs", ["tests/*"])
+-            ),
+-        )
++        tier = self.tier(key)
+         skip_refute = risk.skip_refuter(tier["tier"], kept, risk.enabled(self.cfg))
+         for f in [] if skip_refute else kept:
+             try:
+@@ -979,11 +1005,71 @@ class Runner:
+             },
+             "cost_usd": round(self.cost, 4),
+         }
++        if self.second_since is not None:  # D27 part 2: said wherever the review is shown
++            report["reviewer"] = {
++                "fallback_model": self.second.settings.model,
++                "claude_limited_since": self.second_since,
++                "authors_models": self.second_authors,
++            }
+         for name in ("findings", "refutations", "proofs"):
+             (run_dir / f"{name}.json").write_text(json.dumps({name: report[name]}, indent=2) + "\n")
+         (run_dir / "review.json").write_text(json.dumps(report, indent=2) + "\n")
+         return report
+ 
++    # --- D27 part 2: the review on the second model ---
++
++    def second_refusal(self, cid: str, key: str, limit: claude_wait.ClaudeLimit) -> str | None:
++        """Why this limit does not move the review to the second model, or None when it does."""
++        if self.second is None or not self.second.settings.enabled:
++            return "off"
++        s = self.second.settings
++        if (claude_wait.read(self.trusted_root).get(cid) or {}).get("second_tried"):
++            return "a fallback review was already tried during this wait"
++        if not fallback.should_switch(limit.resets_at, self.clock(), s):
++            return f"Claude's limit resets within {int(s.switch_after_s // 60)} minutes"
++        tier = self.tier(key)
++        if tier["tier"] == "high":
++            return f"a high-tier ticket waits for Claude ({tier['reason']})"
++        why = fallback.profile_refusal(s, self.second.profiles([s.profile]))
++        if why:
++            return why
++        mine = [e for e in pipeline.read_registry(self.trusted_root) if e["key"] == key]
++        used = self.second.used(float(mine[-1]["loaded_at"])) if mine else None
++        self.second_authors = sorted((used or {}).get("models", []))
++        return fallback.independence_refusal(s, used)
++
++    def review_on_second(self, cid: str, key: str, limit: claude_wait.ClaudeLimit) -> dict:
++        """The whole review again, every Claude step on the second model. Raises `limit` again
++        when the switch is refused or the second model fails: the card then waits as in part 1."""
++        try:
++            why = self.second_refusal(cid, key, limit)
++        except (HarnessError, OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:
++            why = f"the checks before the switch failed: {exc}"
++        if why == "off":
++            raise limit
++        if why is None:
++            self.second_tried = True
++            old = claude_wait.read(self.trusted_root).get(cid) or {}
++            # what Claude was paid before it stopped stays in the review's cost
++            self.second_since = float(old.get("since", self.clock()))
++            try:
++                self.second_pack = fallback.source_pack(
++                    lambda *a: _git(self.tr, *a),
++                    self.sha,
++                    lambda n: any(
++                        risk.matches(n, g)
++                        for g in self.cfg.get("review", {}).get("diff_exclude", [])
++                    ),
++                    self.second.settings.pack_max_chars,
++                )
++                return self.review(key, self.kit / "work" / "runs" / key)
++            except (HarnessError, OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:
++                why = f"the fallback review failed: {exc}"
++            finally:
++                self.second_since, self.second_pack = None, ""
++        self.events.append(f"{key}: not reviewed on the fallback model: {why}")
++        raise limit
++
+     # --- D27: waiting for Claude ---
+ 
+     def _alert(self, text: str) -> None:
+@@ -1185,7 +1271,10 @@ class Runner:
+ 
+         threading.Thread(target=beat, daemon=True).start()
+         try:
+-            report = self.review(key, self.kit / "work" / "runs" / key)
++            try:
++                report = self.review(key, self.kit / "work" / "runs" / key)
++            except claude_wait.ClaudeLimit as exc:
++                report = self.review_on_second(cid, key, exc)  # or the same limit again
+         except (RunFileError, specs.SpecInputError, copies.CopyError, fixloop.StillBroken) as exc:
+             stop.set()
+             self._forget_wait(cid)
+@@ -1194,10 +1283,10 @@ class Runner:
+         except claude_wait.ClaudeLimit as exc:
+             stop.set()
+             old = claude_wait.read(self.trusted_root).get(cid)
+-            return self._park(
+-                cid, key,
+-                claude_wait.after_limit(old, key, self.clock(), exc.resets_at, str(exc)),
+-            )  # fmt: skip
++            step = claude_wait.after_limit(old, key, self.clock(), exc.resets_at, str(exc))
++            if self.second_tried:
++                step.wait["second_tried"] = True  # one fallback review per wait, no more
++            return self._park(cid, key, step)
+         except claude_wait.ClaudeFault as exc:
+             stop.set()
+             old = claude_wait.read(self.trusted_root).get(cid)
+@@ -1223,7 +1312,9 @@ class Runner:
+             f"{key}: {len(d['blocking'])} proven, {len(d['blocking_unproven'])} blocking-unproven, "
+             f"{len(d['notes'])} notes, {len(report['skipped_budget'])} skipped for budget; "
+             f"${report['cost_usd']}"
+-        )
++        ) + fallback.said(report)
++        if "reviewer" in report:
++            self.events.append(f"{key}:{fallback.said(report)}")
+         if (
+             d["blocking"]
+             and not d["blocking_unproven"]
+@@ -1348,6 +1439,16 @@ def make_claude(cfg: dict) -> Claude:
+     return call
+ 
+ 
++def make_second(cfg: dict) -> fallback.Second | None:
++    s = fallback.settings(cfg)
++    if not s.enabled:
++        return None
++    call = fallback.make_call(
++        s, fallback.hermes_ask(s), fallback.hermes_check(s), parse_json_objects, validate
++    )
++    return fallback.Second(s, call, fallback.hermes_used(s), statefile.profile_models)
++
++
+ def apply_decisions(cfg: dict) -> list[str]:
+     """D15: apply the reviewer's decision files. Never lets a problem here stop the pass. Returns
+     one line per decision applied or rejected (for the state file)."""
+@@ -1484,6 +1585,7 @@ def _pass(argv: list[str] | None) -> tuple[int, str]:
+             Path(args.repo),
+             code_root=CODE_ROOT,
+             send=alert.configured_send(cfg),
++            second=make_second(cfg),
+         )
+         out = main_pass(runner)
+         if ctx is not None:
+diff --git a/tests/test_d27_fallback.py b/tests/test_d27_fallback.py
+new file mode 100644
+index 0000000..7a98a26
+--- /dev/null
++++ b/tests/test_d27_fallback.py
+@@ -0,0 +1,428 @@
++"""D27 part 2: while Claude is at its usage limit, a second model may review; never silently."""
++
++import json
++import subprocess
++
++import pytest
++from test_d27 import T0, Board, Clock, Script
++from test_reviewer import FINDING, git, world  # noqa: F401
++
++from harness import HarnessError, claude_wait, evidence, fallback, pipeline, reviewer, trusted
++from harness.claude_wait import ClaudeLimit
++from harness.fallback import FallbackFault
++
++MODEL = "qwen4-max"
++ON = {"enabled": True, "model": MODEL}
++S = fallback.settings({"review": {"fallback": ON}})
++FAR = ClaudeLimit("usage limit (five_hour)", T0 + 3 * 3600)
++NEAR = ClaudeLimit("usage limit (five_hour)", T0 + 3600)
++SCHEMA = {
++    "type": "object",
++    "properties": {"a": {"type": "integer"}},
++    "required": ["a"],
++    "additionalProperties": False,
++}
++SEEN = {"models": [MODEL], "tool_calls": 0, "sessions": 1}
++
++
++# --- when to switch ---
++
++
++def test_settings_are_off_unless_enabled():
++    assert not fallback.settings({}).enabled and fallback.settings({}).switch_after_s == 3600
++
++
++@pytest.mark.parametrize(
++    ("resets_at", "switch"),
++    [(None, True), (T0 + 3601, True), (T0 + 3600, False), (T0 + 60, False), (T0 - 5, False)],
++)
++def test_switch_only_when_the_reset_is_far_or_unreadable(resets_at, switch):
++    assert fallback.should_switch(resets_at, T0, S) is switch
++
++
++@pytest.mark.parametrize(
++    ("profile", "word"),
++    [
++        ({"default": MODEL, "fallbacks": []}, None),
++        ({"default": "qwen3.7-plus", "fallbacks": []}, "runs 'qwen3.7-plus'"),
++        ({"default": MODEL, "fallbacks": ["deepseek (x)"]}, "fallbacks of its own"),
++        ({"error": "config get failed"}, "could not be read"),
++    ],
++)
++def test_the_profile_must_be_the_one_model_with_no_fallback(profile, word):
++    why = fallback.profile_refusal(S, {S.profile: profile})
++    assert why is None if word is None else word in why
++
++
++def test_a_profile_that_was_not_read_is_refused():
++    assert "could not be read" in fallback.profile_refusal(S, {})
++
++
++@pytest.mark.parametrize(
++    ("used", "word"),
++    [
++        ({"models": ["gpt-6.2-sol", "qwen3.7-plus"], "unknown": []}, None),
++        ({"models": ["gpt-6.2-sol", MODEL], "unknown": []}, "planned, implemented or found"),
++        ({"models": [], "unknown": ["implementer"]}, "names no model"),
++        (None, "could not be established"),
++    ],
++)
++def test_the_second_model_must_not_be_an_author_of_the_ticket(used, word):
++    why = fallback.independence_refusal(S, used)
++    assert why is None if word is None else word in why
++
++
++# --- the sources in the prompt ---
++
++
++def repo_git(repo):
++    return lambda *a: reviewer._git(repo, *a)
++
++
++def test_the_pack_holds_every_text_file_and_names_what_it_left_out(tmp_path):
++    git(tmp_path, "init", "-q", "-b", "main")
++    (tmp_path / "a.py").write_text("A = 1\n")
++    (tmp_path / "vendor").mkdir()
++    (tmp_path / "vendor" / "big.js").write_text("x" * 50)
++    (tmp_path / "logo.bin").write_bytes(b"\x00\xff\x00")
++    git(tmp_path, "add", "-A")
++    git(tmp_path, "commit", "-q", "-m", "a")
++    pack = fallback.source_pack(repo_git(tmp_path), "HEAD", lambda n: n.startswith("vendor/"), 1000)
++    assert "--- File: a.py ---\nA = 1\n" in pack and "x" * 50 not in pack
++    assert "Left out (generated, vendored or not text): logo.bin, vendor/big.js." in pack
++
++
++def test_sources_too_large_for_one_prompt_are_a_fault(tmp_path):
++    git(tmp_path, "init", "-q", "-b", "main")
++    (tmp_path / "a.py").write_text("y" * 500)
++    git(tmp_path, "add", "-A")
++    git(tmp_path, "commit", "-q", "-m", "a")
++    with pytest.raises(FallbackFault, match="too large for one prompt"):
++        fallback.source_pack(repo_git(tmp_path), "HEAD", lambda n: False, 499)
++
++
++# --- one call ---
++
++
++class Model:
++    """A stand-in profile: replies in order; `seen` is what its sessions then show."""
++
++    def __init__(self, *replies, seen=SEEN, code=0):
++        self.replies, self.seen, self.code, self.asked = list(replies), seen, code, []
++
++    def ask(self, text):
++        self.asked.append(text)
++        reply = self.replies.pop(0)
++        if isinstance(reply, BaseException):
++            raise reply
++        return self.code, reply, "stderr words"
++
++    def call(self, s=S):
++        return fallback.make_call(
++            s, self.ask, lambda start: self.seen, reviewer.parse_json_objects, reviewer.validate
++        )
++
++
++def test_a_valid_reply_is_returned_and_the_schema_is_in_the_question():
++    m = Model('Sure:\n{"a": 1}')
++    assert m.call()("question", SCHEMA) == {"a": 1}
++    assert m.asked[0].startswith("question") and json.dumps(SCHEMA) in m.asked[0]
++
++
++def test_a_wrong_shape_is_asked_again_once_with_the_reason():
++    m = Model('{"a": "one"}', '{"a": 2}')
++    assert m.call()("q", SCHEMA) == {"a": 2}
++    assert "Your previous reply was rejected" in m.asked[1] and len(m.asked) == 2
++
++
++def test_two_wrong_replies_are_a_fault():
++    with pytest.raises(FallbackFault, match="invalid after one re-ask"):
++        Model("no json here", '{"b": 1}').call()("q", SCHEMA)
++
++
++@pytest.mark.parametrize(
++    ("seen", "word"),
++    [
++        ({"models": [MODEL], "tool_calls": 1, "sessions": 1}, "1 tool call"),
++        ({"models": ["qwen3.7-plus"], "tool_calls": 0, "sessions": 1}, "not on qwen4-max alone"),
++        ({"models": [MODEL, "x"], "tool_calls": 0, "sessions": 2}, "not on qwen4-max alone"),
++        ({"models": [""], "tool_calls": 0, "sessions": 1}, "not on qwen4-max alone"),
++    ],
++)
++def test_a_tool_call_or_another_model_discards_a_good_answer(seen, word):
++    with pytest.raises(FallbackFault, match=word):
++        Model('{"a": 1}', seen=seen).call()("q", SCHEMA)
++
++
++def test_a_failed_call_is_a_fault_and_is_not_asked_again():
++    m = Model('{"a": 1}', '{"a": 1}', code=1)
++    with pytest.raises(FallbackFault, match=r"failed \(1\): stderr words"):
++        m.call()("q", SCHEMA)
++    assert len(m.asked) == 1
++
++
++@pytest.mark.parametrize(
++    ("error", "word"),
++    [(subprocess.TimeoutExpired("hermes", 900), "timed out"), (OSError("no docker"), "started")],
++)
++def test_a_time_out_or_a_missing_program_is_a_fault(error, word):
++    with pytest.raises(FallbackFault, match=word):
++        Model(error).call()("q", SCHEMA)
++
++
++def test_the_calls_of_one_card_are_capped():
++    s = fallback.settings({"review": {"fallback": {**ON, "max_calls_per_card": 2}}})
++    call = Model('{"a": 1}', '{"a": 1}', '{"a": 1}').call(s)
++    call("q", SCHEMA)
++    call("q", SCHEMA)
++    with pytest.raises(FallbackFault, match="2 calls for this card, the limit"):
++        call("q", SCHEMA)
++
++
++def test_the_proof_answer_of_the_second_model_carries_the_test_source():
++    base = json.loads((reviewer.CODE_ROOT / "schemas" / "proof.json").read_text())
++    wide = fallback.proof_schema(base)
++    assert "test_source" in wide["required"] and "test_source" not in base["required"]
++    assert wide["additionalProperties"] is False
++
++
++def test_a_review_by_claude_says_nothing_and_one_by_the_second_model_names_it():
++    assert fallback.said({"cost_usd": 1}) == ""
++    who = {"fallback_model": MODEL, "claude_limited_since": T0, "authors_models": ["a", "b"]}
++    said = fallback.said({"reviewer": who})
++    assert "reviewed on the fallback model qwen4-max" in said and "authors ran on: a, b" in said
++
++
++# --- the runner ---
++
++PROFILE_OK = {"default": MODEL, "fallbacks": []}
++AUTHORS = {"models": ["gpt-6.2-sol", "qwen3.7-plus"], "unknown": []}
++TEST = "def test_half():\n    assert False\n"
++
++
++class SecondModel:
++    """Answers the review's steps as the second model would: text in, an object out."""
++
++    def __init__(self, verdict="refuted", fail=None, proof=None):
++        self.verdict, self.fail, self.proof, self.asked = verdict, fail, proof or {}, []
++
++    def __call__(self, prompt, schema):
++        self.asked.append(prompt)
++        if self.fail:
++            raise self.fail
++        if "refutations" in schema["properties"]:
++            return {
++                "refutations": [
++                    {"finding_id": "F1", "verdict": self.verdict, "reason": "r",
++                     "counter_evidence": "c"}
++                ]
++            }  # fmt: skip
++        return {
++            "finding_id": "F1", "test_id": "tests/test_proof.py::test_half",
++            "test_file": "tests/test_proof.py", "could_not_prove_because": "",
++            "test_source": TEST, **self.proof,
++        }  # fmt: skip
++
++
++class Rig2:
++    def __init__(self, world, *failures, second=None, on=ON, profile=PROFILE_OK, used=AUTHORS):
++        kit, repo, run, cfg = world
++        self.world, self.board, self.clock = world, Board(), Clock()
++        self.claude, self.model = Script(*failures), second or SecondModel()
++        self.root = kit.parent / "trusted"
++        self.cfg = {**cfg, "review": {**cfg["review"], "fallback": on}}
++        self.asked_profiles, self.asked_used = [], []
++        self.profile, self.used = profile, used
++        self.alerts, self.events = [], []
++        pipeline.registry_path(self.root).write_text(
++            json.dumps([{"key": "PRC-1", "loaded_at": T0 - 500}])
++        )
++        self.main = git(trusted.trusted_repo(repo, self.root), "rev-parse", "main")
++
++    def profiles(self, names):
++        self.asked_profiles.append(names)
++        return {n: self.profile for n in names}
++
++    def authors(self, t0):
++        self.asked_used.append(t0)
++        return self.used
++
++    def run(self):
++        kit, repo, run, _ = self.world
++        find = lambda prompt: json.dumps({"findings": [FINDING]})  # noqa: E731
++        s = fallback.settings(self.cfg)
++        r = reviewer.Runner(
++            self.cfg, self.board, find, self.claude, repo, kit, self.root,
++            send=self.alerts.append, clock=self.clock,
++            second=fallback.Second(s, self.model, self.authors, self.profiles),
++        )  # fmt: skip
++        out = r.run_once()
++        self.events, self.last = self.events + r.events, r
++        return out
++
++    def landed(self):
++        repo = self.world[1]
++        return git(trusted.trusted_repo(repo, self.root), "rev-parse", "main") != self.main
++
++    def review(self):
++        return json.loads((self.world[2] / "review.json").read_text())
++
++    def wait(self):
++        return claude_wait.read(self.root).get("t_9")
++
++
++def test_a_far_limit_moves_the_whole_review_to_the_second_model_and_says_so(world):
++    rig = Rig2(world, FAR)
++    assert rig.run() == "completed t_9"
++    assert rig.landed() and rig.wait() is None and rig.claude.calls == 1
++    who = rig.review()["reviewer"]
++    assert who == {
++        "fallback_model": MODEL, "claude_limited_since": T0,
++        "authors_models": ["gpt-6.2-sol", "qwen3.7-plus"],
++    }  # fmt: skip
++    assert rig.review()["cost_usd"] == 0
++    assert rig.asked_used == [T0 - 500] and rig.asked_profiles == [["reviewer-fallback"]]
++    words = "reviewed on the fallback model qwen4-max, Claude at its usage limit since"
++    assert len(rig.events) == 1 and words in rig.events[0]
++    complete = next(c for c in rig.board.calls if c[0] == "complete")
++    assert words in complete[complete.index("--summary") + 1]
++    assert "schedule" not in rig.board.verbs() and rig.alerts == []
++
++
++def test_the_second_model_is_told_it_has_no_tools_and_gets_the_sources(world):
++    rig = Rig2(world, FAR)
++    rig.run()
++    (asked,) = rig.model.asked
++    assert asked.startswith(fallback.NO_TOOLS)
++    assert "--- File: calc.py ---\ndef div(a, b):" in asked and "def half(a):" in asked
++
++
++def test_the_evidence_names_the_second_model():
++    who = {"fallback_model": MODEL, "claude_limited_since": T0, "authors_models": []}
++    assert "fallback model qwen4-max" in evidence.fallback.said({"reviewer": who})
++
++
++def test_a_near_reset_waits_for_claude(world):
++    rig = Rig2(world, NEAR)
++    assert rig.run() == "waiting t_9"
++    assert rig.model.asked == [] and rig.asked_profiles == [] and not rig.landed()
++    assert rig.wait()["next_try"] == T0 + 3660 and "second_tried" not in rig.wait()
++    assert any("resets within 60 minutes" in e for e in rig.events)
++
++
++def test_a_limit_without_a_reset_time_switches(world):
++    rig = Rig2(world, ClaudeLimit("the API answered 429"))
++    assert rig.run() == "completed t_9" and "reviewer" in rig.review()
++
++
++def test_switched_off_nothing_is_asked_and_the_card_waits_as_before(world):
++    rig = Rig2(world, FAR, on={"enabled": False, "model": MODEL})
++    assert rig.run() == "waiting t_9"
++    assert rig.model.asked == [] and rig.asked_profiles == [] and rig.asked_used == []
++    assert len(rig.events) == 1 and "waiting for Claude's usage limit" in rig.events[0]
++
++
++def test_a_high_tier_ticket_waits_for_claude(world):
++    rig = Rig2(world, FAR)
++    rig.cfg = {**rig.cfg, "risk": {"high_risk_globs": ["calc.py"]}}
++    assert rig.run() == "waiting t_9"
++    assert rig.model.asked == [] and not rig.landed()
++    assert any("a high-tier ticket waits for Claude" in e for e in rig.events)
++
++
++@pytest.mark.parametrize(
++    ("used", "word"),
++    [
++        ({"models": [MODEL], "unknown": []}, "planned, implemented or found in this ticket"),
++        ({"models": [], "unknown": ["planner"]}, "names no model"),
++        (None, "could not be established"),
++    ],
++)
++def test_an_author_model_or_unknown_authors_wait_for_claude(world, used, word):
++    rig = Rig2(world, FAR, used=used)
++    assert rig.run() == "waiting t_9"
++    assert rig.model.asked == [] and not rig.landed() and any(word in e for e in rig.events)
++
++
++def test_a_ticket_the_pipeline_does_not_know_waits_for_claude(world):
++    rig = Rig2(world, FAR)
++    pipeline.registry_path(rig.root).write_text("[]")
++    assert rig.run() == "waiting t_9" and rig.model.asked == [] and rig.asked_used == []
++
++
++@pytest.mark.parametrize(
++    "profile",
++    [{"default": "other", "fallbacks": []}, {"default": MODEL, "fallbacks": ["x (y)"]},
++     {"error": "gone"}],
++)  # fmt: skip
++def test_a_profile_that_could_switch_silently_is_not_used(world, profile):
++    rig = Rig2(world, FAR, profile=profile)
++    assert rig.run() == "waiting t_9" and rig.model.asked == [] and rig.asked_used == []
++
++
++def test_a_failing_check_before_the_switch_waits_for_claude(world):
++    rig = Rig2(world, FAR)
++    rig.profiles = lambda names: (_ for _ in ()).throw(HarnessError("docker is down"))
++    assert rig.run() == "waiting t_9" and rig.model.asked == []
++    assert any("the checks before the switch failed: docker is down" in e for e in rig.events)
++
++
++def test_a_fault_of_the_second_model_lands_nothing_and_is_tried_once_per_wait(world):
++    rig = Rig2(world, FAR, FAR, second=SecondModel(fail=FallbackFault("1 tool call(s)")))
++    assert rig.run() == "waiting t_9"
++    assert not rig.landed() and "block" not in rig.board.verbs() and len(rig.model.asked) == 1
++    assert rig.last.second_since is None and rig.last.second_pack == ""
++    assert rig.wait()["second_tried"] is True and rig.wait()["next_try"] == T0 + 3 * 3600 + 60
++    assert any("the fallback review failed: 1 tool call(s)" in e for e in rig.events)
++    rig.clock.now = rig.wait()["next_try"] + 1
++    rig.model.fail = None
++    assert rig.run() == "waiting t_9"  # Claude is limited again: the second model is not asked
++    assert len(rig.model.asked) == 1 and not rig.landed()
++    assert any("already tried during this wait" in e for e in rig.events)
++    rig.clock.now = rig.wait()["next_try"] + 1
++    assert rig.run() == "completed t_9" and "reviewer" not in rig.review()  # by Claude
++
++
++def test_after_a_review_by_claude_a_new_wait_may_use_the_second_model_again(world):
++    rig = Rig2(world, FAR, second=SecondModel(fail=FallbackFault("x")))
++    rig.run()
++    rig.clock.now = rig.wait()["next_try"] + 1
++    assert rig.run() == "completed t_9" and rig.wait() is None
++
++
++def test_the_host_writes_the_second_models_test_and_proves_with_it(world):
++    rig = Rig2(world, FAR, second=SecondModel(verdict="stands"))
++    rig.run()
++    (proof,) = rig.review()["proofs"]
++    assert proof["proven"] is True and proof["test_source"] == TEST
++    assert rig.review()["decision"]["blocking"] == ["F1"] and not rig.landed()
++    assert "Put the whole source of that file in test_source" in rig.model.asked[-1]
++
++
++@pytest.mark.parametrize(
++    ("proof", "note"),
++    [
++        ({"test_file": "calc.py", "test_id": "calc.py::test_half"}, "not one new file"),
++        ({"test_file": "../x/test_p.py", "test_id": "../x/test_p.py::test_half"}, "not one new"),
++        ({"test_source": "  \n"}, "is empty"),
++        ({"could_not_prove_because": "no test can show it"}, "could not write a failing test"),
++    ],
++)
++def test_a_test_outside_one_new_test_file_proves_nothing(world, proof, note):
++    rig = Rig2(world, FAR, second=SecondModel(verdict="stands", proof=proof))
++    rig.run()
++    (got,) = rig.review()["proofs"]
++    assert got["proven"] is None and note in got["note"] and not rig.landed()
++
++
++def test_the_second_model_cannot_overwrite_an_existing_test(world):
++    kit, repo, run, cfg = world
++    (repo / "tests").mkdir()
++    (repo / "tests" / "test_proof.py").write_text("def test_half():\n    assert True\n")
++    git(repo, "add", "-A")
++    git(repo, "commit", "-q", "-m", "a test")
++    rig = Rig2(world, FAR, second=SecondModel(verdict="stands"))
++    assert rig.run() == "blocked t_9"
++    (got,) = rig.review()["proofs"]
++    assert "reviewer" in rig.review() and got["proven"] is None
++    assert "not one new file" in got["note"]
