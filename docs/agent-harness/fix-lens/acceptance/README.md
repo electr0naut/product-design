@@ -33,7 +33,7 @@ in Python, independently of the product code.
 | File | Ticket | Tests |
 |---|---|---|
 | `acc-delimiters.test.js` | FXL-9 | 14 |
-| `acc-framing-rules.test.js` | FXL-9 (added after it landed) | 10 |
+| `acc-framing-rules.test.js` | FXL-9 (added after it landed) | 11 |
 | `acc-events.test.js` | FXL-10 | 11 |
 | `acc-orders.test.js` | FXL-11 | 10 |
 | `acc-summary.test.js` | FXL-12 | 17 |
@@ -67,13 +67,12 @@ folder as it stands.
 ## Added after FXL-9 landed: `acc-framing-rules.test.js`
 
 Mutation testing of FXL-9 left 70 mutants of `src/framing.js` alive. Applied one by one and compared on generated
-pastes, 35 change behaviour, and 28 of those were caught by no test, here or in the project
-(`reports/FXL-9-survivors-classified.md`). This file holds the rules the design pins and nothing was holding: a
-delimiter followed by digits without `=`, a delimiter at the end of the text, `8=FIX` after a digit, a tag with a
-letter after its digits, a CheckSum of the wrong length, the header order and where its error points, a
-BodyLength that is not a number, the position of a missing CheckSum, and the shape of every error text. It
-passes on the landed code and on the independent build, and kills 14 of the 28. The other 14 are in places the
-design does not pin (a candidate's `end` after a CheckSum with no delimiter, input that is not a string,
-bad-tag pieces in `fields`, the wording of one problem text, a delimiter spelled at the very end of the text).
+pastes, 44 change behaviour, and the suite as it was caught 5 of them (`reports/FXL-9-survivors-classified.md`).
+This file holds the rules the design pins and nothing was holding: a delimiter followed by digits without `=`,
+or by `=` without digits, a delimiter at the end of the text, `8=FIX` after a digit, a tag with a letter after
+its digits, a CheckSum of the wrong length, the header order and where its error points, a BodyLength that is
+not a number, the position of a missing CheckSum, and the shape of every error text. It passes on the landed
+code and on the independent build, and with it 23 of the 44 are caught. Of the other 21, 12 are in places the
+design does not pin, 1 changes only a wording, and 8 are edge cases of detecting `^A` and `<SOH>`.
 
 It reaches the host copy with the next `refresh_copies`, in the commit that retires the `acc-render` tests.

@@ -30,6 +30,11 @@ test("a text delimiter followed by digits but no = is part of the value", () => 
   for (const [text, v] of cases) expect(value(one(text), 58)).toBe(v);
 });
 
+test("a text delimiter followed by = with no digits is part of the value", () => {
+  expect(value(one("8=FIX.4.4|9=28|35=0|34=1|49=A|56=B|58=a|=b|10=172|"), 58)).toBe("a|=b");
+  expect(value(one("8=FIX.4.4^A9=29^A35=0^A34=1^A49=A^A56=B^A58=a^A=b^A10=208^A"), 58)).toBe("a^A=b");
+});
+
 test("a text delimiter at the end of the text is a separator, not part of the last value", () => {
   for (const d of ["|", "^A", "<SOH>"]) {
     const text = ["8=FIX.4.4", "9=5", "35=0"].join(d) + d;
