@@ -187,14 +187,27 @@ Kept: the SMK-1 and SMK-2 cards (done), their run folders, the two commits on th
 2026-11-27. Ubay, quoted in the review: **"start the first batch now, alert or no alert"** (reviewing session); his message to this job: "Pull product-design and read docs/agent-harness/reports/V12-go-review5.md. Do as it says." This lifts step 3 of D21-code-review. **The 02:02 test alert is still unconfirmed:** on the next kit change list, with a second test message that Ubay confirms.
 
 ## Step 1: nothing had changed (checked just before 12:08:59; read-only)
+The script's output, as printed (`~/.local/state/agent-harness-bake/smk/recheck.py`):
 ```
-cards for FXL-9..16: none | worker cards running, ready or blocked: none
-kit: host checkout, reviewed-sha and container copy all 7c190a2
-copies verify: ae216b0f82e0, design 4c2cb3fd5236, 17 hidden files; all four worker reading copies 4c2cb3fd5236
-fix-lens trusted main e721f31; work repo main e721f31, no changes; hidden history 67 passed; D-20261127-3 applied
-pipeline.json: only SMK-1 and SMK-2, finished; runner status ok; timer active; old driver not running
-ticket files: byte for byte those of the D21 dry run; last commit of each 1b47d32
-RESULT: nothing differs  (18 of 18 checks)
+ok   cards for FXL-9..16: []
+ok   worker cards running: []
+ok   worker cards ready or blocked: []
+ok   host kit: 7c190a2
+ok   host reviewed-sha: 7c190a2
+ok   container kit: 7c190a2
+ok   copies verify: commit, design, hidden files: ('ae216b0f82e0', '4c2cb3fd5236', 17)
+ok   worker reading copies: ['4c2cb3fd5236']
+ok   fix-lens trusted main: e721f31
+ok   fix-lens work repo (main, changes): ('e721f31', '')
+ok   hidden history passed: 67
+ok   D-20261127-3: applied
+ok   pipeline entries: [('SMK-1', True), ('SMK-2', True)]
+ok   runner status ok: True
+ok   runner timer: active
+ok   old driver running: 0
+ok   ticket files (same bytes as the D21 dry run): {'9': 'c9ef1f520c0a', '10': '915fc4714704', '11': '7fa4389df732', '12': '6a20b2b38e78', '13': 'b467210139d5'}
+ok   last commit of each file: ['1b47d32']
+RESULT: nothing differs
 ```
 
 ## Step 2: loaded
