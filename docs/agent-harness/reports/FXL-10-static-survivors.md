@@ -32,6 +32,8 @@ So "Survived" here means only "the one page test did not fail". It says nothing 
 
 **The other 70 are not static.** This change would not explain them. (That run is my trial with the static check left out, not the official rerun, and I have not checked any of the 70 by hand.) In the same run, 2 static hybrid mutants were **killed** by that page test; those kills are real.
 
+> **Correction (D23):** below, "the reviewer" is wrong. The host's automated review gets no mutation result; survivors reach `gates.json` and the published evidence. See `D23-static-mutants.md`.
+
 ## Proposed smallest change (not built)
 In the kit's counting loop (`mutation.py`, `run_stryker`), while `ignoreStatic` is on:
 - a mutant with `status == "Survived"` and `static == true` goes into a new count, **`static_not_measured`**, not into `survived`, and **not into the survivors list** that the reviewer and the evidence get;
