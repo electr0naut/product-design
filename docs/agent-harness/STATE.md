@@ -1,10 +1,10 @@
 # Harness state
 
-Written by the runner at 2026-11-28T00:19:02+0100. Host-only copy: `state.json`.
+Written by the runner at 2026-11-28T00:23:27+0100. Host-only copy: `state.json`.
 Kit: `ccbaea983b26d0df710e6cafd1e4968dcd6a0d50`
 
 ## What changed
-- block: FXL-22 · triage
+- block: FXL-23 · triage
 
 ## Tickets
 - **SMK-1** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
@@ -23,13 +23,14 @@ Kit: `ccbaea983b26d0df710e6cafd1e4968dcd6a0d50`
 - **FXL-20** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
 - **FXL-21** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
 - **FXL-22** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: blocked
-- **FXL-23** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: todo
+- **FXL-23** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: blocked
 - **FXL-24** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: todo
 - **FXL-25** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: todo
 - **FXL-26** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: todo
 
 ## Blocks
 - FXL-22 · triage (`t_e6592dfb`), head `None`: AC10 states 'findOrder also learns to find the order of one message' but doesn't specify the behavior. What is the input (a message object? a message number?)? What is the output (the order/group? the order id?)? What is the new function signature?
+- FXL-23 · triage (`t_b6621679`), head `None`: AC9 is truncated in the handoff ('The usual order still works as today: a fi… [truncated, 368 chars omitted]'). Cannot verify observability (Rule 1). Please provide the complete text of AC9.
 
 ## Holds
 - none
