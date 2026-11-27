@@ -1,0 +1,7 @@
+{
+  "id": "D-20261127-5",
+  "action": "unblock_once",
+  "key": "FXL-10",
+  "card": "t_587dd3d4",
+  "reason": "FXL-10-block-diff: the test edit at head 80116ec is approved by D-20261127-4; let the gatekeeper card go on once"
+}
