@@ -151,6 +151,9 @@ The folder now holds 25 files and 277 tests.
 
 **Checked before use.**
 - **The reviewer's build of v1.4.** All 277 pass.
+- **A second build, made from the tickets and the design alone** (another agent, which saw neither the
+  reviewer's build nor these tests). All 277 pass. The points it found loose in the tickets are now written
+  into FXL-22, FXL-23, FXL-24, FXL-26 and the design; on each of them the two builds already agreed.
 - **v1.3 (the reviewer's build).** 236 pass. The 41 that fail are all in the five new files: 13 in
   `acc-parties`, 10 in `acc-executions`, 4 in `acc-restart`, 5 in `acc-single-byte` and 9 in `acc-pick`.
 - **One ticket at a time.** On v1.3, adding the v1.4 `src/orders.js` makes `acc-parties` pass and nothing else

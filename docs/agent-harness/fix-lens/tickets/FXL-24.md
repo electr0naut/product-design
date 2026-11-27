@@ -10,7 +10,8 @@ logout or disconnect) was not followed: every message after the restart had a lo
 was ignored, so a real gap after the restart was not shown. From v1.4 a Logon numbered 1 restarts the count
 (PRD v1.4 TR-003; technical design v1.4 section 7, step 1).
 
-Step 1 becomes: a Logon (35=A) with 141=Y, or with MsgSeqNum 1, when 43 is not `Y`, sets the expected number
+MsgSeqNum is read as a number, as today, so `34=01` is numbered 1. Step 1 becomes: a Logon (35=A) with 141=Y,
+or with MsgSeqNum 1, when 43 is not `Y`, sets the expected number
 of its direction to 1. The other steps do not change, so the Logon itself then advances the expected number to
 2. Only its own direction restarts; the other direction restarts with its own Logon. The restart adds no
 timeline event of its own.

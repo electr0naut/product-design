@@ -15,7 +15,8 @@ event's message in the timeline and the card's message in a card. `number` is a 
 `orderMessage` (a message number or `null`). `render` finds the selected order with `findOrder(groups,
 view.orderId, view.orderMessage)` from `src/orders.js` (FXL-22); a view without `orderMessage` is found by its
 id, as before. In `src/main.js`, `pick(id, number)` sets `view.orderId` and `view.orderMessage` (and page 1, as
-today); `clear` and pressing Decode set both to `null`.
+today); `pick` called without a number sets `view.orderMessage` to `null`; `clear` and pressing Decode set both
+to `null`. A view whose `orderId` is `null` has no selected order, whatever its `orderMessage`.
 
 Rounding. The figures of the trading summary are rounded to four decimals with `toFixed(4)`, which rounds the
 stored binary value: an average of exactly 1.00255 is stored a hair below and shows as `1.0025`. From v1.4 a

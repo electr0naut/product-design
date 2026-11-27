@@ -409,7 +409,7 @@ expected to change.
 | Missing 34, 49 or 56 | No sequence check; empty string in the direction key and as a party (sections 12 and 13); shown blank |
 | Whose id it is (v1.4) | A ClOrdID belongs to the client and an OrderID or ExecID to the executing party, told apart by SenderCompID and TargetCompID alone (section 12). SubIDs, OnBehalfOfCompID and DeliverToCompID are not read |
 | Repeated 35 | The first value counts |
-| Repeated 11, 37, 41, 17, 19, 32, 31, 54, 55, 1 | The first value counts, in grouping, the summary and the filters |
+| Repeated 11, 37, 41, 17, 19, 32, 31, 54, 55, 1, 49, 56 | The first value counts, in grouping, the summary and the filters |
 | Dictionary source at build time | Vendored XML at a pinned commit; no network |
 | CSP delivery | Meta tag, because a static server may not set headers |
 | OrderID `NONE` | Not an identifier (section 12) |
@@ -489,7 +489,7 @@ Five rules complete the above:
   it is unmatched.
 - A TradeCorrect that names an execution in the log, but whose own LastQty is not a finite number above zero,
   changes nothing and is not unmatched.
-- An unmatched TradeCancel or TradeCorrect is remembered by its OrderID and ExecID, so a resend of it is not
+- An unmatched TradeCancel or TradeCorrect is remembered by its key (SenderCompID, OrderID, ExecID; v1.4), so a resend of it is not
   counted again. That memory is only for spotting the resend. When the unmatched report made no execution (a
   TradeCancel, or a TradeCorrect with no usable quantity, Symbol or side), a later report whose ExecRefID names
   it has named no execution in the log: it is treated as **not found**, so it is unmatched too, and a

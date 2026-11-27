@@ -18,7 +18,8 @@ key so that no choice of values makes two different triples equal.
 Two passes. The reports were taken once, in log order, so a trade cancel that stood before its fill was
 unmatched and the fill stayed in the totals. Logs merged from two sources hold them in either order. The
 reports are now taken in two passes over the whole list, each in log order: first every Fill, then every
-TradeCorrect and TradeCancel. The list of executions stays in log order of `number`. One limit stays, and is
+TradeCorrect and TradeCancel. So when a Fill and a TradeCorrect or TradeCancel carry the same key, the Fill
+holds the key, also when it stands later. The list of executions stays in log order of `number`. One limit stays, and is
 wanted: a TradeCancel or TradeCorrect that names a TradeCorrect standing after it in the log does not find it
 and is unmatched.
 

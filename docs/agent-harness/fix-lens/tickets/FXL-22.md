@@ -13,7 +13,8 @@ ticket: `src/render.js` still calls `findOrder(groups, id)`, which keeps working
 
 The parties of a message. For an ExecutionReport (35=8) or an OrderCancelReject (35=9), the executing party is
 its SenderCompID (49) and the client is its TargetCompID (56). For every other message the client is its 49 and
-the executing party is its 56. A missing 49 or 56 is the empty string.
+the executing party is its 56. A missing 49 or 56 is the empty string, the same as a 49 or 56 with an empty
+value. When 49 or 56 repeats, the first value counts.
 
 The keys of a message. The pair (client, value) for its ClOrdID (11) and for its OrigClOrdID (41), and the pair
 (executing party, value) for its OrderID (37). Two keys are the same only when both parts are equal, exactly and
@@ -26,12 +27,16 @@ are expected to change. `src/filters.js`, `src/summary.js` and `src/render.js` d
 
 Existing tests. Some fixtures in `test/filters.test.js`, `test/render.test.js` and `test/page.test.js` send an
 execution report in the same direction as its order, or leave out the 49 or 56 of one of the two, which no
-real log does. With the party rule the report no longer joins its order, and the test fails. Give those fixtures the real direction: a
+real log does. With the party rule the report no longer joins its order, and the test fails. Give those
+fixtures the real direction: a
 report goes from the executing party to the client, so its 49 is the order's 56 and its 56 is the order's 49.
 Where an expected value follows from the 49 or 56 of a message you changed (a SenderCompID filter, a filter
 list), the expected value follows the fixture; where the old fixture cannot keep what the test's name says,
-rebuild the fixture so that the name still holds. No test is removed, no assertion is dropped, and no test
-outside these three files and `test/orders.test.js` changes. Name every test you changed in the handoff. On the
+rebuild the fixture so that the name still holds and the test still catches what it caught before (a test
+about a hidden message between two shown ones keeps such a message; a test about a filter that hides a report
+keeps a hidden report). No test is removed and no assertion is dropped. An existing test in any other test file
+that fails for the same reason is handled the same way and named in the handoff; a test that fails for any
+other reason is not touched: stop and say so. Name every test you changed in the handoff. On the
 code as landed with FXL-21 these are the 16 tests that fail once the rule is in:
 
 - `test/filters.test.js`: `test_apply_filters_account_and_sender_keep_only_matching_messages`,
@@ -78,7 +83,9 @@ Acceptance criteria
   `D` from `CLI` and `D` from `cli` with the same ClOrdID are two orders.
 - AC7: ClOrdIDs and OrderIDs are separate. For (1) `D`, SELF -> SELF, 11=1 and (2) `8`, SELF -> SELF, 37=1,
   there are two groups: `[1]` with `clOrdIds: ["1"]` and `[2]` with `orderIds: ["1"]`.
-- AC8: `findOrder(groups, id, number)` returns the group whose `numbers` include `number`. When `number` is
+- AC8: `findOrder(groups, id, number)` returns the group whose `numbers` include `number`, also when that
+  group does not hold `id` (in the example below `findOrder(groups, "nope", 4)` is the group `[2, 4]`). When
+  `number` is
   `null` or left out, or no group holds that message, it returns the first group whose `clOrdIds` or `orderIds`
   contains `id`, or `null`. For (1) `D`, ALPHA -> BRK, 11=500; (2) `D`, BETA -> BRK, 11=Q9; (3) `8`, BRK ->
   ALPHA, 37=12, 11=500; (4) `8`, BRK -> BETA, 37=500, 11=Q9; (5) a heartbeat: `findOrder(groups, "500", 4)` is
