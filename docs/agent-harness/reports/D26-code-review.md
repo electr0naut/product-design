@@ -11,10 +11,11 @@ jobs, and one way a secret could be published.** Nothing is to be merged, deploy
 - **The signature check works on the real branch.** With the key line of setup step 6, `why_not_signed` passes
   all 13 decision files on this branch, and refuses `STATE.md`, `reports/D26-jobs.md` and `runs/FXL-18.md` (no
   SSH signature), as it should.
-- **I broke 26 guards by hand, one at a time; `tests/test_d26.py` caught 22.** The four it did not catch are
-  doubled guards, not gaps: the launcher's two ledger checks cover each other (with both off, a test fails);
-  the two extra checks in `why_not_signed` (same content as the head; differs from every parent) follow from
-  what `rev-list -1 -- <path>` returns, so nothing can reach them. Keep them; no test needed.
+- **I broke 24 guards by hand, one at a time; `tests/test_d26.py` caught 20.** The four it did not catch are
+  two doubled pairs, not gaps. The launcher's two ledger checks cover each other: with both off, a test fails.
+  The two extra checks in `why_not_signed` (same content as the head; differs from every parent) follow from
+  what `rev-list -1 -- <path>` returns, so nothing reaches them, and with both off the tests still pass. Keep
+  them; no test needed.
 - Read in full: `signing.py`, `jobs.py`, `proofrun.py`, `dispatch.py`, `run-job`, the settings, the prompt and
   the units. The outbox reader (no link followed, one name, one owner, size and count caps, read only after the
   job ended), the ledger written before the run, and the proof container's flags (no network, read-only, no
