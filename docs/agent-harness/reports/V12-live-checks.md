@@ -179,3 +179,44 @@ Everything else needed for it is in place. **To go on, one line is needed from U
 
 ## Created, kept and deleted in this job
 Kept: the SMK-1 and SMK-2 cards (done), their run folders, the two commits on the fixture repository's `main`, the ticket files in `work/smoke-tickets/`, and the watcher and its log in `~/.local/state/agent-harness-bake/smk/`. Deleted: my scratch checkouts `work/scratch-smoke-pre` and two temporary query scripts in the container's `/tmp`.
+
+---
+
+# First batch loaded (V12-go-review5.md)
+
+2026-11-27. Ubay, quoted in the review: **"start the first batch now, alert or no alert"** (reviewing session); his message to this job: "Pull product-design and read docs/agent-harness/reports/V12-go-review5.md. Do as it says." This lifts step 3 of D21-code-review. **The 02:02 test alert is still unconfirmed:** on the next kit change list, with a second test message that Ubay confirms.
+
+## Step 1: nothing had changed (checked just before 12:08:59; read-only)
+```
+cards for FXL-9..16: none | worker cards running, ready or blocked: none
+kit: host checkout, reviewed-sha and container copy all 7c190a2
+copies verify: ae216b0f82e0, design 4c2cb3fd5236, 17 hidden files; all four worker reading copies 4c2cb3fd5236
+fix-lens trusted main e721f31; work repo main e721f31, no changes; hidden history 67 passed; D-20261127-3 applied
+pipeline.json: only SMK-1 and SMK-2, finished; runner status ok; timer active; old driver not running
+ticket files: byte for byte those of the D21 dry run; last commit of each 1b47d32
+RESULT: nothing differs  (18 of 18 checks)
+```
+
+## Step 2: loaded
+FXL-9 to FXL-13 only, one call, deployed kit `7c190a2` with its own interpreter, 12:08:59 to 12:10:18, exit 0 (`work/v12-batch1-load.log`). FXL-14 to FXL-16 not loaded.
+
+| ticket | triage | planner | implementer | gatekeeper | reviewer | scribe | **gate `accept`** |
+|---|---|---|---|---|---|---|---|
+| FXL-9 | `t_4ce5f5bc` | `t_7713458a` | `t_d600c119` | `t_c67dab18` | `t_0e79fe4d` | `t_8de57973` | **`t_86adfba0`** |
+| FXL-10 | `t_48f81dca` | `t_b1e267f0` | `t_06fbcd75` | `t_9aa89059` | `t_c053bdcc` | `t_311ba68f` | **`t_3960dd05`** |
+| FXL-11 | `t_93781c67` | `t_29fe70d5` | `t_7b95e0b3` | `t_3102cf30` | `t_0a25dcec` | `t_f270ac75` | **`t_30ad1eaa`** |
+| FXL-12 | `t_79089e1d` | `t_23857d96` | `t_2248fbd3` | `t_b8ab2019` | `t_60bb8403` | `t_c5ad15d5` | **`t_ed7cd7ef`** |
+| FXL-13 | `t_16d3b999` | `t_25a52181` | `t_16a0ee09` | `t_767a3517` | `t_92632ed4` | `t_a6a01268` | **`t_f4bc99e5`** |
+
+| ticket's triage waits on | gates of |
+|---|---|
+| FXL-9 | nothing: **running at 12:10:43** |
+| FXL-10 | FXL-9 |
+| FXL-11 | FXL-10 |
+| FXL-12 | FXL-11 (the one before) and FXL-10 (its blocker) |
+| FXL-13 | FXL-12 (the one before) and FXL-11 (its blocker) |
+
+Each gate is unassigned and waits only on its own ticket's scribe. Also checked: `pipeline.json` has the five entries with those gates and scribes; `queue.json` has the five in order; the host-only ticket text of each equals the file; the gates' copy of the trusted main is `e721f31`.
+
+## While it runs
+- `STATE.md` staleness: the 10-minute check now also looks at it (the review's 30-minute rule). Note that the runner rewrites `STATE.md` **only on events** (a finish, a block, a hold, a decision, a kit change), so a long ticket can leave it older than 30 minutes while all is well. I will still check the runner each time that happens, and comment once per quiet spell.
