@@ -1,11 +1,12 @@
-# FIX Lens - Technical Design (copy of Confluence page 1409027, v1.2.2)
+# FIX Lens - Technical Design (v1.3 draft; Confluence page 1409027 still holds v1.2.2)
 
-**Version:** 1.2.2, for PRD v1.2 (Gate 3 approved 2026-11-26).
-**Status:** v1.2 approved by Ubay Gonzalez (2026-11-26); it replaces v1.1, which was approved under delegation on
+**Version:** 1.3, for PRD v1.3. **The v1.3 changes (sections 4, 9, 10, 15 and the new section 16, each marked
+"v1.3") were drafted on 2026-11-27 and await Ubay Gonzalez's approval.** Everything else is v1.2.2, unchanged.
+**Status of v1.2.2:** v1.2 approved by Ubay Gonzalez (2026-11-26); it replaces v1.1, which was approved under delegation on
 2026-11-25. The v1.2.1 clarifications (four corrections and seven additions, none changing the PRD) were approved
 by Ubay Gonzalez on 2026-11-27. The v1.2.2 clarification (one addition in section 13, on a report that names an
 unmatched report; it changes neither the PRD nor the code as built) was approved by Ubay Gonzalez on 2026-11-27.
-**Built by:** the agent delivery harness. Tickets FXL-1 to FXL-8 are built. This version adds FXL-9 to FXL-16.
+**Built by:** the agent delivery harness. Tickets FXL-1 to FXL-18 are built. v1.3 adds FXL-19 to FXL-21.
 
 Sections marked **(changed)** differ from v1.1. Sections marked **(new)** are additions. Everything else is
 unchanged from v1.1.
@@ -29,6 +30,7 @@ src/timeline.js         session and order events, sequence gaps (US-002, TR-003)
 src/orders.js           group messages into orders (US-007)                                    new
 src/summary.js          executions, trade cancels and corrections, buys and sells (US-008)     new
 src/filters.js          the five filters (US-009)                                              new
+src/paging.js           which messages are on a page, and the page line (US-010)               v1.3
 src/analyse.js          one entry point: limits, then framing, then decode and timeline
 src/render.js           DOM output with text nodes and textContent only (TR-006)
 src/main.js             wires the page to analyse() and render(); holds the view state
@@ -123,8 +125,8 @@ CheckSum does not, so the message is reported with `checksum`. No other reading 
 ## 4. Limits (US-004)
 
 They're checked **before** framing.
-- **Size:** `new TextEncoder().encode(paste).length > 1_048_576`.
-- **Count:** the number of message candidates (section 3) `> 1_000`.
+- **Size:** `new TextEncoder().encode(paste).length > 10_485_760`. (v1.3; it was 1,048,576)
+- **Count:** the number of message candidates (section 3) `> 10_000`. (v1.3; it was 1,000)
 
 Over either limit, `analyse()` returns `ok: false` with both measured numbers and nothing else. The warning names
 both numbers and suggests splitting the log (AC-016, AC-017).
@@ -350,8 +352,10 @@ Every `button.order-link` calls `handlers.pick(id)` with the id alone. An OrderI
   expected results written out in the ticket, computed independently of the code and of the helper. The helper
   alone is never the oracle.
 - **Performance (AC-006, TR-005):** a test builds 100 valid mixed messages and checks that `analyse()` finishes
-  in under 5 seconds. A second test builds 1,000 valid order messages and checks that `orderGroups`,
-  `tradeSummary` and `applyFilters` each finish in under 1 second.
+  in under 5 seconds. A second test builds 10,000 valid mixed messages (orders, fills, heartbeats, several
+  sessions) and checks that `analyse()` finishes in under 5 seconds and that `orderGroups`, `tradeSummary` and
+  `applyFilters` each finish in under 1 second. A third builds 10,000 messages padded to just under 10,485,760
+  bytes and checks `analyse()` again. (v1.3; the second test used 1,000 messages)
 - **Dev dependencies, all pinned in `package.json`:** `vitest`, `jsdom`, `@stryker-mutator/core`,
   `@stryker-mutator/vitest-runner` (10.x). No runtime dependencies.
 - **Harness settings:** `[repos.fix-lens]` overlay with the Vitest commands, with `test_dir = "test/"`. The JS
@@ -359,7 +363,9 @@ Every `button.order-link` calls `handlers.pick(id)` with the id alone. An OrderI
 
 ## 10. Ticket order (changed)
 
-FXL-1 to FXL-8 are built. FXL-9 to FXL-16 follow the PRD v1.2 delivery plan, tickets 9 to 16, in that order.
+FXL-1 to FXL-18 are built. FXL-19 to FXL-21 follow the PRD v1.3 delivery plan, tickets 19 to 21 (v1.3):
+FXL-19 the limits, FXL-20 `src/paging.js`, FXL-21 the pager on the page. FXL-9 to FXL-16 followed the PRD v1.2
+delivery plan, tickets 9 to 16, in that order.
 The harness runs them one at a time, each after its blockers. Each ticket lists its acceptance criteria as
 testable statements taken from the PRD, starts with its interface criterion, and names the test files it is
 expected to change.
@@ -490,3 +496,59 @@ These are deliberate, and the tests that describe the old behaviour change with 
 | 35=F, G and 9 add no event | CancelRequest, ReplaceRequest, CancelReject |
 | The page has two sections, with paragraphs for the timeline | Section 8.2 |
 | Errors are listed apart from the messages | Error cards in log order |
+
+**v1.3 changes these:**
+
+| v1.2 | v1.3 |
+|---|---|
+| A log over 1,048,576 bytes or 1,000 messages is refused | The limits are 10,485,760 bytes and 10,000 messages (section 4) |
+| Every shown message has its card and its timeline rows on the page at once | 200 messages at a time (section 16) |
+
+## 16. Paging (US-010) (new in v1.3)
+
+**Why:** with the limit at 10,000 messages, drawing every card at once took 11 seconds and over a million
+elements (measured on v1.2 with the limit lifted). The analysis itself took under a second. So only the drawing
+changes: `analyse()` and every result stay as they are.
+
+**`src/paging.js`**, a pure module with no DOM access:
+- `PAGE_SIZE` is `200`.
+- `pageOf(entries, page)` returns `{ page, pages, from, to, total, items }`.
+  - `total` is `entries.length`; `pages` is `Math.max(1, Math.ceil(total / PAGE_SIZE))`.
+  - `page` is the requested page made valid: anything that is not an integer becomes 1, a number below 1
+    becomes 1, a number above `pages` becomes `pages`.
+  - `items` is the slice of `entries` for that page, in order. `from` and `to` are the positions of its first
+    and last item, counted from 1; both are 0 when `total` is 0.
+  - It never changes `entries`.
+- `pageLabel(info, narrowed)` returns `Messages <from> to <to> of <total>`, with ` shown` added when `narrowed`
+  is true. The three numbers are written with a comma between thousands: `Messages 201 to 400 of 10,000`,
+  `Messages 1 to 200 of 1,240 shown`.
+
+**The entries that are paged** are what section 8.2 shows today, in log order: not narrowed, every decoded
+message and every error, merged by message number; narrowed, the shown decoded messages only (AC-054).
+
+**View and handlers.** `view.page` is an integer, 1 when missing. `handlers` gains `setPage(n)`. In `main.js`:
+`setPage(n)` sets `view.page` and renders, then calls `scrollIntoView()` on the element with the class
+`results`, where the browser has that method. Pressing Decode, `setFilter`, `pick` and `clear` all set
+`view.page` to 1 before rendering (AC-061).
+
+**What `render` does differently** (everything else in section 8.2 stands):
+- It computes the entries, then `info = pageOf(entries, view.page)`.
+- `#decode` holds one card per item of `info.items`, and no others.
+- The timeline holds the events whose message number is the number of a decoded message in `info.items`, and
+  no others (AC-059).
+- **The pager**, only when `info.pages` is above 1: a `nav.pager` as the last element inside `#summary`, after
+  `div.filters`, and a second `nav.pager` as the last element inside `#decode`. Each holds `span.page-info`
+  with `pageLabel(info, narrowed)` and four `button`s of type `button`, in this order, with the classes and
+  texts `page-first` `First`, `page-prev` `Previous`, `page-next` `Next`, `page-last` `Last`. `First` and
+  `Previous` have `disabled` true on page 1; `Next` and `Last` on the last page. They call
+  `handlers.setPage` with `1`, `info.page - 1`, `info.page + 1` and `info.pages`.
+- **Nothing else follows the page** (AC-062): the summary strip, the trading summary, the filter lists and the
+  order banner are built from the whole log or the whole filtered log, exactly as in v1.2. `render` passes the
+  same `shown` numbers to `tradeSummary` as before, not the page's.
+- The empty texts of section 8.2 are unchanged; with no entries there is no pager.
+
+**Styles:** `.pager` is a wrapping flex row with the page line first; its buttons look like `.show-all`. The
+colour rules of section 8.3 hold. A disabled button is shown in `var(--muted)`.
+
+**Security:** the page line is set with `textContent`, and holds only numbers the code computed. No element
+property is set from pasted text (section 8.2).

@@ -202,7 +202,7 @@ FIX Lens is a static web application that lets FIX support and client onboarding
 **Acceptance Criteria:**
 
 - AC-057: The timeline and the message cards show 200 messages at a time (a page). A log of 200 messages or fewer is shown whole, with no page controls.
-- AC-058: When there is more than one page, a line above the timeline and the cards says which messages are on screen and how many there are, for example "Messages 201 to 400 of 10,000", with four buttons: First, Previous, Next and Last. First and Previous are disabled on the first page, Next and Last on the last.
+- AC-058: When there is more than one page, a line above the timeline and the cards says which messages are on screen and how many there are, for example "Messages 201 to 400 of 10,000", with four buttons: First, Previous, Next and Last. First and Previous are disabled on the first page, Next and Last on the last. The line and its buttons are shown above the timeline and the cards, and again under the cards. Changing the page brings the top of the timeline and the cards back into view.
 - AC-059: The timeline and the cards always show the same page: the timeline lists the events of the messages on that page, and no others.
 - AC-060: Pages count the messages shown. Malformed messages count, at their place in the log. While a filter is set or an order is selected, the pages run over the messages that are shown (AC-053, AC-054), and the line says so, for example "Messages 1 to 200 of 1,240 shown".
 - AC-061: Decoding again, changing or clearing a filter, selecting an order and returning to all messages each go back to the first page.
