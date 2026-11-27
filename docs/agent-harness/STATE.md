@@ -1,13 +1,15 @@
 # Harness state
 
-Written by the runner at 2026-11-27T02:30:20+0100. Host-only copy: `state.json`.
+Written by the runner at 2026-11-27T02:42:21+0100. Host-only copy: `state.json`.
 Kit: `7c190a2d696add2fb63f4d409a03e34498e018eb`
 
 ## What changed
-- kit commit is now 7c190a2d696add2fb63f4d409a03e34498e018eb
+- finished: SMK-1
 
 ## Tickets
-- none loaded
+- **SMK-1** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
+- **SMK-2** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: ready
+
 ## Blocks
 - none
 
@@ -15,7 +17,7 @@ Kit: `7c190a2d696add2fb63f4d409a03e34498e018eb`
 - none
 
 ## Last hidden-suite result
-none yet
+{'ticket': 'SMK-1', 'enabled': False, 'passed': None, 'total': None, 'regressions': [], 'trusted_main': None}
 
 ## Profiles
 | profile | default | fallbacks |
