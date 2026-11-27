@@ -1,0 +1,13 @@
+{
+  "id": "D-20261127-6",
+  "action": "retire_hidden",
+  "key": "FXL-14",
+  "tests": [
+    "test/acc-render.test.js > a second render replaces the first, and errors and the size warning are shown",
+    "test/acc-render.test.js > an unsupported version is labelled and its fields are shown raw, without made-up names",
+    "test/acc-render.test.js > decode rows show tag, name, raw value and enum meaning",
+    "test/acc-render.test.js > pasted markup is shown as text and creates no element",
+    "test/acc-render.test.js > timeline rows show every AC-010 field for an order event"
+  ],
+  "reason": "acceptance/README.md: these five describe the v1.1 page, which FXL-14 replaces on purpose (PRD v1.2 US-006). Replaced by acc-presentation.test.js; the file is removed from the acceptance folder in 9448c0b"
+}
