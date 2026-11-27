@@ -1,0 +1,8 @@
+{
+  "id": "D-20261127-13",
+  "action": "load_tickets",
+  "key": "FXL-18",
+  "tickets": ["FXL-18"],
+  "commit": "53a5a14d931e88f068fbe7723cba663416160d5a",
+  "reason": "live check after the 25a315e deploy (Ubay: 'deployed', 2026-11-27): FXL-18 is already loaded, so this must be refused and load nothing; the comment must show the commit, its time and the signature state"
+}
