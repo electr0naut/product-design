@@ -1,9 +1,10 @@
-# FIX Lens - Technical Design (copy of Confluence page 1409027, v1.2.1)
+# FIX Lens - Technical Design (copy of Confluence page 1409027, v1.2.2)
 
-**Version:** 1.2.1, for PRD v1.2 (Gate 3 approved 2026-11-26).
+**Version:** 1.2.2, for PRD v1.2 (Gate 3 approved 2026-11-26).
 **Status:** v1.2 approved by Ubay Gonzalez (2026-11-26); it replaces v1.1, which was approved under delegation on
 2026-11-25. The v1.2.1 clarifications (four corrections and seven additions, none changing the PRD) were approved
-by Ubay Gonzalez on 2026-11-27.
+by Ubay Gonzalez on 2026-11-27. The v1.2.2 clarification (one addition in section 13, on a report that names an
+unmatched report; it changes neither the PRD nor the code as built) was approved by Ubay Gonzalez on 2026-11-27.
 **Built by:** the agent delivery harness. Tickets FXL-1 to FXL-8 are built. This version adds FXL-9 to FXL-16.
 
 Sections marked **(changed)** differ from v1.1. Sections marked **(new)** are additions. Everything else is
@@ -436,7 +437,10 @@ Five rules complete the above:
 - A TradeCorrect that names an execution in the log, but whose own LastQty is not a finite number above zero,
   changes nothing and is not unmatched.
 - An unmatched TradeCancel or TradeCorrect is remembered by its OrderID and ExecID, so a resend of it is not
-  counted again.
+  counted again. That memory is only for spotting the resend. When the unmatched report made no execution (a
+  TradeCancel, or a TradeCorrect with no usable quantity, Symbol or side), a later report whose ExecRefID names
+  it has named no execution in the log: it is treated as **not found**, so it is unmatched too, and a
+  TradeCorrect then makes an execution from its own fields as above. (v1.2.2)
 - Messages of an unsupported version count for nothing in the summary, their NewOrderSingles included.
 
 `side` is `"buy"` for Side 54 `1` or `3`, `"sell"` for `2`, `4`, `5` or `6` (AC-047). A report with another

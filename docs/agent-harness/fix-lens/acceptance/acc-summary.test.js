@@ -155,6 +155,29 @@ test("a resent unmatched report is counted once", () => {
   expect(tradeSummary(decodedOf("FIX.4.4", [cancel, cancel, correct, correct]))).toEqual({ rows: [], unmatched: 2 });
 });
 
+test("a report that names an unmatched report which made no execution is unmatched too (design v1.2.2)", () => {
+  // Worked by hand from section 13. The cancel in line 1 names an execution that is not in the log.
+  const zero = { orders: 0, orderedQty: 0, fills: 0, filledQty: 0, notional: 0, pricedQty: 0 };
+  const r = tradeSummary(decodedOf("FIX.4.4", [
+    "35=8 37=O1 11=C1 17=E2 19=E1 150=H 55=VOD.L 54=1",
+    "35=8 37=O1 11=C1 17=E3 19=E2 150=G 55=VOD.L 54=1 32=100 31=71.5",
+    "35=8 37=O1 11=C1 17=E4 19=E2 150=H 55=VOD.L 54=1",
+    "35=8 43=Y 37=O1 11=C1 17=E4 19=E2 150=H 55=VOD.L 54=1",
+    "35=8 37=O1 11=C1 17=E5 19=E3 150=G 55=VOD.L 54=1 32=120 31=72",
+  ]));
+  // 1, 2 and 3 are unmatched; 4 is a resend of 3; 5 corrects the execution that 2 made from its own fields.
+  expect(r.unmatched).toBe(3);
+  expect(r.rows).toEqual([{ symbol: "VOD.L", buy: { ...zero, fills: 1, filledQty: 120, notional: 8640, pricedQty: 120 }, sell: zero }]);
+
+  // The same after an unmatched correction with no usable quantity.
+  const q = tradeSummary(decodedOf("FIX.4.4", [
+    "35=8 37=O2 11=C2 17=F2 19=F1 150=G 55=BARC.L 54=2 32=0 31=2.5",
+    "35=8 37=O2 11=C2 17=F3 19=F2 150=G 55=BARC.L 54=2 32=50 31=2.5",
+  ]));
+  expect(q.unmatched).toBe(2);
+  expect(q.rows).toEqual([{ symbol: "BARC.L", buy: zero, sell: { ...zero, fills: 1, filledQty: 50, notional: 125, pricedQty: 50 } }]);
+});
+
 test("an empty Symbol or ExecID counts as missing", () => {
   const s = tradeSummary(decodedOf("FIX.4.4", [
     "35=8 37=O1 17=E1 150=F 55= 54=1 32=10 31=2",

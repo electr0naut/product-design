@@ -36,7 +36,7 @@ in Python, independently of the product code.
 | `acc-framing-rules.test.js` | FXL-9 (added after it landed) | 11 |
 | `acc-events.test.js` | FXL-10 | 11 |
 | `acc-orders.test.js` | FXL-11 | 10 |
-| `acc-summary.test.js` | FXL-12 | 17 |
+| `acc-summary.test.js` | FXL-12 | 18 |
 | `acc-filters.test.js` | FXL-13 | 8 |
 | `acc-presentation.test.js` | FXL-14 | 21 |
 | `acc-order-story.test.js` | FXL-15 | 12 |
@@ -76,3 +76,10 @@ code and on the independent build, and with it 23 of the 44 are caught. Of the o
 design does not pin, 1 changes only a wording, and 8 are edge cases of detecting `^A` and `<SOH>`.
 
 It reaches the host copy with the next `refresh_copies`, in the commit that retires the `acc-render` tests.
+
+## Added with design v1.2.2: one test in `acc-summary.test.js`
+
+`a report that names an unmatched report which made no execution is unmatched too (design v1.2.2)` pins the
+reading Ubay Gonzalez chose on 2026-11-27 ("A"). Its figures were worked by hand from section 13. It passes on
+the landed FXL-12 code and fails, as it should, on the independent build's first reading. It reaches the host
+copy, together with the design copy, with a `refresh_copies` sent when no card is running.
