@@ -12,8 +12,9 @@ your recommendation, dont stay idle if not absolutely necessary"**.
    `acc-render`, `acc-framing-rules` present); the trusted `main` of `fix-lens` is `8881fce`; the board has no
    card for FXL-14 to FXL-17.
 3. **Load FXL-17 alone,** from the ticket file at `445c622` or later.
-4. **Then load FXL-14, FXL-15 and FXL-16,** in a second call, from the ticket files at `1b47d32` or later.
-   FXL-14's triage must wait on `accept FXL-17`.
+4. **Then load FXL-14, FXL-15 and FXL-16,** in a second call, from the ticket files as they are on the branch
+   now. Their last changes are `1b47d32` (FXL-14), `ab1db50` (FXL-15) and `7afa4d1` (FXL-16); those are the
+   expected commits, not a reason to stop. FXL-14's triage must wait on `accept FXL-17`.
 5. Comment on the PR with the card ids and the gate links.
 
 ## While it runs
