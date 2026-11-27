@@ -1,10 +1,11 @@
 # Harness state
 
-Written by the runner at 2026-11-27T14:02:47+0100. Host-only copy: `state.json`.
+Written by the runner at 2026-11-27T14:06:00+0100. Host-only copy: `state.json`.
 Kit: `6c483e64d2f0fc26a787f51c7b39cf4c8b2d7953`
 
 ## What changed
-- finished: FXL-13
+- decision applied D-20261127-6: retired 5 hidden test(s) from the fix-lens history
+- decision applied D-20261127-7: refreshed the fix-lens copies from 9448c0b99295: design sha256 4c2cb3fd5236, 17 hidden test files
 
 ## Tickets
 - **SMK-1** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
@@ -36,4 +37,4 @@ Kit: `6c483e64d2f0fc26a787f51c7b39cf4c8b2d7953`
 | scribe | deepseek-flash | qwen3.7-plus (alibaba-token-plan) |
 
 ## Instructions without a report
-- none
+- FXL-13-landed-review.md
