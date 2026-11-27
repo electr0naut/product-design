@@ -131,3 +131,55 @@ The folder now holds 20 files and 214 tests.
 
 **Order of operations.** Retire the four tests and refresh the host copy; deploy the kit commit that adds the
 three lines to the table; then load FXL-19 to FXL-21.
+
+## v1.4 (reviewer, 2026-11-27, for tickets FXL-22 to FXL-26)
+
+Written from the PRD v1.4 and technical design v1.4 drafts (sections 3, 7, 8.2, 12 and 13), for the seven
+findings of the validation of 2026-11-27 that Ubay Gonzalez put into phase 1 ("as recommended", 2026-11-27).
+The wording of the two drafts still waits for his approval; nothing here is loaded before that. Every expected
+value follows from who sends each message and from the rules of the design, never from the product.
+
+| File | Ticket | Tests | Finding |
+|---|---|---|---|
+| `acc-parties.test.js` | FXL-22 | 17 | FL-01, FL-02 (ids within their parties), `findOrder` by message |
+| `acc-executions.test.js` | FXL-23 | 15 | FL-01 (two venues, same OrderID and ExecID), FL-04 (cancel before its fill) |
+| `acc-restart.test.js` | FXL-24 | 11 | FL-05 (a Logon numbered 1 restarts the count) |
+| `acc-single-byte.test.js` | FXL-25 | 9 | FL-13 (single-byte text outside ASCII) |
+| `acc-pick.test.js` | FXL-26 | 11 | FL-03 (the button opens the order of its message), FL-15 (a half rounds away from zero) |
+
+The folder now holds 25 files and 277 tests.
+
+**Checked before use.**
+- **The reviewer's build of v1.4.** All 277 pass.
+- **v1.3 (the reviewer's build).** 236 pass. The 41 that fail are all in the five new files: 13 in
+  `acc-parties`, 10 in `acc-executions`, 4 in `acc-restart`, 5 in `acc-single-byte` and 9 in `acc-pick`.
+- **One ticket at a time.** On v1.3, adding the v1.4 `src/orders.js` makes `acc-parties` pass and nothing else
+  fail; `src/summary.js`, `src/timeline.js` and `src/framing.js` each make exactly their own file pass, in any
+  order; `acc-pick` needs FXL-22 and FXL-26.
+- **The validation's own corpus,** on the reviewer's build: of its 106 hand cases 86 pass (78 on v1.3), and the
+  8 that changed are the cases of the seven findings; its 88 dataset checks give the same verdicts as on v1.3;
+  its property tests PB-01 to PB-07 pass (PB-06 failed on v1.3). Its page check needed one line of its own
+  handler changed to pass the message number on; that was done in a scratch copy.
+- **Deliberate breaks.** 55 single changes to the reviewer's build (the client or the executing party read
+  from the wrong tag, a cancel reject read as sent by the client, an id without its party, the two parts of a
+  key run together, `findOrder` ignoring the number or giving up without it, executions keyed without their
+  sender, one pass instead of two, a correction taking its own number, any message numbered 1 restarting, both
+  directions restarting, the length or the checksum alone accepting single-byte text, characters above U+00FF
+  let in, a button without its number, the old rounding, a half rounded down or to even, the sign lost, and
+  others). 53 make at least one test fail; two tests were added for breaks missed at first (a missing party
+  written as a word, 12 significant digits instead of 15). The other two change nothing that can be seen: the
+  list of executions is already in log order when it is sorted, and a view that kept the number of an earlier
+  click can't be reached, because a selected order shows only its own buttons.
+
+**Existing tests changed, none retired.** The fixtures of `acc-orders.test.js` sent every report in the
+direction of its order, and those of `acc-performance.test.js` spread one order over two pairs of CompIDs,
+which no real log does and which the party rule reads as different parties. The fixtures now send types 8 and 9
+from the executing party, and choose the pair per order. Test names and expected values are unchanged, and both
+files pass on v1.3 and on v1.4, so no `retire_hidden` is needed.
+
+**Expected files** (to add to `[expected_hidden.fix-lens]` in the kit's `harness.host.toml`, D24): FXL-22
+`acc-parties`; FXL-23 `acc-executions`; FXL-24 `acc-restart`; FXL-25 `acc-single-byte`; FXL-26 `acc-pick`.
+
+**Order of operations.** After the approval of the v1.4 wording, and once FXL-19 to FXL-21 have landed and no
+card is running: refresh the host copy; deploy the kit commit that adds the five lines to the table; then load
+FXL-22 to FXL-26.

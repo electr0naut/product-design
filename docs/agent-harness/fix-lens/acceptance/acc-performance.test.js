@@ -15,9 +15,9 @@ function fixmsg(fields) {
   for (const b of enc.encode(head + body)) sum += b;
   return (head + body + `10=${String(sum % 256).padStart(3, "0")}${S}`).replaceAll(S, "|");
 }
-// Order o is messages 5o+1 to 5o+5: a NewOrder, three fills of 100 at 71.25 and a heartbeat. Messages alternate
-// between two sessions, each direction with its own sequence, so there is no gap. Side: even o buys, odd o
-// sells. Symbol: o mod 3. Account: o mod 4.
+// Order o is messages 5o+1 to 5o+5: a NewOrder, three fills of 100 at 71.25 and a heartbeat. Orders alternate
+// between two sessions (even o on CLI1 and BRK1, odd o on CLI2 and BRK2), each direction with its own sequence,
+// so there is no gap. Side: even o buys, odd o sells. Symbol: o mod 3. Account: o mod 4.
 const SYMBOLS = ["VOD.L", "BARC.L", "AZN.L"];
 function log(n, pad = 0) {
   const rows = [];
@@ -25,8 +25,8 @@ function log(n, pad = 0) {
   const next = (k) => (seq[k] = (seq[k] ?? 0) + 1);
   const text = pad ? [[58, "x".repeat(pad)]] : [];
   for (let i = 0; i < n; i++) {
-    const [cli, brk] = i % 2 ? ["CLI2", "BRK2"] : ["CLI1", "BRK1"];
     const o = Math.floor(i / 5);
+    const [cli, brk] = o % 2 ? ["CLI2", "BRK2"] : ["CLI1", "BRK1"];
     const k = i % 5;
     const sym = SYMBOLS[o % 3];
     const sideOf = 1 + (o % 2);
@@ -69,7 +69,7 @@ test("10,000 mixed messages: analyse under 5 seconds, each view under 1 second, 
   expect(filterMs).toBeLessThan(1000);
 
   const [bySender, senderMs] = timed(() => applyFilters(r.decoded, { senderCompId: "BRK2" }));
-  // BRK2 sends the execution reports that fall on even message numbers
+  // BRK2 sends the three execution reports of each of the 1,000 odd orders
   expect(bySender.length).toBe(3000);
   expect(senderMs).toBeLessThan(1000);
 });

@@ -470,13 +470,13 @@ For each ExecutionReport, by `executionKind`:
 
 - **Fill** with LastQty 32 a finite number above zero: if its key is already in the map, skip it (a resend).
   Otherwise add an Execution `{ number, symbol: 55, side, qty: 32, px: 31 }` and map its key to it.
-- **TradeCorrect:** if its own key is already in the map, skip it. Otherwise look up `<37>|<19>`:
+- **TradeCorrect:** if its own key is already in the map, skip it. Otherwise look up the key of its own 49, its own 37 and its 19:
   - **found, an execution:** set that execution's `qty` and `px` to this report's 32 and 31. Its `number`,
     `symbol` and `side` stay. Map this report's own key to the same execution.
   - **found, `cancelled`:** nothing changes. Map its own key to `cancelled`.
   - **not found:** it is **unmatched**. When its 32 is a finite number above zero, add an Execution from its own
     fields, as for a Fill. Map its own key to it.
-- **TradeCancel:** if its own key is already in the map, skip it. Otherwise look up `<37>|<19>`:
+- **TradeCancel:** if its own key is already in the map, skip it. Otherwise look up the key of its own 49, its own 37 and its 19:
   - **found, an execution:** remove it from the list. Map every key that pointed to it, and this report's own
     key, to `cancelled`.
   - **found, `cancelled`:** nothing changes.
@@ -515,7 +515,8 @@ unmatched reports whose number is in it.
   `toFixed(4)` alone gives `1.0025`. The method: write the absolute value with 15 significant digits
   (`toPrecision(15)`), which removes that noise; take its digits up to the fourth decimal place and add one in
   the last place when the fifth decimal digit is 5 or more; put the sign back. A value that `toPrecision(15)`
-  writes with an exponent (below 0.000001, or 1e15 and above) is rounded with `toFixed(4)` as before.
+  writes with an exponent (below 0.000001, or 1e15 and above) or with fewer than five decimals (eleven or more
+  digits before the point) is rounded with `toFixed(4)` as before.
 - Bought and Sold: `format(filledQty)`. Average: `format(notional / pricedQty)`, or `–` (an en dash) when
   `pricedQty` is zero. Net: `format(buy.filledQty - sell.filledQty)`, with a leading `+` when the rounded value is above
   zero. A value that rounds to zero is written `0`, never `-0` or `+0`.

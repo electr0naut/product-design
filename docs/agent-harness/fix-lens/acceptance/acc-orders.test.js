@@ -10,8 +10,12 @@ function fixmsg(begin, fields) {
   const sum = [...new TextEncoder().encode(head + body)].reduce((a, b) => a + b, 0) % 256;
   return (head + body + `10=${String(sum).padStart(3, "0")}${S}`).replaceAll(S, "|");
 }
+// A sends the orders and B answers: reports (8) and cancel rejects (9) go from B to A, as in a real log (v1.4).
 const log = (...rows) => {
-  const text = rows.map(([type, ...extra], i) => fixmsg("FIX.4.4", [[35, type], [49, "A"], [56, "B"], [34, i + 1], ...extra])).join("\n");
+  const text = rows.map(([type, ...extra], i) => {
+    const [from, to] = type === "8" || type === "9" ? ["B", "A"] : ["A", "B"];
+    return fixmsg("FIX.4.4", [[35, type], [49, from], [56, to], [34, i + 1], ...extra]);
+  }).join("\n");
   const r = analyse(text);
   expect(r.errors).toEqual([]);
   return r.decoded;
