@@ -1,0 +1,8 @@
+{
+  "id": "D-20261127-19",
+  "action": "load_tickets",
+  "key": "FXL-22",
+  "tickets": ["FXL-22", "FXL-23", "FXL-24", "FXL-25", "FXL-26"],
+  "commit": "2a7550244286d5401ca43a484b3bced8efc61a36",
+  "reason": "FIX Lens v1.4 (seven findings of the validation of 2026-11-27: order ids within their parties, executions by sender, a cancel or correction before its fill, restart at 1, single-byte text, pick by message, rounding), from PRD v1.4 and design v1.4, approved by Ubay Gonzalez on 2026-11-27 ('as recommended' for the scope; 'v1.4 approved' for the wording). The copies were refreshed from this commit (D-20261127-18) and the kit with the expected hidden files of the five tickets is deployed (ccbaea9; Ubay: 'deployed', 2026-11-27). The board is idle: every loaded ticket is finished."
+}
