@@ -135,19 +135,22 @@ test("malformed messages are error cards at their place in log order", () => {
   expect(cards[1].querySelector("p.error-text").textContent).toMatch(/^Message 2: BodyLength \(9\) says 21, actual 20 at position \d+$/);
 });
 
-test("empty states and the size warning", () => {
+// v1.3 (FXL-19): replaces "empty states and the size warning", which pinned 1,001 messages.
+test("empty states and the size warning at the v1.3 limit", () => {
   show("no fix here");
   expect(q("#decode p.empty").textContent).toBe("No FIX messages found in the pasted text.");
   expect(q("#timeline p.empty")).not.toBeNull();
-  const big = analyse((ACK + "\n").repeat(1001));
+  const big = analyse((ACK + "\n").repeat(10001));
+  expect(big.ok).toBe(false);
   page();
   render(big);
   expect(all("#decode article").length).toBe(0);
   expect(all("#decode p").length).toBe(1);
-  expect(q("#decode p.warning").textContent).toContain("1001");
+  expect(q("#decode p.warning").textContent.replace(/[,.\s\u00a0\u202f']/g, "")).toContain("10001");
   expect(all("#timeline li").length).toBe(0);
   expect(q("#summary").children.length).toBe(0);
   expect(q("#decode > h2")).not.toBeNull();
+  expect(all("nav.pager").length).toBe(0);
 });
 
 test("a second render replaces the first", () => {

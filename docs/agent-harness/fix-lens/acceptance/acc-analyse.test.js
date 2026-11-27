@@ -18,9 +18,13 @@ test("a malformed message between two valid ones", () => {
   expect(r.timeline.map((e) => e.number)).toEqual([1, 3]);
 });
 
-test("over a limit nothing is decoded", () => {
-  const r = analyse((V1 + "\n").repeat(1001));
+// v1.3 (FXL-19): replaces "over a limit nothing is decoded", which pinned 1,001 messages.
+test("at the v1.3 limit everything is decoded, over it nothing is", () => {
+  const at = analyse((V1 + "\n").repeat(10000));
+  expect([at.ok, at.messages.length, at.errors.length, at.decoded.length]).toEqual([true, 10000, 0, 10000]);
+  const r = analyse((V1 + "\n").repeat(10001));
   expect(r.ok).toBe(false);
+  expect([r.limit.ok, r.limit.messages]).toEqual([false, 10001]);
   expect([r.messages.length, r.errors.length, r.decoded.length, r.timeline.length]).toEqual([0, 0, 0, 0]);
 });
 

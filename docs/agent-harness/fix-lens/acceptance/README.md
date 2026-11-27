@@ -83,3 +83,51 @@ It reaches the host copy with the next `refresh_copies`, in the commit that reti
 reading Ubay Gonzalez chose on 2026-11-27 ("A"). Its figures were worked by hand from section 13. It passes on
 the landed FXL-12 code and fails, as it should, on the independent build's first reading. It reaches the host
 copy, together with the design copy, with a `refresh_copies` sent when no card is running.
+
+## v1.3 (reviewer, 2026-11-27, for tickets FXL-19 to FXL-21)
+
+Written from PRD v1.3 and technical design v1.3 (sections 4, 9 and 16). Every expected number follows from how
+each test builds its log.
+
+| File | Ticket | Tests |
+|---|---|---|
+| `acc-limits.test.js` | FXL-19 | 4 (three new, replacing two) |
+| `acc-analyse.test.js` | FXL-19 | 4 (one replaced) |
+| `acc-presentation.test.js` | FXL-19 | 21 (one replaced) |
+| `acc-performance.test.js` | FXL-19 | 2 |
+| `acc-paging.test.js` | FXL-20 | 14 |
+| `acc-pager.test.js` | FXL-21 | 24 |
+
+The folder now holds 20 files and 214 tests.
+
+**Checked before use.**
+- **Two builds.** The reviewer's own build of v1.3 and a second build made by another agent from the three
+  tickets and the design alone, without seeing this folder. All 214 tests pass on both, first time on the
+  second build. Its report named four loose points in the tickets (which old-limit lines move, the size of the
+  padding, the sequence numbers of AC8, where a SequenceGap row goes); the tickets were tightened.
+- **v1.2 as landed.** 171 tests pass. The 43 that fail are new: 3 in `acc-limits`, 1 in `acc-analyse`, 2 in
+  `acc-performance`, the 14 of `acc-paging` (the module is not there) and 23 of the 24 in `acc-pager` (the one
+  that passes says a log of 200 messages has no pager).
+- **Deliberate breaks.** 33 single changes to the reviewer's build (the timeline not paged, the trading summary
+  or the filter lists following the page, a missing or misplaced pager, each of the four returns to page 1, the
+  scroll missing or unguarded, off-by-one buttons, the limits one off, bytes counted as characters, a bare
+  `toLocaleString()`, and others). Each makes at least one test fail.
+- **A real browser** (Chromium, both themes, 1280 and 375 pixels wide), on the reviewer's build with 10,000
+  messages, plain and padded to 10.4 MB: the first page is painted 0.7 to 1.3 seconds after Decode, a page
+  change takes 0.2 to 0.4 seconds, a filter change under 0.4 seconds, and the page never scrolls sideways.
+
+**v1.2 tests that v1.3 changes on purpose.** Four tests pinned the old limits. They are retired with a
+`retire_hidden` decision before FXL-19 is loaded, and replaced in the same files:
+
+| Test | Replaced by |
+|---|---|
+| `acc-limits.test.js` > `byte limit is UTF-8 and inclusive at 1,048,576` | `byte limit is UTF-8 and inclusive at 10,485,760 (v1.3)` |
+| `acc-limits.test.js` > `message limit: 1,000 accepted, 1,001 refused, warning names both numbers` | `message limit: 10,000 accepted, 10,001 refused, warning names both numbers (v1.3)` |
+| `acc-analyse.test.js` > `over a limit nothing is decoded` | `at the v1.3 limit everything is decoded, over it nothing is` |
+| `acc-presentation.test.js` > `empty states and the size warning` | `empty states and the size warning at the v1.3 limit` |
+
+**Expected files** (`[expected_hidden.fix-lens]` in the kit's `harness.host.toml`, D24): FXL-19 `acc-limits`,
+`acc-analyse`, `acc-presentation` and `acc-performance`; FXL-20 `acc-paging`; FXL-21 `acc-pager`.
+
+**Order of operations.** Retire the four tests and refresh the host copy; deploy the kit commit that adds the
+three lines to the table; then load FXL-19 to FXL-21.
