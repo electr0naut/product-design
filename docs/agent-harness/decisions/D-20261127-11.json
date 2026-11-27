@@ -1,0 +1,8 @@
+{
+  "id": "D-20261127-11",
+  "action": "load_tickets",
+  "key": "FXL-16",
+  "tickets": ["FXL-16"],
+  "commit": "5131cc3bb50d99da1e68c54cd9c607fd3ec3f674",
+  "reason": "live check of the load_tickets action after the 5b6c863 deploy (Ubay: 'deployed', 2026-11-27): FXL-16 is already loaded, so this must be refused and load nothing"
+}
