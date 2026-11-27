@@ -30,7 +30,7 @@ is `–`. Do the arithmetic on the digits (a `BigInt` or a string), not by multi
 `src/render.js`, `src/main.js`, `test/render.test.js` and `test/page.test.js` are expected to change.
 `src/orders.js`, `src/summary.js`, `index.html` and `styles.css` do not change. Existing tests that check what
 `pick` is called with, or what `view` holds after a click, move to the two arguments and to `orderMessage`;
-on the code as it stood before v1.3 these were `test_render_order_identifiers_are_typed_pick_buttons` and
+on the code as landed with FXL-21 these are `test_render_order_identifiers_are_typed_pick_buttons` and
 `test_render_optional_order_view_preserves_whole_log` in `test/render.test.js`. No other existing test changes.
 
 The rules of design sections 8.2 and 8.4 still hold: nodes are built with `document.createElement`, text is

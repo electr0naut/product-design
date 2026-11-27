@@ -21,18 +21,18 @@ case-sensitively. A ClOrdID key is never the same as an OrderID key, also when p
 Everything else is as today: an empty value and `37=NONE` give no key, all keys of one message are joined, the
 groups are the connected sets, and a group lists `clOrdIds`, `orderIds` and `numbers` as before.
 
-`src/orders.js`, `test/orders.test.js`, `test/filters.test.js` and `test/render.test.js` are expected to change.
-`src/filters.js`, `src/summary.js` and `src/render.js` do not change.
+`src/orders.js`, `test/orders.test.js`, `test/filters.test.js`, `test/render.test.js` and `test/page.test.js`
+are expected to change. `src/filters.js`, `src/summary.js` and `src/render.js` do not change.
 
-Existing tests. Some fixtures in `test/filters.test.js` and `test/render.test.js` send an execution report in
-the same direction as its order, or leave out the 49 or 56 of one of the two, which no real log does. With the
-party rule the report no longer joins its order, and the test fails. Give those fixtures the real direction: a
+Existing tests. Some fixtures in `test/filters.test.js`, `test/render.test.js` and `test/page.test.js` send an
+execution report in the same direction as its order, or leave out the 49 or 56 of one of the two, which no
+real log does. With the party rule the report no longer joins its order, and the test fails. Give those fixtures the real direction: a
 report goes from the executing party to the client, so its 49 is the order's 56 and its 56 is the order's 49.
 Where an expected value follows from the 49 or 56 of a message you changed (a SenderCompID filter, a filter
 list), the expected value follows the fixture; where the old fixture cannot keep what the test's name says,
 rebuild the fixture so that the name still holds. No test is removed, no assertion is dropped, and no test
-outside these two files and `test/orders.test.js` changes. Name every test you changed in the handoff. On the
-code as it stood before v1.3 these were:
+outside these three files and `test/orders.test.js` changes. Name every test you changed in the handoff. On the
+code as landed with FXL-21 these are the 16 tests that fail once the rule is in:
 
 - `test/filters.test.js`: `test_apply_filters_account_and_sender_keep_only_matching_messages`,
   `test_apply_filters_sender_exclusions_preserve_full_log_order_links`,
@@ -45,10 +45,11 @@ code as it stood before v1.3 these were:
   `test_render_logA_account_ACC2_only_vod_sell_row`,
   `test_render_order_terms_choose_source_and_skip_missing_parts`,
   `test_render_selected_order_keeps_only_original_group_numbers`,
+  `test_render_selected_order_pages_only_order_members`,
+  `test_render_selected_order_summary_and_story_stay_constant_across_pages`,
   `test_render_selected_stats_count_visible_messages_gaps_and_orders`,
   `test_render_selected_timeline_preserves_existing_gaps_without_new_gaps`.
-
-Tests added since then that fail for the same reason are handled the same way.
+- `test/page.test.js`: `test_page_order_pick_and_clear_reset_pagination_to_first_page`.
 
 The examples below give each message as its type and the fields that matter, numbered in log order. `ALPHA ->
 BRK` means 49=ALPHA and 56=BRK.
