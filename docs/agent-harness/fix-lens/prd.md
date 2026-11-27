@@ -1,10 +1,12 @@
 # Product Requirements Document: FIX Lens
 
 **Product:** FIX Lens
-**Version:** 1.2 (Proof of Concept)
-**Status:** Approved (Gate 3, 2026-11-26)
+**Version:** 1.3 (Proof of Concept)
+**Status:** v1.3 drafted on 2026-11-27 and **awaiting Ubay Gonzalez's approval of this text**. v1.2 was approved (Gate 3, 2026-11-26).
 **BRD Status:** Approved by Risk Committee (2026-11-24)
 
+> **Changes in v1.3:** the largest log the tool accepts goes from 1,000 messages and 1,048,576 bytes to 10,000 messages and 10,485,760 bytes. So that a log of that size stays readable and quick, the timeline and the message cards are shown 200 messages at a time (US-010). Nothing else changes: every result is still computed on the whole log.
+>
 > **Changes in v1.2:** logs that show the delimiter as `^A` or `<SOH>` are accepted, and a delimiter character inside a value no longer breaks the message. A page that was not opened through a web server says so. Cancel and replace requests, trade cancels, trade corrections and order status reports become timeline events, and a FIX 4.2 trade cancel or correction is no longer shown as a fill. Four stories are new: a designed presentation with light and dark themes (US-006), the story of one order (US-007), buys, sells and net per symbol (US-008), and filters (US-009). Tickets 9 to 16 are added to the delivery plan.
 >
 > **Changes in v1.1:** every story was pinned to the FIX 4.2/4.4 specification, so that each acceptance criterion can be tested and each story can become a delivery ticket.
@@ -18,8 +20,8 @@ FIX Lens is a static web application that lets FIX support and client onboarding
 - **FIX versions:** 4.2 and 4.4, selected by BeginString (tag 8). Any other BeginString is reported as an unsupported version for that message.
 - **Message structure:** top-level fields only. Repeated tags (for example, repeating-group members) are listed in order of appearance, without grouping, and are not errors.
 - **Input:** raw FIX logs pasted into a textarea. Fields may be separated by SOH, by `|`, or by the text `^A` or `<SOH>`, as terminals and log viewers show the SOH byte.
-- **Output:** a field-by-field decode, a session behaviour timeline, a summary of the log, a trading summary per symbol, filters, and a view of a single order, all viewable in the browser.
-- **Max log size:** 1,048,576 bytes (UTF-8) or 1,000 messages.
+- **Output:** a field-by-field decode, a session behaviour timeline, a summary of the log, a trading summary per symbol, filters, and a view of a single order, all viewable in the browser. The timeline and the decode are shown a page of messages at a time.
+- **Max log size:** 10,485,760 bytes (UTF-8) or 10,000 messages.
 - **Error handling:** malformed messages are rejected gracefully, with clear error messages.
 - **Data handling:** in-memory processing only. No retention, no logging, no caching.
 - **Delivery:** static web app (HTML/JS, no backend), served over HTTP or HTTPS. Opening the file from disk is not supported, and the page says so (AC-024).
@@ -27,6 +29,7 @@ FIX Lens is a static web application that lets FIX support and client onboarding
 ### Out of Scope (Proof of Concept)
 
 - FIX 5.0 support.
+- Reading log files, and logs larger than the limits above. Later phases are outlined in `phase-2-scope.md`.
 - Grouping repeating groups and nested structures (their fields are still shown, flat).
 - Export functionality (PDF, CSV).
 - Field-level validation against the FIX specification: required fields per message type, field formats and value ranges. Framing checks (TR-002) are in scope.
@@ -101,7 +104,7 @@ FIX Lens is a static web application that lets FIX support and client onboarding
 
 **Acceptance Criteria:**
 
-- AC-016: If the pasted text is larger than 1,048,576 bytes (UTF-8) or contains more than 1,000 messages, the tool shows a warning with the measured size and message count.
+- AC-016: If the pasted text is larger than 10,485,760 bytes (UTF-8) or contains more than 10,000 messages, the tool shows a warning with the measured size and message count.
 - AC-017: The warning suggests splitting the log into smaller chunks.
 - AC-018: A log over either limit is not decoded at all, and no partial output is shown.
 
@@ -190,6 +193,21 @@ FIX Lens is a static web application that lets FIX support and client onboarding
 - AC-055: A "Clear filters" button resets all five. Decoding again also resets them.
 - AC-056: Filtering never changes a result. Sequence gaps, message numbers, order grouping and the effect of trade cancels and corrections are computed on the full log (AC-038).
 
+### US-010: Read a Long Log a Page at a Time
+
+**As a** FIX support technician
+**I want** a long log shown a page at a time
+**So that** a log of thousands of messages opens quickly and stays easy to move through
+
+**Acceptance Criteria:**
+
+- AC-057: The timeline and the message cards show 200 messages at a time (a page). A log of 200 messages or fewer is shown whole, with no page controls.
+- AC-058: When there is more than one page, a line above the timeline and the cards says which messages are on screen and how many there are, for example "Messages 201 to 400 of 10,000", with four buttons: First, Previous, Next and Last. First and Previous are disabled on the first page, Next and Last on the last.
+- AC-059: The timeline and the cards always show the same page: the timeline lists the events of the messages on that page, and no others.
+- AC-060: Pages count the messages shown. Malformed messages count, at their place in the log. While a filter is set or an order is selected, the pages run over the messages that are shown (AC-053, AC-054), and the line says so, for example "Messages 1 to 200 of 1,240 shown".
+- AC-061: Decoding again, changing or clearing a filter, selecting an order and returning to all messages each go back to the first page.
+- AC-062: Paging never changes a result. The summary strip, the trading summary, the filter lists, the order banner, message numbers, sequence gaps and order grouping are those of the whole log, or of the whole filtered log where AC-053 says so. They are never those of the page.
+
 ## Technical Requirements
 
 ### TR-001: FIX Field Dictionary
@@ -244,8 +262,10 @@ FIX Lens is a static web application that lets FIX support and client onboarding
 
 ### TR-005: Performance
 
-- **Speed:** a 100-message log is processed in under 5 seconds, measured on the logic modules.
-- **Views:** for a 1,000-message log, order grouping, the trading summary and applying the filters each take under 1 second, measured on the logic modules.
+- **Speed:** a 100-message log is processed in under 5 seconds, and so is a 10,000-message log of 10,485,760 bytes, measured on the logic modules.
+- **Views:** for a 10,000-message log, order grouping, the trading summary and applying the filters each take under 1 second, measured on the logic modules.
+- **The page:** in a current desktop browser, the first page of a 10,000-message log is on screen within 3 seconds of pressing Decode, and changing the page, a filter or the selected order redraws within 1 second. This is measured in a real browser at acceptance.
+- **Baseline (2026-11-27, v1.2 with the limit lifted):** analysing 10,000 messages took 0.3 to 0.6 seconds and each view under 0.03 seconds on the logic modules; drawing all 10,000 messages at once took 11 seconds, which is why the page shows 200 at a time.
 - **Limits:** logs up to the limits in Scope are handled without crashing. Larger logs are refused, as AC-016 to AC-018 describe.
 
 ### TR-006: Security
@@ -275,7 +295,7 @@ Time from paste to understandable decode: under 5 seconds for a 100-message log.
 
 ## Delivery Plan
 
-The agent delivery harness builds FIX Lens as ordered tickets. Each one goes through triage, planning, implementation, the deterministic gates, the cross-lab review and a handoff. Tickets 1 to 8 are v1.1 and are built. Tickets 9 to 16 are v1.2.
+The agent delivery harness builds FIX Lens as ordered tickets. Each one goes through triage, planning, implementation, the deterministic gates, the cross-lab review and a handoff. Tickets 1 to 8 are v1.1 and are built. Tickets 9 to 16 are v1.2 and are built, with two corrections (17 and 18). Tickets 19 to 21 are v1.3.
 
 | # | Ticket | Depends on |
 | --- | --- | --- |
@@ -295,6 +315,11 @@ The agent delivery harness builds FIX Lens as ordered tickets. Each one goes thr
 | 14 | The presentation: layout, cards, timeline rows, summary strip, themes, the not-started message (US-006, AC-024) | 9, 10 |
 | 15 | The order story on the page (US-007) | 11, 14 |
 | 16 | The trading summary and the filters on the page (AC-049, AC-053 to AC-055) | 12, 13, 15 |
+| 17 | Correction to 13: the Account filter keeps a message outside all orders that carries the Account, whatever its type | 13 |
+| 18 | Correction to 15 and 16: styles for the order banner, the order links, the trading summary and the filters | 16 |
+| 19 | Limits of 10,485,760 bytes and 10,000 messages, with performance tests at that size (AC-016, TR-005) |  |
+| 20 | Paging module: which messages are on a page, and the page line (AC-057, AC-058, AC-060) |  |
+| 21 | Paging on the page: the page line and buttons, the timeline and the cards in step, the return to the first page (US-010) | 19, 20 |
 
 Deployment to the internal web server follows after the user has tested with real FIX logs.
 
@@ -308,7 +333,7 @@ Deployment to the internal web server follows after the user has tested with rea
 ### Risk 2: Performance with Large Logs
 
 - **Risk:** the tool may be slow, or crash, with large logs.
-- **Mitigation:** hard limits of 1,048,576 bytes and 1,000 messages; linear-time parsing; a performance test on the logic modules.
+- **Mitigation:** hard limits of 10,485,760 bytes and 10,000 messages; linear-time parsing; the page draws one page of 200 messages at a time; performance tests on the logic modules at the limits.
 
 ### Risk 3: Malformed Message Handling
 
@@ -336,4 +361,5 @@ Deployment to the internal web server follows after the user has tested with rea
 - **BRD:** Approved by Risk Committee (2026-11-24). Refreshed for the extended functionality of v1.2; the refresh was approved on 2026-11-26.
 - **PRD:** v1.2 approved by Ubay Gonzalez (2026-11-26). v1.1 approved by Ubay Gonzalez (2026-11-25).
 - **Technical Design:** v1.2 approved by Ubay Gonzalez (2026-11-26) (see the child page FIX Lens - Technical Design). It replaces v1.1, which was approved under delegation on 2026-11-25.
-- **Implementation:** v1.1 is built: tickets 1 to 8 are on the trusted main (2026-11-26). It has not yet been tested with real logs or deployed. v1.2 is pending.
+- **PRD v1.3:** the change was set by Ubay Gonzalez on 2026-11-27 ("10000 is the max for now", "v1.3 is fine"). This text awaits his approval.
+- **Implementation:** v1.2 is built: tickets 1 to 18 are on the trusted main (2026-11-27), with 173 of 173 acceptance tests passing. It has not yet been tested with real logs or deployed. v1.3 is pending.
