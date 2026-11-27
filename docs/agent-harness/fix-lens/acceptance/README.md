@@ -136,7 +136,7 @@ three lines to the table; then load FXL-19 to FXL-21.
 
 Written from the PRD v1.4 and technical design v1.4 drafts (sections 3, 7, 8.2, 12 and 13), for the seven
 findings of the validation of 2026-11-27 that Ubay Gonzalez put into phase 1 ("as recommended", 2026-11-27).
-The wording of the two drafts still waits for his approval; nothing here is loaded before that. Every expected
+He approved the wording of both on 2026-11-27 ("v1.4 approved"). Every expected
 value follows from who sends each message and from the rules of the design, never from the product.
 
 | File | Ticket | Tests | Finding |

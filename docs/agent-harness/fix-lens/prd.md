@@ -1,11 +1,11 @@
 # Product Requirements Document: FIX Lens
 
 **Product:** FIX Lens
-**Version:** 1.4 (Proof of Concept), draft
-**Status:** v1.4 is a draft that waits for approval. Its scope was approved by Ubay Gonzalez on 2026-11-27 ("as recommended": seven findings of the validation); its wording has not been approved yet. v1.3 was approved by Ubay Gonzalez on 2026-11-27. v1.2 was approved at Gate 3 on 2026-11-26.
+**Version:** 1.4 (Proof of Concept)
+**Status:** v1.4 was approved by Ubay Gonzalez on 2026-11-27 ("v1.4 approved"); its scope, seven findings of the validation, he had approved the same day ("as recommended"). v1.3 was approved by Ubay Gonzalez on 2026-11-27. v1.2 was approved at Gate 3 on 2026-11-26.
 **BRD Status:** Approved by Risk Committee (2026-11-24). Refreshed on 2026-11-27 for the phased plan and the limits of v1.3; that refresh was approved by Ubay Gonzalez.
 
-> **Changes in v1.4 (draft):** seven findings of the independent validation of 2026-11-27 are fixed. Order ids are read within the parties they belong to, so two clients that reuse a ClOrdID, or two venues that reuse an OrderID and ExecID, are no longer merged (AC-035, AC-041). An id button opens the order of the message it is on (AC-036). A trade cancel or correction finds its execution wherever it stands in the log (AC-042, AC-043). Averages round a half up (AC-045). A session that starts again at 1 is followed from 1 (TR-003). A message with accented single-byte text is no longer called malformed (TR-002). The other nine findings are phase 2.
+> **Changes in v1.4:** seven findings of the independent validation of 2026-11-27 are fixed. Order ids are read within the parties they belong to, so two clients that reuse a ClOrdID, or two venues that reuse an OrderID and ExecID, are no longer merged (AC-035, AC-041). An id button opens the order of the message it is on (AC-036). A trade cancel or correction finds its execution wherever it stands in the log (AC-042, AC-043). Averages round a half up (AC-045). A session that starts again at 1 is followed from 1 (TR-003). A message with accented single-byte text is no longer called malformed (TR-002). The other nine findings are phase 2.
 >
 > **Changes in v1.3:** the largest log the tool accepts goes from 1,000 messages and 1,048,576 bytes to 10,000 messages and 10,485,760 bytes. So that a log of that size stays readable and quick, the timeline and the message cards are shown 200 messages at a time (US-010). Nothing else changes: every result is still computed on the whole log.
 >
@@ -378,5 +378,5 @@ Deployment to the internal web server follows after the user has tested with rea
 - **PRD:** v1.2 approved by Ubay Gonzalez (2026-11-26). v1.1 approved by Ubay Gonzalez (2026-11-25).
 - **Technical Design:** v1.2 approved by Ubay Gonzalez (2026-11-26) (see the child page FIX Lens - Technical Design). It replaces v1.1, which was approved under delegation on 2026-11-25. The v1.3 changes were approved by Ubay Gonzalez on 2026-11-27.
 - **PRD v1.3:** approved by Ubay Gonzalez on 2026-11-27 ("approved", in answer to the request to approve PRD v1.3 and technical design v1.3). He had set the change the same day: "10000 is the max for now", "v1.3 is fine".
-- **PRD v1.4:** draft. Scope approved by Ubay Gonzalez on 2026-11-27 ("as recommended", in answer to the recommendation to fix FL-01, FL-02, FL-03, FL-04, FL-05, FL-13 and FL-15 in phase 1). The wording waits for his approval.
+- **PRD v1.4:** approved by Ubay Gonzalez on 2026-11-27 ("v1.4 approved"). Scope approved by Ubay Gonzalez on 2026-11-27 ("as recommended", in answer to the recommendation to fix FL-01, FL-02, FL-03, FL-04, FL-05, FL-13 and FL-15 in phase 1).
 - **Implementation:** v1.2 is built: tickets 1 to 18 are on the trusted main (2026-11-27), with 173 of 173 acceptance tests passing. It has not yet been tested with real logs or deployed. v1.3 is pending.

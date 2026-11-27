@@ -1,8 +1,8 @@
 # FIX Lens - Technical Design
 
-**Version:** 1.4 (draft), for PRD v1.4. **The v1.4 changes (in sections 2, 3, 7, 8.2, 10, 11, 12, 13 and 15,
-each marked "v1.4") wait for approval.** Their scope, seven findings of the validation of 2026-11-27, was
-approved by Ubay Gonzalez on 2026-11-27 ("as recommended"); their wording has not been approved yet.
+**Version:** 1.4, for PRD v1.4. **The v1.4 changes (in sections 2, 3, 7, 8.2, 10, 11, 12, 13 and 15,
+each marked "v1.4") were approved by Ubay Gonzalez on 2026-11-27 ("v1.4 approved").** Their scope, seven
+findings of the validation of 2026-11-27, he had approved the same day ("as recommended").
 **The v1.3 changes (sections 4, 9, 10, 15 and the new section 16, each marked
 "v1.3") were approved by Ubay Gonzalez on 2026-11-27 ("approved").** Everything else is v1.2.2, unchanged.
 **Status of v1.2.2:** v1.2 approved by Ubay Gonzalez (2026-11-26); it replaces v1.1, which was approved under delegation on
