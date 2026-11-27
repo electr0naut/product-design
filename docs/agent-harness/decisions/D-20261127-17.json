@@ -1,0 +1,8 @@
+{
+  "id": "D-20261127-17",
+  "action": "load_tickets",
+  "key": "FXL-19",
+  "tickets": ["FXL-19", "FXL-20", "FXL-21"],
+  "commit": "b50786bfd690ffd1117464542583b14ced667258",
+  "reason": "FIX Lens v1.3 (limits of 10,485,760 bytes and 10,000 messages, paging of 200), from PRD v1.3 and design v1.3, approved by Ubay on 2026-11-27 ('v1.3 is fine', 'approved'; 'lets produce the updated PRDs and start the work'). The copies were refreshed from this commit (D-20261127-16) and the kit with the expected hidden files of the three tickets is deployed (b483e6d; Ubay: 'deployed', 2026-11-27). The board is idle: every loaded ticket is finished."
+}
