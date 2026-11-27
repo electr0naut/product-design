@@ -1,10 +1,10 @@
 # Harness state
 
-Written by the runner at 2026-11-28T00:13:08+0100. Host-only copy: `state.json`.
+Written by the runner at 2026-11-28T00:16:04+0100. Host-only copy: `state.json`.
 Kit: `ccbaea983b26d0df710e6cafd1e4968dcd6a0d50`
 
 ## What changed
-- decision applied D-20261127-18: refreshed the fix-lens copies from 2a7550244286: design sha256 3163bb3260c2, 25 hidden test files [commit 1e39fd0b746c, 2026-11-27T23:11:51+00:00, signature: by a listed key]
+- decision applied D-20261127-19: loaded 5 ticket(s) from 2a7550244286. FXL-22: triage t_e6592dfb, gate t_7abd7fb5, triage waits on nothing. FXL-23: triage t_b6621679, gate t_42672b13, triage waits on accept FXL-22. FXL-24: triage t_96a6ccf1, gate t_64085dc0, triage waits on accept FXL-23. FXL-25: triage t_cb1e1642, gate t_aabb57a4, triage waits on accept FXL-24. FXL-26: triage t_60da39c7, gate t_24680da2, triage waits on accept FXL-21, accept FXL-22, accept FXL-25 [commit 44f86c2be028, 2026-11-27T23:13:25+00:00, signature: by a listed key]
 
 ## Tickets
 - **SMK-1** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
@@ -22,6 +22,11 @@ Kit: `ccbaea983b26d0df710e6cafd1e4968dcd6a0d50`
 - **FXL-19** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
 - **FXL-20** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
 - **FXL-21** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
+- **FXL-22** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: running
+- **FXL-23** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: todo
+- **FXL-24** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: todo
+- **FXL-25** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: todo
+- **FXL-26** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: todo
 
 ## Blocks
 - none
