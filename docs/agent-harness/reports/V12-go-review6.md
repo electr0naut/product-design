@@ -8,8 +8,8 @@ your recommendation, dont stay idle if not absolutely necessary"**.
 1. **Finish `tools/rerun_mutation.py FXL-9`** if it is running; it refuses while a card runs, so it comes first.
    Report its counts on the PR. If it has not started, run it now.
 2. **Re-check, and load nothing if anything differs:** no worker card is running; the kit is `6c483e6` on the
-   host and in the container; the copies verify at `9448c0b99295` (design `4c2cb3fd5236`, 17 hidden files, no
-   `acc-render`, `acc-framing-rules` present); the trusted `main` of `fix-lens` is `8881fce`; the board has no
+   host and in the container; the copies verify at `23952fd05985` (design `023e2adfdb09`, 17 hidden files, no
+   `acc-render`, `acc-framing-rules` present) once `D-20261127-8` is applied, see below; the trusted `main` of `fix-lens` is `8881fce`; the board has no
    card for FXL-14 to FXL-17.
 3. **Load FXL-17 alone,** from the ticket file at `445c622` or later.
 4. **Then load FXL-14, FXL-15 and FXL-16,** in a second call, from the ticket files as they are on the branch
@@ -30,3 +30,13 @@ PRD and design: loading the tickets already written for it, a corrective ticket 
 follow-up for the framing rules. I tell him each time, and he can stop it. **Everything in section 3 of
 `RULES.md` still waits for him:** deploys, secrets, new hosts, model changes, deleting data, anything sent
 outside, and any change to an approved PRD or design.
+
+## Added 13:16 UTC: design v1.2.2 and `D-20261127-8`
+Ubay approved one clarification of section 13 (his word: "A"; quoted in the design's status line and in
+`acceptance/README.md`). It is on Confluence as v1.2.2 and in the repo at `23952fd`. It changes no code: FXL-12
+already does it. `D-20261127-8` refreshes the copies from that commit: the design copy, and one more test in
+`acc-summary.test.js`.
+- **If you have not loaded FXL-17 yet:** wait for the runner to apply `D-20261127-8`, check that the copies
+  verify at `23952fd05985` with design `023e2adfdb09`, then load as above.
+- **If FXL-17 is already loaded:** do not stop it. Say so on the PR, with the time the decision was applied and
+  which card was running then.
