@@ -1,0 +1,3640 @@
+{
+ "seed": 4201,
+ "messages": 321,
+ "valid": 321,
+ "invalid": 0,
+ "sessions": [
+  {
+   "session": 0,
+   "begin": "FIX.4.2",
+   "sender": "CLIENTB",
+   "target": "BROKERX",
+   "senderSub": null,
+   "targetSub": null,
+   "messages": 91
+  },
+  {
+   "session": 0,
+   "begin": "FIX.4.2",
+   "sender": "BROKERX",
+   "target": "CLIENTB",
+   "senderSub": null,
+   "targetSub": null,
+   "messages": 230
+  }
+ ],
+ "directions": 2,
+ "gaps": [
+  {
+   "number": 125,
+   "expected": 86,
+   "received": 87,
+   "sender": "BROKERX",
+   "target": "CLIENTB"
+  },
+  {
+   "number": 225,
+   "expected": 63,
+   "received": 64,
+   "sender": "CLIENTB",
+   "target": "BROKERX"
+  }
+ ],
+ "events": [
+  "1:Logon",
+  "2:Logon",
+  "3:NewOrder",
+  "4:NewOrder",
+  "5:NewOrder",
+  "6:NewOrder",
+  "7:NewOrder",
+  "8:NewOrder",
+  "9:NewOrder",
+  "10:NewOrder",
+  "11:NewOrder",
+  "12:ExecutionReport (ExecType A)",
+  "13:ExecutionReport (ExecType A)",
+  "14:Acknowledgement",
+  "15:NewOrder",
+  "16:Acknowledgement",
+  "17:ExecutionReport (ExecType A)",
+  "18:Acknowledgement",
+  "19:Acknowledgement",
+  "20:Acknowledgement",
+  "21:NewOrder",
+  "22:Fill",
+  "23:NewOrder",
+  "24:Acknowledgement",
+  "25:ExecutionReport (ExecType A)",
+  "26:ExecutionReport (ExecType A)",
+  "27:CancelRequest",
+  "28:Acknowledgement",
+  "29:ReplaceRequest",
+  "30:Acknowledgement",
+  "31:Heartbeat",
+  "32:Fill",
+  "33:ExecutionReport (ExecType 6)",
+  "34:Fill",
+  "35:ExecutionReport (ExecType A)",
+  "36:Fill",
+  "37:Fill",
+  "38:ReplaceRequest",
+  "39:Acknowledgement",
+  "40:OrderStatus",
+  "41:ExecutionReport (ExecType E)",
+  "42:Acknowledgement",
+  "43:Acknowledgement",
+  "44:ExecutionReport (ExecType E)",
+  "45:Fill",
+  "46:ReplaceRequest",
+  "47:ExecutionReport (ExecType E)",
+  "48:ReplaceRequest",
+  "49:Heartbeat",
+  "50:ReplaceRequest",
+  "51:ReplaceRequest",
+  "52:Cancelled",
+  "53:NewOrder",
+  "54:Replaced",
+  "55:NewOrder",
+  "56:Fill",
+  "57:Acknowledgement",
+  "58:ExecutionReport (ExecType E)",
+  "59:ExecutionReport (ExecType 8)",
+  "60:Acknowledgement",
+  "61:Replaced",
+  "62:ExecutionReport (ExecType E)",
+  "63:ExecutionReport (ExecType E)",
+  "64:NewOrder",
+  "65:Fill",
+  "66:ExecutionReport (ExecType C)",
+  "67:Fill",
+  "68:Acknowledgement",
+  "69:Fill",
+  "70:Acknowledgement",
+  "71:Replaced",
+  "72:OrderStatus",
+  "73:ReplaceRequest",
+  "74:ReplaceRequest",
+  "75:Fill",
+  "76:Acknowledgement",
+  "77:Fill",
+  "78:Fill",
+  "79:Fill",
+  "80:ReplaceRequest",
+  "81:Replaced",
+  "82:ExecutionReport (ExecType E)",
+  "83:ExecutionReport (ExecType E)",
+  "84:Fill",
+  "85:Fill",
+  "86:Replaced",
+  "87:ExecutionReport (ExecType E)",
+  "88:Fill",
+  "89:Fill",
+  "90:Replaced",
+  "91:Heartbeat",
+  "92:Heartbeat",
+  "93:CancelReject",
+  "94:CancelRequest",
+  "95:Fill",
+  "96:Fill",
+  "97:ExecutionReport (ExecType 6)",
+  "98:Heartbeat",
+  "99:CancelRequest",
+  "100:TradeCancel",
+  "101:Fill",
+  "102:ExecutionReport (ExecType 6)",
+  "103:Replaced",
+  "104:ExecutionReport (ExecType C)",
+  "105:ExecutionReport (ExecType C)",
+  "106:Fill",
+  "107:Cancelled",
+  "108:Heartbeat",
+  "109:Replaced",
+  "110:Fill",
+  "111:Replaced",
+  "112:OrderStatus",
+  "113:Fill",
+  "114:TradeCancel",
+  "115:Cancelled",
+  "116:Replaced",
+  "117:ReplaceRequest",
+  "118:ExecutionReport (ExecType E)",
+  "119:Fill",
+  "120:TradeCancel",
+  "121:Replaced",
+  "122:ReplaceRequest",
+  "123:ExecutionReport (ExecType E)",
+  "124:Replaced",
+  "125:SequenceGap",
+  "125:Heartbeat",
+  "126:ResendRequest",
+  "127:GapFill",
+  "128:TestRequest",
+  "129:Heartbeat",
+  "130:NewOrder",
+  "131:NewOrder",
+  "132:NewOrder",
+  "133:NewOrder",
+  "134:NewOrder",
+  "135:Acknowledgement",
+  "136:Acknowledgement",
+  "137:NewOrder",
+  "138:NewOrder",
+  "139:NewOrder",
+  "140:ExecutionReport (ExecType A)",
+  "141:NewOrder",
+  "142:Acknowledgement",
+  "143:NewOrder",
+  "144:ExecutionReport (ExecType 8)",
+  "145:NewOrder",
+  "146:NewOrder",
+  "147:Acknowledgement",
+  "148:NewOrder",
+  "149:Heartbeat",
+  "150:NewOrder",
+  "151:Fill",
+  "152:ExecutionReport (ExecType A)",
+  "153:Acknowledgement",
+  "154:Acknowledgement",
+  "155:Acknowledgement",
+  "156:Acknowledgement",
+  "157:NewOrder",
+  "158:Fill",
+  "159:Acknowledgement",
+  "160:Acknowledgement",
+  "161:OrderStatus",
+  "162:Acknowledgement",
+  "163:Fill",
+  "164:ExecutionReport (ExecType A)",
+  "165:CancelRequest",
+  "166:Fill",
+  "167:Acknowledgement",
+  "168:Acknowledgement",
+  "169:OrderStatus",
+  "170:OrderStatus",
+  "171:ReplaceRequest",
+  "172:ExecutionReport (ExecType E)",
+  "173:Acknowledgement",
+  "174:Fill",
+  "175:ReplaceRequest",
+  "176:Acknowledgement",
+  "177:CancelRequest",
+  "178:ExecutionReport (ExecType 3)",
+  "179:OrderStatus",
+  "180:ExecutionReport (ExecType C)",
+  "181:CancelReject",
+  "182:OrderStatus",
+  "183:Acknowledgement",
+  "184:Fill",
+  "185:ReplaceRequest",
+  "186:ReplaceRequest",
+  "187:ExecutionReport (ExecType E)",
+  "188:Heartbeat",
+  "189:ReplaceRequest",
+  "190:ExecutionReport (ExecType E)",
+  "191:ExecutionReport (ExecType E)",
+  "192:Fill",
+  "193:Fill",
+  "194:ExecutionReport (ExecType 6)",
+  "195:ExecutionReport (ExecType E)",
+  "196:TradeCancel",
+  "197:Heartbeat",
+  "198:CancelReject",
+  "199:Cancelled",
+  "200:Fill",
+  "201:Replaced",
+  "202:Heartbeat",
+  "203:ExecutionReport (ExecType 3)",
+  "204:Fill",
+  "205:TradeCancel",
+  "206:ExecutionReport (ExecType 3)",
+  "207:Replaced",
+  "208:ExecutionReport (ExecType 6)",
+  "209:ExecutionReport (ExecType 3)",
+  "210:Fill",
+  "211:Replaced",
+  "212:Cancelled",
+  "213:TradeCorrect",
+  "214:Replaced",
+  "215:Fill",
+  "216:Fill",
+  "217:Fill",
+  "218:Heartbeat",
+  "219:ReplaceRequest",
+  "220:ExecutionReport (ExecType 3)",
+  "221:ExecutionReport (ExecType E)",
+  "222:Fill",
+  "223:Replaced",
+  "224:Fill",
+  "225:SequenceGap",
+  "225:Heartbeat",
+  "226:ResendRequest",
+  "227:NewOrder",
+  "228:NewOrder",
+  "229:Acknowledgement",
+  "230:NewOrder",
+  "231:NewOrder",
+  "232:NewOrder",
+  "233:Acknowledgement",
+  "234:ExecutionReport (ExecType A)",
+  "235:NewOrder",
+  "236:Acknowledgement",
+  "237:NewOrder",
+  "238:NewOrder",
+  "239:NewOrder",
+  "240:Fill",
+  "241:NewOrder",
+  "242:ExecutionReport (ExecType C)",
+  "243:Acknowledgement",
+  "244:ExecutionReport (ExecType A)",
+  "245:Acknowledgement",
+  "246:Acknowledgement",
+  "247:Acknowledgement",
+  "248:OrderStatus",
+  "249:Fill",
+  "250:Acknowledgement",
+  "251:Acknowledgement",
+  "252:NewOrder",
+  "253:NewOrder",
+  "254:Fill",
+  "255:ReplaceRequest",
+  "256:NewOrder",
+  "257:Fill",
+  "258:Heartbeat",
+  "259:Fill",
+  "260:ExecutionReport (ExecType A)",
+  "261:ExecutionReport (ExecType 3)",
+  "262:NewOrder",
+  "263:Fill",
+  "264:Acknowledgement",
+  "265:Heartbeat",
+  "266:Fill",
+  "267:Acknowledgement",
+  "268:Acknowledgement",
+  "269:Fill",
+  "270:Acknowledgement",
+  "271:NewOrder",
+  "272:Fill",
+  "273:Acknowledgement",
+  "274:Fill",
+  "275:ReplaceRequest",
+  "276:Fill",
+  "277:Fill",
+  "278:ExecutionReport (ExecType E)",
+  "279:Acknowledgement",
+  "280:ReplaceRequest",
+  "281:ReplaceRequest",
+  "282:Replaced",
+  "283:Fill",
+  "284:ExecutionReport (ExecType E)",
+  "285:ReplaceRequest",
+  "286:ExecutionReport (ExecType E)",
+  "287:Fill",
+  "288:Replaced",
+  "289:TradeCorrect",
+  "290:Fill",
+  "291:Fill",
+  "292:ExecutionReport (ExecType E)",
+  "293:CancelReject",
+  "294:ExecutionReport (ExecType C)",
+  "295:ExecutionReport (ExecType A)",
+  "296:ReplaceRequest",
+  "297:ExecutionReport (ExecType E)",
+  "298:Heartbeat",
+  "299:ReplaceRequest",
+  "300:Fill",
+  "301:ExecutionReport (ExecType E)",
+  "302:Replaced",
+  "303:Heartbeat",
+  "304:Fill",
+  "305:Fill",
+  "306:Acknowledgement",
+  "307:Replaced",
+  "308:Heartbeat",
+  "309:Fill",
+  "310:Fill",
+  "311:TradeCancel",
+  "312:CancelRequest",
+  "313:CancelReject",
+  "314:ExecutionReport (ExecType E)",
+  "315:ExecutionReport (ExecType 6)",
+  "316:Cancelled",
+  "317:ExecutionReport (ExecType 3)",
+  "318:Replaced",
+  "319:Fill",
+  "320:Logout",
+  "321:Logout"
+ ],
+ "retransmissions": [
+  {
+   "number": 20,
+   "kind": "possdup report"
+  },
+  {
+   "number": 70,
+   "kind": "possdup report"
+  },
+  {
+   "number": 90,
+   "kind": "possdup report"
+  },
+  {
+   "number": 101,
+   "kind": "possdup report"
+  },
+  {
+   "number": 111,
+   "kind": "possdup report"
+  },
+  {
+   "number": 127,
+   "kind": "gapfill"
+  },
+  {
+   "number": 155,
+   "kind": "possdup report"
+  },
+  {
+   "number": 173,
+   "kind": "possdup report"
+  },
+  {
+   "number": 182,
+   "kind": "possdup report"
+  },
+  {
+   "number": 214,
+   "kind": "possdup report"
+  },
+  {
+   "number": 270,
+   "kind": "possdup report"
+  }
+ ],
+ "resets": [
+  {
+   "session": 0,
+   "number": 1
+  }
+ ],
+ "orderCount": 45,
+ "orders": [
+  {
+   "order": 0,
+   "session": 0,
+   "account": "ACC-GAMMA",
+   "symbol": "ZETA",
+   "side": "buy",
+   "clOrdIds": [
+    "CLIENTB.0.1",
+    "CLIENTB.0.15"
+   ],
+   "orderId": "BROKERX-O8",
+   "numbers": [
+    3,
+    30,
+    34,
+    38,
+    44,
+    65,
+    71,
+    72,
+    79,
+    100,
+    104
+   ],
+   "finalOrdStatus": "C",
+   "filledQty": "3",
+   "avgPx": "0.7296",
+   "lastReport": {
+    "status": "C",
+    "cum": "3",
+    "avg": "0.7296"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 1,
+   "session": 0,
+   "account": "ACC-BETA",
+   "symbol": "ZETA",
+   "side": "sell",
+   "clOrdIds": [
+    "CLIENTB.0.2",
+    "CLIENTB.0.23"
+   ],
+   "orderId": "BROKERX-O7",
+   "numbers": [
+    4,
+    26,
+    60,
+    70,
+    73,
+    82,
+    85,
+    103,
+    106
+   ],
+   "finalOrdStatus": "2",
+   "filledQty": "17.5",
+   "avgPx": "5.1537",
+   "lastReport": {
+    "status": "2",
+    "cum": "17.5",
+    "avg": "5.1537"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 2,
+   "session": 0,
+   "account": "ACC-GAMMA",
+   "symbol": "KRONE",
+   "side": "sell",
+   "clOrdIds": [
+    "CLIENTB.0.3",
+    "CLIENTB.0.14"
+   ],
+   "orderId": "BROKERX-O5",
+   "numbers": [
+    5,
+    24,
+    29,
+    41,
+    56,
+    61,
+    78,
+    88
+   ],
+   "finalOrdStatus": "2",
+   "filledQty": "100",
+   "avgPx": "39.6957",
+   "lastReport": {
+    "status": "2",
+    "cum": "100",
+    "avg": "39.6957"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 3,
+   "session": 0,
+   "account": "ACC-ALPHA",
+   "symbol": "OMNI",
+   "side": "sell",
+   "clOrdIds": [
+    "CLIENTB.0.4"
+   ],
+   "orderId": "BROKERX-O3",
+   "numbers": [
+    6,
+    17,
+    19,
+    20
+   ],
+   "finalOrdStatus": "0",
+   "filledQty": "0",
+   "avgPx": "0",
+   "lastReport": {
+    "status": "0",
+    "cum": "0",
+    "avg": "0"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 4,
+   "session": 0,
+   "account": "ACC-BETA",
+   "symbol": "KRONE",
+   "side": "buy",
+   "clOrdIds": [
+    "CLIENTB.0.5",
+    "CLIENTB.0.19",
+    "CLIENTB.0.28",
+    "CLIENTB.0.29"
+   ],
+   "orderId": "BROKERX-O4",
+   "numbers": [
+    7,
+    18,
+    22,
+    51,
+    63,
+    84,
+    116,
+    117,
+    118,
+    119,
+    121,
+    122,
+    123,
+    124
+   ],
+   "finalOrdStatus": "1",
+   "filledQty": "80",
+   "avgPx": "65.7721",
+   "lastReport": {
+    "status": "5",
+    "cum": "80",
+    "avg": "65.7721"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 5,
+   "session": 0,
+   "account": "ACC-BETA",
+   "symbol": "KRONE",
+   "side": "sell",
+   "clOrdIds": [
+    "CLIENTB.0.6"
+   ],
+   "orderId": "BROKERX-O2",
+   "numbers": [
+    8,
+    13,
+    16,
+    37,
+    40,
+    45
+   ],
+   "finalOrdStatus": "2",
+   "filledQty": "350",
+   "avgPx": "51.2836",
+   "lastReport": {
+    "status": "2",
+    "cum": "350",
+    "avg": "51.2836"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 6,
+   "session": 0,
+   "account": "ACC-BETA",
+   "symbol": "ZETA",
+   "side": "sell",
+   "clOrdIds": [
+    "CLIENTB.0.7",
+    "CLIENTB.0.13"
+   ],
+   "orderId": "BROKERX-O1",
+   "numbers": [
+    9,
+    12,
+    14,
+    27,
+    33,
+    36,
+    52,
+    114
+   ],
+   "finalOrdStatus": "4",
+   "filledQty": "0",
+   "avgPx": "0",
+   "lastReport": {
+    "status": "4",
+    "cum": "0",
+    "avg": "0"
+   },
+   "rejections": 0,
+   "cancelled": true
+  },
+  {
+   "order": 7,
+   "session": 0,
+   "account": "ACC-BETA",
+   "symbol": "KRONE",
+   "side": "buy",
+   "clOrdIds": [
+    "CLIENTB.0.8"
+   ],
+   "orderId": "BROKERX-O10",
+   "numbers": [
+    10,
+    39,
+    69,
+    75
+   ],
+   "finalOrdStatus": "2",
+   "filledQty": "60",
+   "avgPx": "43.423",
+   "lastReport": {
+    "status": "2",
+    "cum": "60",
+    "avg": "43.423"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 8,
+   "session": 0,
+   "account": "ACC-ALPHA",
+   "symbol": "KRONE",
+   "side": "sell",
+   "clOrdIds": [
+    "CLIENTB.0.9",
+    "CLIENTB.0.18",
+    "CLIENTB.0.27"
+   ],
+   "orderId": "BROKERX-O11",
+   "numbers": [
+    11,
+    43,
+    50,
+    62,
+    81,
+    99,
+    102,
+    110,
+    115,
+    120
+   ],
+   "finalOrdStatus": "4",
+   "filledQty": "0",
+   "avgPx": "0",
+   "lastReport": {
+    "status": "4",
+    "cum": "0",
+    "avg": "0"
+   },
+   "rejections": 0,
+   "cancelled": true
+  },
+  {
+   "order": 9,
+   "session": 0,
+   "account": "ACC-GAMMA",
+   "symbol": "KRONE",
+   "side": "buy",
+   "clOrdIds": [
+    "CLIENTB.0.10",
+    "CLIENTB.0.16"
+   ],
+   "orderId": "BROKERX-O6",
+   "numbers": [
+    15,
+    25,
+    28,
+    32,
+    46,
+    47,
+    54,
+    66
+   ],
+   "finalOrdStatus": "C",
+   "filledQty": "180",
+   "avgPx": "0.912",
+   "lastReport": {
+    "status": "C",
+    "cum": "180",
+    "avg": "0.912"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 10,
+   "session": 0,
+   "account": "ACC-BETA",
+   "symbol": "OMNI",
+   "side": "sell",
+   "clOrdIds": [
+    "CLIENTB.0.11",
+    "CLIENTB.0.24"
+   ],
+   "orderId": "BROKERX-O12",
+   "numbers": [
+    21,
+    57,
+    74,
+    83,
+    89,
+    93,
+    96,
+    101,
+    105
+   ],
+   "finalOrdStatus": "C",
+   "filledQty": "16",
+   "avgPx": "3121.8375",
+   "lastReport": {
+    "status": "C",
+    "cum": "16",
+    "avg": "3121.8375"
+   },
+   "rejections": 1,
+   "cancelled": false
+  },
+  {
+   "order": 11,
+   "session": 0,
+   "account": "ACC-ALPHA",
+   "symbol": "ZETA",
+   "side": "sell",
+   "clOrdIds": [
+    "CLIENTB.0.12",
+    "CLIENTB.0.17"
+   ],
+   "orderId": "BROKERX-O9",
+   "numbers": [
+    23,
+    35,
+    42,
+    48,
+    58,
+    67,
+    86,
+    90,
+    95
+   ],
+   "finalOrdStatus": "2",
+   "filledQty": "1.5",
+   "avgPx": "4.9455",
+   "lastReport": {
+    "status": "2",
+    "cum": "1.5",
+    "avg": "4.9455"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 12,
+   "session": 0,
+   "account": "ACC-GAMMA",
+   "symbol": "OMNI",
+   "side": "sell",
+   "clOrdIds": [
+    "CLIENTB.0.20",
+    "CLIENTB.0.26"
+   ],
+   "orderId": "BROKERX-O13",
+   "numbers": [
+    53,
+    68,
+    77,
+    94,
+    97,
+    107
+   ],
+   "finalOrdStatus": "4",
+   "filledQty": "1",
+   "avgPx": "381.35",
+   "lastReport": {
+    "status": "4",
+    "cum": "1",
+    "avg": "381.35"
+   },
+   "rejections": 0,
+   "cancelled": true
+  },
+  {
+   "order": 13,
+   "session": 0,
+   "account": "ACC-BETA",
+   "symbol": "ZETA",
+   "side": "sell",
+   "clOrdIds": [
+    "CLIENTB.0.21"
+   ],
+   "orderId": null,
+   "numbers": [
+    55,
+    59
+   ],
+   "finalOrdStatus": "8",
+   "filledQty": "0",
+   "avgPx": "0",
+   "lastReport": {
+    "status": "8",
+    "cum": "0",
+    "avg": "0"
+   },
+   "rejections": 1,
+   "cancelled": false
+  },
+  {
+   "order": 14,
+   "session": 0,
+   "account": "ACC-GAMMA",
+   "symbol": "ACME",
+   "side": "sell",
+   "clOrdIds": [
+    "CLIENTB.0.22",
+    "CLIENTB.0.25"
+   ],
+   "orderId": "BROKERX-O14",
+   "numbers": [
+    64,
+    76,
+    80,
+    87,
+    109,
+    111,
+    112,
+    113
+   ],
+   "finalOrdStatus": "2",
+   "filledQty": "2000",
+   "avgPx": "683.87",
+   "lastReport": {
+    "status": "2",
+    "cum": "2000",
+    "avg": "683.87"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 15,
+   "session": 0,
+   "account": null,
+   "symbol": "ZETA",
+   "side": "sell",
+   "clOrdIds": [
+    "CLIENTB.0.30"
+   ],
+   "orderId": "BROKERX-O17",
+   "numbers": [
+    130,
+    140,
+    176,
+    179,
+    204,
+    205,
+    216
+   ],
+   "finalOrdStatus": "2",
+   "filledQty": "10.5",
+   "avgPx": "0.6178",
+   "lastReport": {
+    "status": "2",
+    "cum": "10.5",
+    "avg": "0.6178"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 16,
+   "session": 0,
+   "account": "ACC-BETA",
+   "symbol": "ZETA",
+   "side": "buy",
+   "clOrdIds": [
+    "CLIENTB.0.31",
+    "CLIENTB.0.45"
+   ],
+   "orderId": "BROKERX-O22",
+   "numbers": [
+    131,
+    154,
+    165,
+    208,
+    212
+   ],
+   "finalOrdStatus": "4",
+   "filledQty": "0",
+   "avgPx": "0",
+   "lastReport": {
+    "status": "4",
+    "cum": "0",
+    "avg": "0"
+   },
+   "rejections": 0,
+   "cancelled": true
+  },
+  {
+   "order": 17,
+   "session": 0,
+   "account": "ACC-ALPHA",
+   "symbol": "ACME",
+   "side": "buy",
+   "clOrdIds": [
+    "CLIENTB.0.32"
+   ],
+   "orderId": "BROKERX-O15",
+   "numbers": [
+    132,
+    135
+   ],
+   "finalOrdStatus": "0",
+   "filledQty": "0",
+   "avgPx": "0",
+   "lastReport": {
+    "status": "0",
+    "cum": "0",
+    "avg": "0"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 18,
+   "session": 0,
+   "account": null,
+   "symbol": "OMNI",
+   "side": "buy",
+   "clOrdIds": [
+    "CLIENTB.0.33"
+   ],
+   "orderId": "BROKERX-O19",
+   "numbers": [
+    133,
+    147,
+    155,
+    158,
+    161,
+    169,
+    180
+   ],
+   "finalOrdStatus": "C",
+   "filledQty": "7",
+   "avgPx": "4040.45",
+   "lastReport": {
+    "status": "C",
+    "cum": "7",
+    "avg": "4040.45"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 19,
+   "session": 0,
+   "account": "ACC-ALPHA",
+   "symbol": "ZETA",
+   "side": "sell",
+   "clOrdIds": [
+    "CLIENTB.0.34",
+    "CLIENTB.0.47"
+   ],
+   "orderId": "BROKERX-O16",
+   "numbers": [
+    134,
+    136,
+    151,
+    163,
+    166,
+    175,
+    195,
+    198,
+    206
+   ],
+   "finalOrdStatus": "3",
+   "filledQty": "10.5",
+   "avgPx": "7.6139",
+   "lastReport": {
+    "status": "3",
+    "cum": "10.5",
+    "avg": "7.6139"
+   },
+   "rejections": 1,
+   "cancelled": false
+  },
+  {
+   "order": 20,
+   "session": 0,
+   "account": "ACC-BETA",
+   "symbol": "ACME",
+   "side": "buy",
+   "clOrdIds": [
+    "CLIENTB.0.35"
+   ],
+   "orderId": "BROKERX-O26",
+   "numbers": [
+    137,
+    162,
+    173,
+    192
+   ],
+   "finalOrdStatus": "1",
+   "filledQty": "500",
+   "avgPx": "377.76",
+   "lastReport": {
+    "status": "1",
+    "cum": "500",
+    "avg": "377.76"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 21,
+   "session": 0,
+   "account": null,
+   "symbol": "OMNI",
+   "side": "buy",
+   "clOrdIds": [
+    "CLIENTB.0.36"
+   ],
+   "orderId": null,
+   "numbers": [
+    138,
+    144
+   ],
+   "finalOrdStatus": "8",
+   "filledQty": "0",
+   "avgPx": "0",
+   "lastReport": {
+    "status": "8",
+    "cum": "0",
+    "avg": "0"
+   },
+   "rejections": 1,
+   "cancelled": false
+  },
+  {
+   "order": 22,
+   "session": 0,
+   "account": "ACC-BETA",
+   "symbol": "KRONE",
+   "side": "sell",
+   "clOrdIds": [
+    "CLIENTB.0.37"
+   ],
+   "orderId": "BROKERX-O18",
+   "numbers": [
+    139,
+    142
+   ],
+   "finalOrdStatus": "0",
+   "filledQty": "0",
+   "avgPx": "0",
+   "lastReport": {
+    "status": "0",
+    "cum": "0",
+    "avg": "0"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 23,
+   "session": 0,
+   "account": null,
+   "symbol": "ACME",
+   "side": "sell",
+   "clOrdIds": [
+    "CLIENTB.0.38",
+    "CLIENTB.0.48"
+   ],
+   "orderId": "BROKERX-O24",
+   "numbers": [
+    141,
+    159,
+    177,
+    194,
+    199
+   ],
+   "finalOrdStatus": "4",
+   "filledQty": "0",
+   "avgPx": "0",
+   "lastReport": {
+    "status": "4",
+    "cum": "0",
+    "avg": "0"
+   },
+   "rejections": 0,
+   "cancelled": true
+  },
+  {
+   "order": 24,
+   "session": 0,
+   "account": null,
+   "symbol": "ZETA",
+   "side": "buy",
+   "clOrdIds": [
+    "CLIENTB.0.39"
+   ],
+   "orderId": "BROKERX-O28",
+   "numbers": [
+    143,
+    167,
+    170,
+    182
+   ],
+   "finalOrdStatus": "0",
+   "filledQty": "0",
+   "avgPx": "0",
+   "lastReport": {
+    "status": "0",
+    "cum": "0",
+    "avg": "0"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 25,
+   "session": 0,
+   "account": "ACC-ALPHA",
+   "symbol": "KRONE",
+   "side": "buy",
+   "clOrdIds": [
+    "CLIENTB.0.40"
+   ],
+   "orderId": "BROKERX-O23",
+   "numbers": [
+    145,
+    156,
+    178
+   ],
+   "finalOrdStatus": "3",
+   "filledQty": "0",
+   "avgPx": "0",
+   "lastReport": {
+    "status": "3",
+    "cum": "0",
+    "avg": "0"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 26,
+   "session": 0,
+   "account": "ACC-BETA",
+   "symbol": "ACME",
+   "side": "buy",
+   "clOrdIds": [
+    "CLIENTB.0.41",
+    "CLIENTB.0.50"
+   ],
+   "orderId": "BROKERX-O20",
+   "numbers": [
+    146,
+    152,
+    183,
+    186,
+    191,
+    200,
+    207,
+    214,
+    217,
+    220
+   ],
+   "finalOrdStatus": "3",
+   "filledQty": "200",
+   "avgPx": "540.69",
+   "lastReport": {
+    "status": "3",
+    "cum": "200",
+    "avg": "540.69"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 27,
+   "session": 0,
+   "account": null,
+   "symbol": "KRONE",
+   "side": "sell",
+   "clOrdIds": [
+    "CLIENTB.0.42",
+    "CLIENTB.0.49"
+   ],
+   "orderId": "BROKERX-O25",
+   "numbers": [
+    148,
+    160,
+    174,
+    185,
+    187,
+    193,
+    201,
+    203
+   ],
+   "finalOrdStatus": "3",
+   "filledQty": "40",
+   "avgPx": "60.4928",
+   "lastReport": {
+    "status": "3",
+    "cum": "40",
+    "avg": "60.4928"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 28,
+   "session": 0,
+   "account": "ACC-GAMMA",
+   "symbol": "OMNI",
+   "side": "sell",
+   "clOrdIds": [
+    "CLIENTB.0.43",
+    "CLIENTB.0.46"
+   ],
+   "orderId": "BROKERX-O21",
+   "numbers": [
+    150,
+    153,
+    171,
+    172,
+    181,
+    184,
+    196,
+    209
+   ],
+   "finalOrdStatus": "3",
+   "filledQty": "0",
+   "avgPx": "0",
+   "lastReport": {
+    "status": "3",
+    "cum": "0",
+    "avg": "0"
+   },
+   "rejections": 1,
+   "cancelled": false
+  },
+  {
+   "order": 29,
+   "session": 0,
+   "account": "ACC-BETA",
+   "symbol": "OMNI",
+   "side": "sell",
+   "clOrdIds": [
+    "CLIENTB.0.44",
+    "CLIENTB.0.51",
+    "CLIENTB.0.52"
+   ],
+   "orderId": "BROKERX-O27",
+   "numbers": [
+    157,
+    164,
+    168,
+    189,
+    190,
+    210,
+    211,
+    213,
+    215,
+    219,
+    221,
+    222,
+    223,
+    224
+   ],
+   "finalOrdStatus": "2",
+   "filledQty": "7",
+   "avgPx": "583.0643",
+   "lastReport": {
+    "status": "2",
+    "cum": "7",
+    "avg": "583.0643"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 30,
+   "session": 0,
+   "account": "ACC-BETA",
+   "symbol": "ACME",
+   "side": "buy",
+   "clOrdIds": [
+    "CLIENTB.0.53",
+    "CLIENTB.0.65"
+   ],
+   "orderId": "BROKERX-O29",
+   "numbers": [
+    227,
+    229,
+    255,
+    286,
+    300,
+    313
+   ],
+   "finalOrdStatus": "1",
+   "filledQty": "100",
+   "avgPx": "624.86",
+   "lastReport": {
+    "status": "E",
+    "cum": "100",
+    "avg": "624.86"
+   },
+   "rejections": 1,
+   "cancelled": false
+  },
+  {
+   "order": 31,
+   "session": 0,
+   "account": "ACC-ALPHA",
+   "symbol": "OMNI",
+   "side": "sell",
+   "clOrdIds": [
+    "CLIENTB.0.54"
+   ],
+   "orderId": "BROKERX-O32",
+   "numbers": [
+    228,
+    236,
+    242
+   ],
+   "finalOrdStatus": "C",
+   "filledQty": "0",
+   "avgPx": "0",
+   "lastReport": {
+    "status": "C",
+    "cum": "0",
+    "avg": "0"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 32,
+   "session": 0,
+   "account": "ACC-BETA",
+   "symbol": "OMNI",
+   "side": "buy",
+   "clOrdIds": [
+    "CLIENTB.0.55"
+   ],
+   "orderId": "BROKERX-O31",
+   "numbers": [
+    230,
+    234,
+    247,
+    249,
+    257,
+    259
+   ],
+   "finalOrdStatus": "2",
+   "filledQty": "8",
+   "avgPx": "4149.5625",
+   "lastReport": {
+    "status": "2",
+    "cum": "8",
+    "avg": "4149.5625"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 33,
+   "session": 0,
+   "account": "ACC-GAMMA",
+   "symbol": "ACME",
+   "side": "buy",
+   "clOrdIds": [
+    "CLIENTB.0.56"
+   ],
+   "orderId": "BROKERX-O30",
+   "numbers": [
+    231,
+    233,
+    240
+   ],
+   "finalOrdStatus": "1",
+   "filledQty": "100",
+   "avgPx": "227.41",
+   "lastReport": {
+    "status": "1",
+    "cum": "100",
+    "avg": "227.41"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 34,
+   "session": 0,
+   "account": "ACC-GAMMA",
+   "symbol": "OMNI",
+   "side": "sell",
+   "clOrdIds": [
+    "CLIENTB.0.57",
+    "CLIENTB.0.72"
+   ],
+   "orderId": "BROKERX-O33",
+   "numbers": [
+    232,
+    243,
+    263,
+    266,
+    272,
+    283,
+    285,
+    314,
+    318,
+    319
+   ],
+   "finalOrdStatus": "2",
+   "filledQty": "20",
+   "avgPx": "2022.455",
+   "lastReport": {
+    "status": "2",
+    "cum": "20",
+    "avg": "2022.455"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 35,
+   "session": 0,
+   "account": "ACC-ALPHA",
+   "symbol": "ACME",
+   "side": "buy",
+   "clOrdIds": [
+    "CLIENTB.0.58"
+   ],
+   "orderId": "BROKERX-O37",
+   "numbers": [
+    235,
+    251,
+    254
+   ],
+   "finalOrdStatus": "2",
+   "filledQty": "3300",
+   "avgPx": "553.8",
+   "lastReport": {
+    "status": "2",
+    "cum": "3300",
+    "avg": "553.8"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 36,
+   "session": 0,
+   "account": null,
+   "symbol": "ACME",
+   "side": "buy",
+   "clOrdIds": [
+    "CLIENTB.0.59",
+    "CLIENTB.0.71",
+    "CLIENTB.0.74"
+   ],
+   "orderId": "BROKERX-O42",
+   "numbers": [
+    237,
+    279,
+    281,
+    284,
+    288,
+    299,
+    301,
+    302,
+    310,
+    311,
+    317
+   ],
+   "finalOrdStatus": "3",
+   "filledQty": "0",
+   "avgPx": "0",
+   "lastReport": {
+    "status": "3",
+    "cum": "0",
+    "avg": "0"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 37,
+   "session": 0,
+   "account": "ACC-BETA",
+   "symbol": "KRONE",
+   "side": "sell",
+   "clOrdIds": [
+    "CLIENTB.0.60",
+    "CLIENTB.0.70",
+    "CLIENTB.0.73"
+   ],
+   "orderId": "BROKERX-O35",
+   "numbers": [
+    238,
+    245,
+    248,
+    269,
+    280,
+    292,
+    293,
+    296,
+    297,
+    305,
+    307,
+    309
+   ],
+   "finalOrdStatus": "1",
+   "filledQty": "200",
+   "avgPx": "30.6731",
+   "lastReport": {
+    "status": "1",
+    "cum": "200",
+    "avg": "30.6731"
+   },
+   "rejections": 1,
+   "cancelled": false
+  },
+  {
+   "order": 38,
+   "session": 0,
+   "account": "ACC-ALPHA",
+   "symbol": "OMNI",
+   "side": "buy",
+   "clOrdIds": [
+    "CLIENTB.0.61"
+   ],
+   "orderId": "BROKERX-O36",
+   "numbers": [
+    239,
+    250,
+    270,
+    274,
+    289,
+    294
+   ],
+   "finalOrdStatus": "C",
+   "filledQty": "12",
+   "avgPx": "3286.35",
+   "lastReport": {
+    "status": "C",
+    "cum": "12",
+    "avg": "3286.35"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 39,
+   "session": 0,
+   "account": "ACC-GAMMA",
+   "symbol": "ZETA",
+   "side": "sell",
+   "clOrdIds": [
+    "CLIENTB.0.62"
+   ],
+   "orderId": "BROKERX-O34",
+   "numbers": [
+    241,
+    244,
+    246,
+    261
+   ],
+   "finalOrdStatus": "3",
+   "filledQty": "0",
+   "avgPx": "0",
+   "lastReport": {
+    "status": "3",
+    "cum": "0",
+    "avg": "0"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 40,
+   "session": 0,
+   "account": null,
+   "symbol": "ACME",
+   "side": "buy",
+   "clOrdIds": [
+    "CLIENTB.0.63",
+    "CLIENTB.0.69"
+   ],
+   "orderId": "BROKERX-O39",
+   "numbers": [
+    252,
+    264,
+    275,
+    278,
+    282,
+    304
+   ],
+   "finalOrdStatus": "1",
+   "filledQty": "900",
+   "avgPx": "8.81",
+   "lastReport": {
+    "status": "1",
+    "cum": "900",
+    "avg": "8.81"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 41,
+   "session": 0,
+   "account": "ACC-GAMMA",
+   "symbol": "KRONE",
+   "side": "buy",
+   "clOrdIds": [
+    "CLIENTB.0.64"
+   ],
+   "orderId": "BROKERX-O38",
+   "numbers": [
+    253,
+    260,
+    267,
+    290,
+    291
+   ],
+   "finalOrdStatus": "1",
+   "filledQty": "130",
+   "avgPx": "44.2471",
+   "lastReport": {
+    "status": "1",
+    "cum": "130",
+    "avg": "44.2471"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 42,
+   "session": 0,
+   "account": "ACC-ALPHA",
+   "symbol": "ZETA",
+   "side": "sell",
+   "clOrdIds": [
+    "CLIENTB.0.66"
+   ],
+   "orderId": "BROKERX-O40",
+   "numbers": [
+    256,
+    268,
+    277,
+    287
+   ],
+   "finalOrdStatus": "2",
+   "filledQty": "17.5",
+   "avgPx": "6.8299",
+   "lastReport": {
+    "status": "2",
+    "cum": "17.5",
+    "avg": "6.8299"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 43,
+   "session": 0,
+   "account": "ACC-BETA",
+   "symbol": "OMNI",
+   "side": "sell",
+   "clOrdIds": [
+    "CLIENTB.0.67"
+   ],
+   "orderId": "BROKERX-O41",
+   "numbers": [
+    262,
+    273,
+    276
+   ],
+   "finalOrdStatus": "2",
+   "filledQty": "6",
+   "avgPx": "4479.7",
+   "lastReport": {
+    "status": "2",
+    "cum": "6",
+    "avg": "4479.7"
+   },
+   "rejections": 0,
+   "cancelled": false
+  },
+  {
+   "order": 44,
+   "session": 0,
+   "account": null,
+   "symbol": "ACME",
+   "side": "buy",
+   "clOrdIds": [
+    "CLIENTB.0.68",
+    "CLIENTB.0.75"
+   ],
+   "orderId": "BROKERX-O43",
+   "numbers": [
+    271,
+    295,
+    306,
+    312,
+    315,
+    316
+   ],
+   "finalOrdStatus": "4",
+   "filledQty": "0",
+   "avgPx": "0",
+   "lastReport": {
+    "status": "4",
+    "cum": "0",
+    "avg": "0"
+   },
+   "rejections": 0,
+   "cancelled": true
+  }
+ ],
+ "executions": [
+  {
+   "order": 0,
+   "exec_ids": [
+    "BROKERX-E16"
+   ],
+   "symbol": "ZETA",
+   "side": "buy",
+   "qty": "2.5",
+   "px": "0.7296",
+   "survives": true,
+   "number": 34
+  },
+  {
+   "order": 0,
+   "exec_ids": [
+    "BROKERX-E38"
+   ],
+   "symbol": "ZETA",
+   "side": "buy",
+   "qty": "0.5",
+   "px": "0.7294",
+   "survives": true,
+   "number": 65
+  },
+  {
+   "order": 0,
+   "exec_ids": [
+    "BROKERX-E49",
+    "BROKERX-E62"
+   ],
+   "symbol": "ZETA",
+   "side": "buy",
+   "qty": "7",
+   "px": "0.7269",
+   "survives": false,
+   "number": 79
+  },
+  {
+   "order": 1,
+   "exec_ids": [
+    "BROKERX-E54"
+   ],
+   "symbol": "ZETA",
+   "side": "sell",
+   "qty": "0.5",
+   "px": "5.1556",
+   "survives": true,
+   "number": 85
+  },
+  {
+   "order": 1,
+   "exec_ids": [
+    "BROKERX-E67"
+   ],
+   "symbol": "ZETA",
+   "side": "sell",
+   "qty": "17",
+   "px": "5.1536",
+   "survives": true,
+   "number": 106
+  },
+  {
+   "order": 2,
+   "exec_ids": [
+    "BROKERX-E30"
+   ],
+   "symbol": "KRONE",
+   "side": "sell",
+   "qty": "10",
+   "px": "39.694",
+   "survives": true,
+   "number": 56
+  },
+  {
+   "order": 2,
+   "exec_ids": [
+    "BROKERX-E48"
+   ],
+   "symbol": "KRONE",
+   "side": "sell",
+   "qty": "80",
+   "px": "39.692",
+   "survives": true,
+   "number": 78
+  },
+  {
+   "order": 2,
+   "exec_ids": [
+    "BROKERX-E57"
+   ],
+   "symbol": "KRONE",
+   "side": "sell",
+   "qty": "10",
+   "px": "39.727",
+   "survives": true,
+   "number": 88
+  },
+  {
+   "order": 4,
+   "exec_ids": [
+    "BROKERX-E8"
+   ],
+   "symbol": "KRONE",
+   "side": "buy",
+   "qty": "60",
+   "px": "65.769",
+   "survives": true,
+   "number": 22
+  },
+  {
+   "order": 4,
+   "exec_ids": [
+    "BROKERX-E53"
+   ],
+   "symbol": "KRONE",
+   "side": "buy",
+   "qty": "10",
+   "px": "65.788",
+   "survives": true,
+   "number": 84
+  },
+  {
+   "order": 4,
+   "exec_ids": [
+    "BROKERX-E77"
+   ],
+   "symbol": "KRONE",
+   "side": "buy",
+   "qty": "10",
+   "px": "65.775",
+   "survives": true,
+   "number": 119
+  },
+  {
+   "order": 5,
+   "exec_ids": [
+    "BROKERX-E19"
+   ],
+   "symbol": "KRONE",
+   "side": "sell",
+   "qty": "260",
+   "px": "51.281",
+   "survives": true,
+   "number": 37
+  },
+  {
+   "order": 5,
+   "exec_ids": [
+    "BROKERX-E26"
+   ],
+   "symbol": "KRONE",
+   "side": "sell",
+   "qty": "90",
+   "px": "51.291",
+   "survives": true,
+   "number": 45
+  },
+  {
+   "order": 6,
+   "exec_ids": [
+    "BROKERX-E18",
+    "BROKERX-E73"
+   ],
+   "symbol": "ZETA",
+   "side": "sell",
+   "qty": "0.5",
+   "px": "8.5324",
+   "survives": false,
+   "number": 36
+  },
+  {
+   "order": 7,
+   "exec_ids": [
+    "BROKERX-E42"
+   ],
+   "symbol": "KRONE",
+   "side": "buy",
+   "qty": "30",
+   "px": "43.439",
+   "survives": true,
+   "number": 69
+  },
+  {
+   "order": 7,
+   "exec_ids": [
+    "BROKERX-E45"
+   ],
+   "symbol": "KRONE",
+   "side": "buy",
+   "qty": "30",
+   "px": "43.407",
+   "survives": true,
+   "number": 75
+  },
+  {
+   "order": 8,
+   "exec_ids": [
+    "BROKERX-E70",
+    "BROKERX-E78"
+   ],
+   "symbol": "KRONE",
+   "side": "sell",
+   "qty": "10",
+   "px": "62.95",
+   "survives": false,
+   "number": 110
+  },
+  {
+   "order": 9,
+   "exec_ids": [
+    "BROKERX-E14"
+   ],
+   "symbol": "KRONE",
+   "side": "buy",
+   "qty": "180",
+   "px": "0.912",
+   "survives": true,
+   "number": 32
+  },
+  {
+   "order": 10,
+   "exec_ids": [
+    "BROKERX-E58"
+   ],
+   "symbol": "OMNI",
+   "side": "sell",
+   "qty": "1",
+   "px": "3123.15",
+   "survives": true,
+   "number": 89
+  },
+  {
+   "order": 10,
+   "exec_ids": [
+    "BROKERX-E60"
+   ],
+   "symbol": "OMNI",
+   "side": "sell",
+   "qty": "15",
+   "px": "3121.75",
+   "survives": true,
+   "number": 96
+  },
+  {
+   "order": 11,
+   "exec_ids": [
+    "BROKERX-E40"
+   ],
+   "symbol": "ZETA",
+   "side": "sell",
+   "qty": "0.5",
+   "px": "4.9451",
+   "survives": true,
+   "number": 67
+  },
+  {
+   "order": 11,
+   "exec_ids": [
+    "BROKERX-E59"
+   ],
+   "symbol": "ZETA",
+   "side": "sell",
+   "qty": "1",
+   "px": "4.9457",
+   "survives": true,
+   "number": 95
+  },
+  {
+   "order": 12,
+   "exec_ids": [
+    "BROKERX-E47"
+   ],
+   "symbol": "OMNI",
+   "side": "sell",
+   "qty": "1",
+   "px": "381.35",
+   "survives": true,
+   "number": 77
+  },
+  {
+   "order": 14,
+   "exec_ids": [
+    "BROKERX-E72"
+   ],
+   "symbol": "ACME",
+   "side": "sell",
+   "qty": "2000",
+   "px": "683.87",
+   "survives": true,
+   "number": 113
+  },
+  {
+   "order": 15,
+   "exec_ids": [
+    "BROKERX-E125",
+    "BROKERX-E126"
+   ],
+   "symbol": "ZETA",
+   "side": "sell",
+   "qty": "6.5",
+   "px": "0.621",
+   "survives": false,
+   "number": 204
+  },
+  {
+   "order": 15,
+   "exec_ids": [
+    "BROKERX-E136"
+   ],
+   "symbol": "ZETA",
+   "side": "sell",
+   "qty": "10.5",
+   "px": "0.6178",
+   "survives": true,
+   "number": 216
+  },
+  {
+   "order": 18,
+   "exec_ids": [
+    "BROKERX-E93"
+   ],
+   "symbol": "OMNI",
+   "side": "buy",
+   "qty": "7",
+   "px": "4040.45",
+   "survives": true,
+   "number": 158
+  },
+  {
+   "order": 19,
+   "exec_ids": [
+    "BROKERX-E88"
+   ],
+   "symbol": "ZETA",
+   "side": "sell",
+   "qty": "8",
+   "px": "7.6134",
+   "survives": true,
+   "number": 151
+  },
+  {
+   "order": 19,
+   "exec_ids": [
+    "BROKERX-E98"
+   ],
+   "symbol": "ZETA",
+   "side": "sell",
+   "qty": "2",
+   "px": "7.6155",
+   "survives": true,
+   "number": 163
+  },
+  {
+   "order": 19,
+   "exec_ids": [
+    "BROKERX-E100"
+   ],
+   "symbol": "ZETA",
+   "side": "sell",
+   "qty": "0.5",
+   "px": "7.6148",
+   "survives": true,
+   "number": 166
+  },
+  {
+   "order": 20,
+   "exec_ids": [
+    "BROKERX-E116"
+   ],
+   "symbol": "ACME",
+   "side": "buy",
+   "qty": "500",
+   "px": "377.76",
+   "survives": true,
+   "number": 192
+  },
+  {
+   "order": 26,
+   "exec_ids": [
+    "BROKERX-E122"
+   ],
+   "symbol": "ACME",
+   "side": "buy",
+   "qty": "100",
+   "px": "540.69",
+   "survives": true,
+   "number": 200
+  },
+  {
+   "order": 26,
+   "exec_ids": [
+    "BROKERX-E137"
+   ],
+   "symbol": "ACME",
+   "side": "buy",
+   "qty": "100",
+   "px": "540.69",
+   "survives": true,
+   "number": 217
+  },
+  {
+   "order": 27,
+   "exec_ids": [
+    "BROKERX-E106"
+   ],
+   "symbol": "KRONE",
+   "side": "sell",
+   "qty": "30",
+   "px": "60.494",
+   "survives": true,
+   "number": 174
+  },
+  {
+   "order": 27,
+   "exec_ids": [
+    "BROKERX-E117"
+   ],
+   "symbol": "KRONE",
+   "side": "sell",
+   "qty": "10",
+   "px": "60.489",
+   "survives": true,
+   "number": 193
+  },
+  {
+   "order": 28,
+   "exec_ids": [
+    "BROKERX-E112",
+    "BROKERX-E120"
+   ],
+   "symbol": "OMNI",
+   "side": "sell",
+   "qty": "13",
+   "px": "855.65",
+   "survives": false,
+   "number": 184
+  },
+  {
+   "order": 29,
+   "exec_ids": [
+    "BROKERX-E131",
+    "BROKERX-E134"
+   ],
+   "symbol": "OMNI",
+   "side": "sell",
+   "qty": "1",
+   "px": "584.5",
+   "survives": true,
+   "number": 210
+  },
+  {
+   "order": 29,
+   "exec_ids": [
+    "BROKERX-E135"
+   ],
+   "symbol": "OMNI",
+   "side": "sell",
+   "qty": "3",
+   "px": "582.85",
+   "survives": true,
+   "number": 215
+  },
+  {
+   "order": 29,
+   "exec_ids": [
+    "BROKERX-E140"
+   ],
+   "symbol": "OMNI",
+   "side": "sell",
+   "qty": "1",
+   "px": "582.9",
+   "survives": true,
+   "number": 222
+  },
+  {
+   "order": 29,
+   "exec_ids": [
+    "BROKERX-E142"
+   ],
+   "symbol": "OMNI",
+   "side": "sell",
+   "qty": "2",
+   "px": "582.75",
+   "survives": true,
+   "number": 224
+  },
+  {
+   "order": 30,
+   "exec_ids": [
+    "BROKERX-E189"
+   ],
+   "symbol": "ACME",
+   "side": "buy",
+   "qty": "100",
+   "px": "624.86",
+   "survives": true,
+   "number": 300
+  },
+  {
+   "order": 32,
+   "exec_ids": [
+    "BROKERX-E155"
+   ],
+   "symbol": "OMNI",
+   "side": "buy",
+   "qty": "4",
+   "px": "4150.3",
+   "survives": true,
+   "number": 249
+  },
+  {
+   "order": 32,
+   "exec_ids": [
+    "BROKERX-E159"
+   ],
+   "symbol": "OMNI",
+   "side": "buy",
+   "qty": "3",
+   "px": "4148.7",
+   "survives": true,
+   "number": 257
+  },
+  {
+   "order": 32,
+   "exec_ids": [
+    "BROKERX-E160"
+   ],
+   "symbol": "OMNI",
+   "side": "buy",
+   "qty": "1",
+   "px": "4149.2",
+   "survives": true,
+   "number": 259
+  },
+  {
+   "order": 33,
+   "exec_ids": [
+    "BROKERX-E147"
+   ],
+   "symbol": "ACME",
+   "side": "buy",
+   "qty": "100",
+   "px": "227.41",
+   "survives": true,
+   "number": 240
+  },
+  {
+   "order": 34,
+   "exec_ids": [
+    "BROKERX-E163"
+   ],
+   "symbol": "OMNI",
+   "side": "sell",
+   "qty": "10",
+   "px": "2022.3",
+   "survives": true,
+   "number": 263
+  },
+  {
+   "order": 34,
+   "exec_ids": [
+    "BROKERX-E165"
+   ],
+   "symbol": "OMNI",
+   "side": "sell",
+   "qty": "1",
+   "px": "2022.25",
+   "survives": true,
+   "number": 266
+  },
+  {
+   "order": 34,
+   "exec_ids": [
+    "BROKERX-E169"
+   ],
+   "symbol": "OMNI",
+   "side": "sell",
+   "qty": "1",
+   "px": "2021.35",
+   "survives": true,
+   "number": 272
+  },
+  {
+   "order": 34,
+   "exec_ids": [
+    "BROKERX-E177"
+   ],
+   "symbol": "OMNI",
+   "side": "sell",
+   "qty": "1",
+   "px": "2021.5",
+   "survives": true,
+   "number": 283
+  },
+  {
+   "order": 34,
+   "exec_ids": [
+    "BROKERX-E204"
+   ],
+   "symbol": "OMNI",
+   "side": "sell",
+   "qty": "7",
+   "px": "2023",
+   "survives": true,
+   "number": 319
+  },
+  {
+   "order": 35,
+   "exec_ids": [
+    "BROKERX-E158"
+   ],
+   "symbol": "ACME",
+   "side": "buy",
+   "qty": "3300",
+   "px": "553.8",
+   "survives": true,
+   "number": 254
+  },
+  {
+   "order": 36,
+   "exec_ids": [
+    "BROKERX-E197",
+    "BROKERX-E198"
+   ],
+   "symbol": "ACME",
+   "side": "buy",
+   "qty": "1300",
+   "px": "551.02",
+   "survives": false,
+   "number": 310
+  },
+  {
+   "order": 37,
+   "exec_ids": [
+    "BROKERX-E168"
+   ],
+   "symbol": "KRONE",
+   "side": "sell",
+   "qty": "130",
+   "px": "30.675",
+   "survives": true,
+   "number": 269
+  },
+  {
+   "order": 37,
+   "exec_ids": [
+    "BROKERX-E193"
+   ],
+   "symbol": "KRONE",
+   "side": "sell",
+   "qty": "10",
+   "px": "30.69",
+   "survives": true,
+   "number": 305
+  },
+  {
+   "order": 37,
+   "exec_ids": [
+    "BROKERX-E196"
+   ],
+   "symbol": "KRONE",
+   "side": "sell",
+   "qty": "60",
+   "px": "30.666",
+   "survives": true,
+   "number": 309
+  },
+  {
+   "order": 38,
+   "exec_ids": [
+    "BROKERX-E171",
+    "BROKERX-E182"
+   ],
+   "symbol": "OMNI",
+   "side": "buy",
+   "qty": "12",
+   "px": "3286.35",
+   "survives": true,
+   "number": 274
+  },
+  {
+   "order": 40,
+   "exec_ids": [
+    "BROKERX-E192"
+   ],
+   "symbol": "ACME",
+   "side": "buy",
+   "qty": "900",
+   "px": "8.81",
+   "survives": true,
+   "number": 304
+  },
+  {
+   "order": 41,
+   "exec_ids": [
+    "BROKERX-E183"
+   ],
+   "symbol": "KRONE",
+   "side": "buy",
+   "qty": "120",
+   "px": "44.245",
+   "survives": true,
+   "number": 290
+  },
+  {
+   "order": 41,
+   "exec_ids": [
+    "BROKERX-E184"
+   ],
+   "symbol": "KRONE",
+   "side": "buy",
+   "qty": "10",
+   "px": "44.272",
+   "survives": true,
+   "number": 291
+  },
+  {
+   "order": 42,
+   "exec_ids": [
+    "BROKERX-E173"
+   ],
+   "symbol": "ZETA",
+   "side": "sell",
+   "qty": "10.5",
+   "px": "6.8303",
+   "survives": true,
+   "number": 277
+  },
+  {
+   "order": 42,
+   "exec_ids": [
+    "BROKERX-E180"
+   ],
+   "symbol": "ZETA",
+   "side": "sell",
+   "qty": "7",
+   "px": "6.8293",
+   "survives": true,
+   "number": 287
+  },
+  {
+   "order": 43,
+   "exec_ids": [
+    "BROKERX-E172"
+   ],
+   "symbol": "OMNI",
+   "side": "sell",
+   "qty": "6",
+   "px": "4479.7",
+   "survives": true,
+   "number": 276
+  }
+ ],
+ "trades": {
+  "ACME": {
+   "buyOrders": "9",
+   "bought": [
+    "5100"
+   ],
+   "avgBuy": [
+    "434.8459"
+   ],
+   "sellOrders": "2",
+   "sold": [
+    "2000"
+   ],
+   "avgSell": [
+    "683.87"
+   ],
+   "net": [
+    "+3100"
+   ],
+   "exact": {
+    "bought": "5100",
+    "sold": "2000",
+    "buyNotional": "2217714",
+    "sellNotional": "1367740"
+   }
+  },
+  "KRONE": {
+   "buyOrders": "5",
+   "bought": [
+    "450"
+   ],
+   "avgBuy": [
+    "30.6298"
+   ],
+   "sellOrders": "6",
+   "sold": [
+    "690"
+   ],
+   "avgSell": [
+    "44.164"
+   ],
+   "net": [
+    "-240"
+   ],
+   "exact": {
+    "bought": "450",
+    "sold": "690",
+    "buyNotional": "13783.43",
+    "sellNotional": "30473.14"
+   }
+  },
+  "OMNI": {
+   "buyOrders": "4",
+   "bought": [
+    "27"
+   ],
+   "avgBuy": [
+    "3737.6241"
+   ],
+   "sellOrders": "8",
+   "sold": [
+    "50"
+   ],
+   "avgSell": [
+    "2434.79"
+   ],
+   "net": [
+    "-23"
+   ],
+   "exact": {
+    "bought": "27",
+    "sold": "50",
+    "buyNotional": "100915.85",
+    "sellNotional": "121739.5"
+   }
+  },
+  "ZETA": {
+   "buyOrders": "3",
+   "bought": [
+    "3"
+   ],
+   "avgBuy": [
+    "0.7296"
+   ],
+   "sellOrders": "8",
+   "sold": [
+    "57.5"
+   ],
+   "avgSell": [
+    "5.2794"
+   ],
+   "net": [
+    "-54.5"
+   ],
+   "exact": {
+    "bought": "3",
+    "sold": "57.5",
+    "buyNotional": "2.1887",
+    "sellNotional": "303.563"
+   }
+  }
+ },
+ "rejections": 7,
+ "cancellations": 6,
+ "dataset": "datasets/FIX42/lifecycle-42.log",
+ "sha256": "c4ea4a383ad097b329c19a45e04b6133fdc86a1217cabf198b7d63fcfc8e58a7",
+ "description": "One FIX 4.2 session, 45 orders with every lifecycle path, two lost messages, resends",
+ "bytes": 66821,
+ "views": [
+  {
+   "filters": {
+    "account": "ACC-ALPHA"
+   },
+   "shown": [
+    6,
+    11,
+    17,
+    19,
+    20,
+    23,
+    35,
+    42,
+    43,
+    48,
+    50,
+    58,
+    62,
+    67,
+    81,
+    86,
+    90,
+    95,
+    99,
+    102,
+    110,
+    115,
+    120,
+    132,
+    134,
+    135,
+    136,
+    145,
+    151,
+    156,
+    163,
+    166,
+    175,
+    178,
+    195,
+    198,
+    206,
+    228,
+    235,
+    236,
+    239,
+    242,
+    250,
+    251,
+    254,
+    256,
+    268,
+    270,
+    274,
+    277,
+    287,
+    289,
+    294
+   ],
+   "orders": 10,
+   "trades": {
+    "ACME": {
+     "buyOrders": "2",
+     "bought": [
+      "3300"
+     ],
+     "avgBuy": [
+      "553.8"
+     ],
+     "sellOrders": "0",
+     "sold": [
+      "0"
+     ],
+     "avgSell": [
+      "–"
+     ],
+     "net": [
+      "+3300"
+     ]
+    },
+    "KRONE": {
+     "buyOrders": "1",
+     "bought": [
+      "0"
+     ],
+     "avgBuy": [
+      "–"
+     ],
+     "sellOrders": "1",
+     "sold": [
+      "0"
+     ],
+     "avgSell": [
+      "–"
+     ],
+     "net": [
+      "0"
+     ]
+    },
+    "OMNI": {
+     "buyOrders": "1",
+     "bought": [
+      "12"
+     ],
+     "avgBuy": [
+      "3286.35"
+     ],
+     "sellOrders": "2",
+     "sold": [
+      "0"
+     ],
+     "avgSell": [
+      "–"
+     ],
+     "net": [
+      "+12"
+     ]
+    },
+    "ZETA": {
+     "buyOrders": "0",
+     "bought": [
+      "0"
+     ],
+     "avgBuy": [
+      "–"
+     ],
+     "sellOrders": "3",
+     "sold": [
+      "29.5"
+     ],
+     "avgSell": [
+      "7.0131"
+     ],
+     "net": [
+      "-29.5"
+     ]
+    }
+   }
+  },
+  {
+   "filters": {
+    "account": "ACC-BETA"
+   },
+   "shown": [
+    4,
+    7,
+    8,
+    9,
+    10,
+    12,
+    13,
+    14,
+    16,
+    18,
+    21,
+    22,
+    26,
+    27,
+    33,
+    36,
+    37,
+    39,
+    40,
+    45,
+    51,
+    52,
+    55,
+    57,
+    59,
+    60,
+    63,
+    69,
+    70,
+    73,
+    74,
+    75,
+    82,
+    83,
+    84,
+    85,
+    89,
+    93,
+    96,
+    101,
+    103,
+    105,
+    106,
+    114,
+    116,
+    117,
+    118,
+    119,
+    121,
+    122,
+    123,
+    124,
+    131,
+    137,
+    139,
+    142,
+    146,
+    152,
+    154,
+    157,
+    162,
+    164,
+    165,
+    168,
+    173,
+    183,
+    186,
+    189,
+    190,
+    191,
+    192,
+    200,
+    207,
+    208,
+    210,
+    211,
+    212,
+    213,
+    214,
+    215,
+    217,
+    219,
+    220,
+    221,
+    222,
+    223,
+    224,
+    227,
+    229,
+    230,
+    234,
+    238,
+    245,
+    247,
+    248,
+    249,
+    255,
+    257,
+    259,
+    262,
+    269,
+    273,
+    276,
+    280,
+    286,
+    292,
+    293,
+    296,
+    297,
+    300,
+    305,
+    307,
+    309,
+    313
+   ],
+   "orders": 16,
+   "trades": {
+    "ACME": {
+     "buyOrders": "3",
+     "bought": [
+      "800"
+     ],
+     "avgBuy": [
+      "449.38"
+     ],
+     "sellOrders": "0",
+     "sold": [
+      "0"
+     ],
+     "avgSell": [
+      "–"
+     ],
+     "net": [
+      "+800"
+     ]
+    },
+    "KRONE": {
+     "buyOrders": "2",
+     "bought": [
+      "140"
+     ],
+     "avgBuy": [
+      "56.1939"
+     ],
+     "sellOrders": "3",
+     "sold": [
+      "550"
+     ],
+     "avgSell": [
+      "43.7888"
+     ],
+     "net": [
+      "-410"
+     ]
+    },
+    "OMNI": {
+     "buyOrders": "1",
+     "bought": [
+      "8"
+     ],
+     "avgBuy": [
+      "4149.5625"
+     ],
+     "sellOrders": "3",
+     "sold": [
+      "29"
+     ],
+     "avgSell": [
+      "2789.9672"
+     ],
+     "net": [
+      "-21"
+     ]
+    },
+    "ZETA": {
+     "buyOrders": "1",
+     "bought": [
+      "0"
+     ],
+     "avgBuy": [
+      "–"
+     ],
+     "sellOrders": "3",
+     "sold": [
+      "17.5"
+     ],
+     "avgSell": [
+      "5.1537"
+     ],
+     "net": [
+      "-17.5"
+     ]
+    }
+   }
+  },
+  {
+   "filters": {
+    "account": "ACC-GAMMA"
+   },
+   "shown": [
+    3,
+    5,
+    15,
+    24,
+    25,
+    28,
+    29,
+    30,
+    32,
+    34,
+    38,
+    41,
+    44,
+    46,
+    47,
+    53,
+    54,
+    56,
+    61,
+    64,
+    65,
+    66,
+    68,
+    71,
+    72,
+    76,
+    77,
+    78,
+    79,
+    80,
+    87,
+    88,
+    94,
+    97,
+    100,
+    104,
+    107,
+    109,
+    111,
+    112,
+    113,
+    150,
+    153,
+    171,
+    172,
+    181,
+    184,
+    196,
+    209,
+    231,
+    232,
+    233,
+    240,
+    241,
+    243,
+    244,
+    246,
+    253,
+    260,
+    261,
+    263,
+    266,
+    267,
+    272,
+    283,
+    285,
+    290,
+    291,
+    314,
+    318,
+    319
+   ],
+   "orders": 10,
+   "trades": {
+    "ACME": {
+     "buyOrders": "1",
+     "bought": [
+      "100"
+     ],
+     "avgBuy": [
+      "227.41"
+     ],
+     "sellOrders": "1",
+     "sold": [
+      "2000"
+     ],
+     "avgSell": [
+      "683.87"
+     ],
+     "net": [
+      "-1900"
+     ]
+    },
+    "KRONE": {
+     "buyOrders": "2",
+     "bought": [
+      "310"
+     ],
+     "avgBuy": [
+      "19.0848"
+     ],
+     "sellOrders": "1",
+     "sold": [
+      "100"
+     ],
+     "avgSell": [
+      "39.6957"
+     ],
+     "net": [
+      "+210"
+     ]
+    },
+    "OMNI": {
+     "buyOrders": "0",
+     "bought": [
+      "0"
+     ],
+     "avgBuy": [
+      "–"
+     ],
+     "sellOrders": "3",
+     "sold": [
+      "21"
+     ],
+     "avgSell": [
+      "1944.3071"
+     ],
+     "net": [
+      "-21"
+     ]
+    },
+    "ZETA": {
+     "buyOrders": "1",
+     "bought": [
+      "3"
+     ],
+     "avgBuy": [
+      "0.7296"
+     ],
+     "sellOrders": "1",
+     "sold": [
+      "0"
+     ],
+     "avgSell": [
+      "–"
+     ],
+     "net": [
+      "+3"
+     ]
+    }
+   }
+  },
+  {
+   "filters": {
+    "senderCompId": "BROKERX"
+   },
+   "shown": [
+    2,
+    12,
+    13,
+    14,
+    16,
+    17,
+    18,
+    19,
+    20,
+    22,
+    24,
+    25,
+    26,
+    28,
+    30,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    47,
+    52,
+    54,
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    75,
+    76,
+    77,
+    78,
+    79,
+    81,
+    82,
+    83,
+    84,
+    85,
+    86,
+    87,
+    88,
+    89,
+    90,
+    92,
+    93,
+    95,
+    96,
+    97,
+    98,
+    100,
+    101,
+    102,
+    103,
+    104,
+    105,
+    106,
+    107,
+    109,
+    110,
+    111,
+    112,
+    113,
+    114,
+    115,
+    116,
+    118,
+    119,
+    120,
+    121,
+    123,
+    124,
+    125,
+    127,
+    129,
+    135,
+    136,
+    140,
+    142,
+    144,
+    147,
+    151,
+    152,
+    153,
+    154,
+    155,
+    156,
+    158,
+    159,
+    160,
+    161,
+    162,
+    163,
+    164,
+    166,
+    167,
+    168,
+    169,
+    170,
+    172,
+    173,
+    174,
+    176,
+    178,
+    179,
+    180,
+    181,
+    182,
+    183,
+    184,
+    187,
+    188,
+    190,
+    191,
+    192,
+    193,
+    194,
+    195,
+    196,
+    197,
+    198,
+    199,
+    200,
+    201,
+    203,
+    204,
+    205,
+    206,
+    207,
+    208,
+    209,
+    210,
+    211,
+    212,
+    213,
+    214,
+    215,
+    216,
+    217,
+    220,
+    221,
+    222,
+    223,
+    224,
+    226,
+    229,
+    233,
+    234,
+    236,
+    240,
+    242,
+    243,
+    244,
+    245,
+    246,
+    247,
+    248,
+    249,
+    250,
+    251,
+    254,
+    257,
+    259,
+    260,
+    261,
+    263,
+    264,
+    266,
+    267,
+    268,
+    269,
+    270,
+    272,
+    273,
+    274,
+    276,
+    277,
+    278,
+    279,
+    282,
+    283,
+    284,
+    286,
+    287,
+    288,
+    289,
+    290,
+    291,
+    292,
+    293,
+    294,
+    295,
+    297,
+    298,
+    300,
+    301,
+    302,
+    304,
+    305,
+    306,
+    307,
+    309,
+    310,
+    311,
+    313,
+    314,
+    315,
+    316,
+    317,
+    318,
+    319,
+    321
+   ],
+   "gaps": 1,
+   "trades": {
+    "ACME": {
+     "buyOrders": "0",
+     "bought": [
+      "5100"
+     ],
+     "avgBuy": [
+      "434.8459"
+     ],
+     "sellOrders": "0",
+     "sold": [
+      "2000"
+     ],
+     "avgSell": [
+      "683.87"
+     ],
+     "net": [
+      "+3100"
+     ]
+    },
+    "KRONE": {
+     "buyOrders": "0",
+     "bought": [
+      "450"
+     ],
+     "avgBuy": [
+      "30.6298"
+     ],
+     "sellOrders": "0",
+     "sold": [
+      "690"
+     ],
+     "avgSell": [
+      "44.164"
+     ],
+     "net": [
+      "-240"
+     ]
+    },
+    "OMNI": {
+     "buyOrders": "0",
+     "bought": [
+      "27"
+     ],
+     "avgBuy": [
+      "3737.6241"
+     ],
+     "sellOrders": "0",
+     "sold": [
+      "50"
+     ],
+     "avgSell": [
+      "2434.79"
+     ],
+     "net": [
+      "-23"
+     ]
+    },
+    "ZETA": {
+     "buyOrders": "0",
+     "bought": [
+      "3"
+     ],
+     "avgBuy": [
+      "0.7296"
+     ],
+     "sellOrders": "0",
+     "sold": [
+      "57.5"
+     ],
+     "avgSell": [
+      "5.2794"
+     ],
+     "net": [
+      "-54.5"
+     ]
+    }
+   }
+  },
+  {
+   "filters": {
+    "senderCompId": "CLIENTB"
+   },
+   "shown": [
+    1,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    15,
+    21,
+    23,
+    27,
+    29,
+    31,
+    38,
+    46,
+    48,
+    49,
+    50,
+    51,
+    53,
+    55,
+    64,
+    73,
+    74,
+    80,
+    91,
+    94,
+    99,
+    108,
+    117,
+    122,
+    126,
+    128,
+    130,
+    131,
+    132,
+    133,
+    134,
+    137,
+    138,
+    139,
+    141,
+    143,
+    145,
+    146,
+    148,
+    149,
+    150,
+    157,
+    165,
+    171,
+    175,
+    177,
+    185,
+    186,
+    189,
+    202,
+    218,
+    219,
+    225,
+    227,
+    228,
+    230,
+    231,
+    232,
+    235,
+    237,
+    238,
+    239,
+    241,
+    252,
+    253,
+    255,
+    256,
+    258,
+    262,
+    265,
+    271,
+    275,
+    280,
+    281,
+    285,
+    296,
+    299,
+    303,
+    308,
+    312,
+    320
+   ],
+   "gaps": 1,
+   "trades": {
+    "ACME": {
+     "buyOrders": "9",
+     "bought": [
+      "0"
+     ],
+     "avgBuy": [
+      "–"
+     ],
+     "sellOrders": "2",
+     "sold": [
+      "0"
+     ],
+     "avgSell": [
+      "–"
+     ],
+     "net": [
+      "0"
+     ]
+    },
+    "KRONE": {
+     "buyOrders": "5",
+     "bought": [
+      "0"
+     ],
+     "avgBuy": [
+      "–"
+     ],
+     "sellOrders": "6",
+     "sold": [
+      "0"
+     ],
+     "avgSell": [
+      "–"
+     ],
+     "net": [
+      "0"
+     ]
+    },
+    "OMNI": {
+     "buyOrders": "4",
+     "bought": [
+      "0"
+     ],
+     "avgBuy": [
+      "–"
+     ],
+     "sellOrders": "8",
+     "sold": [
+      "0"
+     ],
+     "avgSell": [
+      "–"
+     ],
+     "net": [
+      "0"
+     ]
+    },
+    "ZETA": {
+     "buyOrders": "3",
+     "bought": [
+      "0"
+     ],
+     "avgBuy": [
+      "–"
+     ],
+     "sellOrders": "8",
+     "sold": [
+      "0"
+     ],
+     "avgSell": [
+      "–"
+     ],
+     "net": [
+      "0"
+     ]
+    }
+   }
+  }
+ ],
+ "intentionallyInvalid": [],
+ "anomalies": [
+  "sequence gap at message 125",
+  "sequence gap at message 225"
+ ]
+}
