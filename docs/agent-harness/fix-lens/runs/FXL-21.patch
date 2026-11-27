@@ -1,0 +1,554 @@
+From e23113c3cd40e591be96ca451f587aea0465ea16 Mon Sep 17 00:00:00 2001
+From: Hermes Agent <hermes@agent.local>
+Date: Fri, 27 Nov 2026 20:31:35 +0100
+Subject: [PATCH] FXL-21: Keep timeline and cards in step with page controls
+
+---
+ src/main.js         |  18 +++-
+ src/render.js       |  42 +++++++--
+ styles.css          |  16 ++++
+ test/page.test.js   | 137 +++++++++++++++++++++++++++++
+ test/render.test.js | 204 ++++++++++++++++++++++++++++++++++++++++++++
+ test/styles.test.js |  18 ++++
+ 6 files changed, 424 insertions(+), 11 deletions(-)
+
+diff --git a/src/main.js b/src/main.js
+index 22dd2c5..49b7634 100644
+--- a/src/main.js
++++ b/src/main.js
+@@ -21,16 +21,16 @@ themeButton.addEventListener('click', () => {
+ themeButton.hidden = false;
+ 
+ const input = document.querySelector('#paste');
+-const view = { orderId: null, filters: {} };
++const view = { orderId: null, filters: {}, page: 1 };
+ let result;
+ const handlers = {
+   pick(id) {
+     view.orderId = id;
+-    renderCurrent();
++    renderFirstPage();
+   },
+   clear() {
+     view.orderId = null;
+-    renderCurrent();
++    renderFirstPage();
+   },
+   setFilter(key, value) {
+     if (key == null) {
+@@ -40,14 +40,24 @@ const handlers = {
+     } else {
+       view.filters[key] = value;
+     }
++    renderFirstPage();
++  },
++  setPage(page) {
++    view.page = page;
+     renderCurrent();
++    const results = document.querySelector('.results');
++    if (typeof results?.scrollIntoView === 'function') results.scrollIntoView();
+   },
+ };
+ const renderCurrent = () => render(result, view, handlers);
++function renderFirstPage() {
++  view.page = 1;
++  renderCurrent();
++}
+ 
+ document.querySelector('#decode-button').addEventListener('click', () => {
+   result = analyse(input.value);
+   view.orderId = null;
+   view.filters = {};
+-  renderCurrent();
++  renderFirstPage();
+ });
+diff --git a/src/render.js b/src/render.js
+index 784830a..ec155dc 100644
+--- a/src/render.js
++++ b/src/render.js
+@@ -1,6 +1,7 @@
+ import { findOrder, orderGroups } from './orders.js';
+ import { tradeSummary } from './summary.js';
+ import { FILTERS, filterOptions, applyFilters } from './filters.js';
++import { pageOf, pageLabel } from './paging.js';
+ 
+ // Text and classes travel separately: call sites supply only fixed class names.
+ function add(parent, tag, className, text) {
+@@ -95,6 +96,23 @@ function renderFilters(section, decoded, view, handlers) {
+   }
+ }
+ 
++function renderPager(section, info, narrowed, handlers) {
++  const pager = add(section, 'nav', 'pager');
++  add(pager, 'span', 'page-info', pageLabel(info, narrowed));
++  const { page, pages } = info;
++  const controls = [
++    [add(pager, 'button', 'page-first', 'First'), 1, page === 1],
++    [add(pager, 'button', 'page-prev', 'Previous'), page - 1, page === 1],
++    [add(pager, 'button', 'page-next', 'Next'), page + 1, page === pages],
++    [add(pager, 'button', 'page-last', 'Last'), pages, page === pages],
++  ];
++  for (const [button, destination, disabled] of controls) {
++    button.type = 'button';
++    button.disabled = disabled;
++    button.addEventListener('click', () => handlers?.setPage?.(destination));
++  }
++}
++
+ const fieldOf = (message, tag) => message.fields.find(field => field.tag === tag);
+ const valueOf = (message, tag) => fieldOf(message, tag)?.value;
+ 
+@@ -207,11 +225,14 @@ function renderCard(section, message, handlers) {
+   }
+ }
+ 
+-function renderMessages(section, decoded, errors, handlers, narrowed) {
+-  const entries = [...decoded.map(message => ({ number: message.number, message })),
+-    ...errors.map(error => ({ number: error.number, error }))];
++function messageEntries(decoded, errors) {
++  return [...decoded.map(message => ({ number: message.number, message })),
++    ...errors.map(error => ({ number: error.number, error }))].sort((a, b) => a.number - b.number);
++}
++
++function renderMessages(section, entries, handlers, narrowed) {
+   if (!entries.length) add(section, 'p', 'empty', narrowed ? NO_MATCHES : NO_MESSAGES);
+-  for (const { message, error, number } of entries.sort((a, b) => a.number - b.number)) {
++  for (const { message, error, number } of entries) {
+     if (message) {
+       renderCard(section, message, handlers);
+     } else {
+@@ -225,7 +246,7 @@ function renderMessages(section, decoded, errors, handlers, narrowed) {
+ }
+ 
+ /** Replace generated output without replacing the page's headings.
+- * Optional view: { orderId, filters }; optional handlers: { pick, clear, setFilter }.
++ * Optional view: { orderId, filters, page }; optional handlers: { pick, clear, setFilter, setPage }.
+  */
+ export function render(result, view, handlers) {
+   const summary = document.querySelector('#summary');
+@@ -262,6 +283,13 @@ export function render(result, view, handlers) {
+   renderStats(summary, { decoded, errors, events, groups, shown, total, narrowed });
+   renderTrades(summary, tradeSummary(result.decoded, narrowed ? shown : undefined));
+   renderFilters(summary, result.decoded, view, handlers);
+-  renderTimeline(timeline, events, handlers);
+-  renderMessages(decode, decoded, errors, handlers, narrowed);
++
++  const info = pageOf(messageEntries(decoded, errors), view?.page);
++  const pageNumbers = new Set(info.items.filter(entry => entry.message).map(entry => entry.number));
++  renderTimeline(timeline, events.filter(event => pageNumbers.has(event.number)), handlers);
++  renderMessages(decode, info.items, handlers, narrowed);
++  if (info.pages > 1) {
++    renderPager(summary, info, narrowed, handlers);
++    renderPager(decode, info, narrowed, handlers);
++  }
+ }
+diff --git a/styles.css b/styles.css
+index 193e758..0f7aab9 100644
+--- a/styles.css
++++ b/styles.css
+@@ -229,3 +229,19 @@ button {
+   font-size: .85rem;
+ }
+ .filter select:disabled { border-style: dashed; color: var(--muted); }
++
++
++.pager {
++  display: flex;
++  flex-wrap: wrap;
++  align-items: center;
++  gap: .5rem;
++  margin-top: .75rem;
++}
++.pager button {
++  padding: .3rem .8rem;
++  border-color: var(--line);
++  background: var(--panel);
++  color: var(--ink);
++}
++.pager button:disabled { color: var(--muted); cursor: default; }
+diff --git a/test/page.test.js b/test/page.test.js
+index fdc3fbc..6d13f0b 100644
+--- a/test/page.test.js
++++ b/test/page.test.js
+@@ -98,3 +98,140 @@ test('test_page_theme_follows_system_and_toggles_without_storage', async () => {
+     }
+   }
+ });
++
++
++const get = selector => document.querySelector(selector);
++const press = selector => {
++  const button = get(selector);
++  expect(button, selector).not.toBeNull();
++  button.click();
++};
++
++function decodeFrames(frames) {
++  get('#paste').value = frames.join('\n');
++  press('#decode-button');
++}
++
++const makeFrames = fields => Array.from({ length: 450 }, (_, i) =>
++  buildMessage([[8, 'FIX.4.4'], ...fields(i)]));
++const heartbeats = marker => makeFrames(i => [[35, '0'], [34, i + 1], [58, marker]]);
++const expectVisiblePage = (range, firstCard) => {
++  const label = `Messages ${range}`;
++  expect([...document.querySelectorAll('.pager .page-info')].map(node => node.textContent)).toEqual([label, label]);
++  expect(get('#decode .card .num')?.textContent).toBe(firstCard);
++};
++
++test('test_page_next_and_last_render_before_scrolling_results_once', async () => {
++  await start();
++  const results = get('.results');
++  const seen = [];
++  const scroll = vi.fn(function () {
++    seen.push({ receiver: this, label: get('#summary .page-info')?.textContent, card: get('#decode .card .num')?.textContent });
++  });
++  results.scrollIntoView = scroll;
++  decodeFrames(heartbeats('first log'));
++  expect(scroll).not.toHaveBeenCalled();
++  press('#summary .page-next');
++  expectVisiblePage('201 to 400 of 450', '#201');
++  expect(scroll.mock.calls).toEqual([[]]);
++  press('#decode .page-last');
++  expectVisiblePage('401 to 450 of 450', '#401');
++  expect(scroll.mock.calls).toEqual([[], []]);
++  expect(seen.map(entry => entry.receiver === results)).toEqual([true, true]);
++  expect(seen.map(({ label, card }) => [label, card])).toEqual([
++    ['Messages 201 to 400 of 450', '#201'], ['Messages 401 to 450 of 450', '#401'],
++  ]);
++});
++
++test('test_page_next_without_scroll_method_navigates_without_error', async () => {
++  await start();
++  get('.results').scrollIntoView = undefined;
++  decodeFrames(heartbeats('no scroll method'));
++  const onError = vi.fn();
++  window.addEventListener('error', onError);
++  try {
++    press('#summary .page-next');
++    expectVisiblePage('201 to 400 of 450', '#201');
++    expect(onError).not.toHaveBeenCalled();
++  } finally {
++    window.removeEventListener('error', onError);
++  }
++});
++
++test('test_page_filter_changes_reset_pagination_to_first_page', async () => {
++  await start();
++  const scroll = vi.fn();
++  get('.results').scrollIntoView = scroll;
++  decodeFrames(makeFrames(i => [[35, '0'], [49, i % 2 ? 'B' : 'A'], [56, 'T'], [34, Math.floor(i / 2) + 1]]));
++  const pickSender = value => {
++    const control = [...document.querySelectorAll('.filter')]
++      .find(label => label.firstElementChild.textContent === 'SenderCompID').querySelector('select');
++    control.value = value;
++    control.dispatchEvent(new Event('change'));
++  };
++  const next = (range, card) => {
++    press('#summary .page-next');
++    expectVisiblePage(range, card);
++    scroll.mockClear();
++  };
++  next('201 to 400 of 450', '#201');
++  pickSender('A');
++  expectVisiblePage('1 to 200 of 225 shown', '#1');
++  expect(scroll).not.toHaveBeenCalled();
++  next('201 to 225 of 225 shown', '#401');
++  pickSender('B');
++  expectVisiblePage('1 to 200 of 225 shown', '#2');
++  expect(scroll).not.toHaveBeenCalled();
++  next('201 to 225 of 225 shown', '#402');
++  pickSender('All');
++  expectVisiblePage('1 to 200 of 450', '#1');
++  expect(scroll).not.toHaveBeenCalled();
++  pickSender('B');
++  next('201 to 225 of 225 shown', '#402');
++  press('.clear-filters');
++  expectVisiblePage('1 to 200 of 450', '#1');
++  expect(scroll).not.toHaveBeenCalled();
++});
++
++test('test_page_order_pick_and_clear_reset_pagination_to_first_page', async () => {
++  await start();
++  const scroll = vi.fn();
++  get('.results').scrollIntoView = scroll;
++  decodeFrames(makeFrames(i => {
++    const inOrder = i % 2 === 0 || i >= 400;
++    const type = i === 0 ? 'D' : inOrder ? '8' : '0';
++    const fields = [[35, type], [49, 'A'], [56, 'B'], [34, i + 1]];
++    if (inOrder) fields.push([11, 'C-A']);
++    if (type === '8') fields.push([37, 'O-A'], [150, '0']);
++    return fields;
++  }));
++  press('#summary .page-next');
++  expectVisiblePage('201 to 400 of 450', '#201');
++  scroll.mockClear();
++  expect(get('#decode .card .order-link')?.textContent).toBe('C-A');
++  press('#decode .card .order-link');
++  expectVisiblePage('1 to 200 of 250 shown', '#1');
++  expect(get('.order-story strong')?.textContent).toContain('C-A');
++  expect(scroll).not.toHaveBeenCalled();
++  press('#decode .page-next');
++  expectVisiblePage('201 to 250 of 250 shown', '#401');
++  scroll.mockClear();
++  press('.order-story .show-all');
++  expectVisiblePage('1 to 200 of 450', '#1');
++  expect(get('.order-story')).toBeNull();
++  expect(scroll).not.toHaveBeenCalled();
++});
++
++test('test_page_decoding_again_from_page_two_resets_to_first_page', async () => {
++  await start();
++  const scroll = vi.fn();
++  get('.results').scrollIntoView = scroll;
++  decodeFrames(heartbeats('original log'));
++  press('#summary .page-next');
++  expectVisiblePage('201 to 400 of 450', '#201');
++  scroll.mockClear();
++  decodeFrames(heartbeats('replacement log'));
++  expectVisiblePage('1 to 200 of 450', '#1');
++  expect(get('#decode .card').textContent).toContain('replacement log');
++  expect(scroll).not.toHaveBeenCalled();
++});
+diff --git a/test/render.test.js b/test/render.test.js
+index f50de5a..bd6d35d 100644
+--- a/test/render.test.js
++++ b/test/render.test.js
+@@ -751,3 +751,207 @@ test('test_render_filter_option_texts_set_via_textContent', () => {
+   expect(all('#summary b, #summary i, #summary [class="marker"]')).toHaveLength(0);
+   expect(all('#summary div.filters option').every(node => !node.hasAttribute('value'))).toBe(true);
+ });
++
++
++const messageNumbers = (from, to) => Array.from({ length: to - from + 1 }, (_, i) => `#${from + i}`);
++const heartbeatFrames = (count, skipAt = Infinity) => Array.from({ length: count }, (_, i) =>
++  fix('0', [34, i + (i + 1 >= skipAt ? 2 : 1)]));
++const heartbeatLog = (count, skipAt) => analyseLog(...heartbeatFrames(count, skipAt));
++const pagers = () => all('nav.pager');
++const pageLabels = () => texts(all('nav.pager .page-info'));
++const expectPageLabel = label => expect(pageLabels()).toEqual([label, label]);
++
++// Alternate cohorts for 400 messages, then extend A by 50. Each sender has its own sequence.
++function interleavedOrderLog() {
++  const numbers = { A: [], B: [] };
++  const frames = Array.from({ length: 450 }, (_, i) => {
++    const party = i < 400 && i % 2 ? 'B' : 'A';
++    const n = numbers[party].push(`#${i + 1}`);
++    const newOrder = n === 1;
++    const fill = n === 2 || n === 250;
++    const fields = [[8, 'FIX.4.4'], [35, newOrder ? 'D' : '8'], [34, n],
++      [49, party], [50, `${party}-sender`], [56, `${party}-target`], [57, `${party}-sub`],
++      [1, `${party}-account`], [11, `C-${party}`], [55, `SYM-${party}`], [54, '1']];
++    if (newOrder) fields.push([38, 10], [40, '2'], [44, 5]);
++    else {
++      fields.push([37, `O-${party}`], [17, `${party}-${n}`], [150, fill ? 'F' : '0']);
++      if (fill) fields.push([32, n === 2 ? 2 : 8], [31, 5], [39, n === 2 ? '1' : '2'], [14, n === 2 ? 2 : 10], [6, 5]);
++    }
++    return buildMessage(fields);
++  });
++  return { result: analyseLog(...frames), numbers };
++}
++
++const filterBySender = senderCompId => ({ filters: { senderCompId } });
++const optionLists = () => all('.filters select').map(control => texts(control.options));
++const summaryPanels = () => ({ stats: stats(), trades: select('.trades').textContent, options: optionLists() });
++
++test('test_render_omitted_view_shows_first_200_cards_and_two_pagers', () => {
++  render(heartbeatLog(201));
++  expect(cardNumbers()).toEqual(messageNumbers(1, 200));
++  expect(pagers()).toHaveLength(2);
++});
++
++test('test_render_200_entry_boundary_shows_whole_or_last_partial_page', () => {
++  render(heartbeatLog(200));
++  expect(cardNumbers()).toEqual(messageNumbers(1, 200));
++  expect(pagers()).toHaveLength(0);
++  render(heartbeatLog(201), { page: 2 });
++  expect(cardNumbers()).toEqual(['#201']);
++  expect(pagers()).toHaveLength(2);
++});
++
++test('test_render_multipage_pagers_follow_filters_and_cards_with_exact_controls', () => {
++  render(heartbeatLog(201));
++  const controls = [['page-first', 'First'], ['page-prev', 'Previous'], ['page-next', 'Next'], ['page-last', 'Last']];
++  expect(pagers()).toEqual([select('#summary').lastElementChild, select('#decode').lastElementChild]);
++  const [top, bottom] = pagers();
++  expect(top.previousElementSibling.matches('div.filters')).toBe(true);
++  expect(bottom.previousElementSibling).toBe(cards().at(-1));
++  for (const pager of [top, bottom]) {
++    expect(pager.childNodes).toHaveLength(5);
++    const [info, ...buttons] = pager.children;
++    expect(info.matches('span.page-info')).toBe(true);
++    expect(buttons.map(button => [button.localName, button.getAttribute('type'), button.className, button.textContent]))
++      .toEqual(controls.map(([className, text]) => ['button', 'button', className, text]));
++  }
++});
++
++test('test_render_450_messages_labels_both_pagers_with_exact_page_ranges', () => {
++  const result = heartbeatLog(450);
++  for (const [page, label] of [[1, 'Messages 1 to 200 of 450'], [2, 'Messages 201 to 400 of 450'],
++    [3, 'Messages 401 to 450 of 450']]) {
++    render(result, { page });
++    expectPageLabel(label);
++  }
++  expect(cards()).toHaveLength(50);
++});
++
++test('test_render_first_middle_last_pages_disable_only_unavailable_buttons', () => {
++  const result = heartbeatLog(450);
++  for (const [page, disabled] of [[1, [true, true, false, false]], [2, [false, false, false, false]],
++    [3, [false, false, true, true]]]) {
++    render(result, { page });
++    expect(pagers().map(pager => Array.from(pager.querySelectorAll('button'), button => button.disabled)))
++      .toEqual([disabled, disabled]);
++  }
++});
++
++test('test_render_both_pagers_send_numeric_control_destinations', () => {
++  for (const [count, page, destinations] of [[450, 2, [1, 1, 3, 3]], [850, 3, [1, 2, 4, 5]]]) {
++    const setPage = vi.fn();
++    render(heartbeatLog(count), { page }, { setPage });
++    expect(pagers()).toHaveLength(2);
++    for (const pager of pagers()) {
++      setPage.mockClear();
++      for (const button of pager.querySelectorAll('button')) button.click();
++      expect(setPage.mock.calls).toEqual(destinations.map(n => [n]));
++    }
++  }
++});
++
++test('test_render_out_of_range_pages_show_clamped_results', () => {
++  const result = heartbeatLog(450);
++  render(result, { page: 99 });
++  expectPageLabel('Messages 401 to 450 of 450');
++  expect(cardNumbers()).toEqual(messageNumbers(401, 450));
++  render(result, { page: 0 });
++  expectPageLabel('Messages 1 to 200 of 450');
++  expect(cardNumbers()).toEqual(messageNumbers(1, 200));
++});
++
++test('test_render_heartbeat_pages_keep_timeline_rows_and_cards_in_step', () => {
++  const result = heartbeatLog(450);
++  for (const [page, from, to] of [[2, 201, 400], [3, 401, 450]]) {
++    render(result, { page });
++    expect(timelineNumbers()).toEqual(messageNumbers(from, to));
++    expect(cardNumbers()).toEqual(messageNumbers(from, to));
++  }
++});
++
++test('test_render_sequence_gap_at_page_boundary_follows_its_message', () => {
++  const result = heartbeatLog(450, 201);
++  for (const page of [1, 2, 3]) {
++    render(result, { page });
++    const gaps = all('#timeline .gap');
++    expect(gaps).toHaveLength(page === 2 ? 1 : 0);
++    if (page === 2) {
++      expect(gaps[0].querySelector('.badge').textContent).toBe('SequenceGap');
++      expect(gaps[0].querySelector('.num').textContent).toBe('#201');
++      expect(rows().filter(row => row.querySelector('.num').textContent === '#201')
++        .map(row => row.querySelector('.badge').textContent)).toEqual(['SequenceGap', 'Heartbeat']);
++      expect(cardNumbers()[0]).toBe('#201');
++    }
++  }
++});
++
++test('test_render_malformed_third_entry_counts_toward_page_size', () => {
++  const frames = heartbeatFrames(249);
++  frames.splice(2, 0, malformed);
++  const result = analyseLog(...frames);
++  expect(result.errors.map(error => error.number)).toEqual([3]);
++  render(result, { page: 1 });
++  expectPageLabel('Messages 1 to 200 of 250');
++  expect(cardNumbers()).toEqual(messageNumbers(1, 200));
++  expect(cards()[2].matches('article.card.malformed')).toBe(true);
++  expect(timelineNumbers()).toEqual(messageNumbers(1, 200).filter(number => number !== '#3'));
++  render(result, { page: 2 });
++  expect(cardNumbers()).toEqual(messageNumbers(201, 250));
++});
++
++function expectNarrowedPages(result, numbers, viewA, viewB) {
++  for (const [page, expected, label] of [[1, numbers.A.slice(0, 200), 'Messages 1 to 200 of 250 shown'],
++    [2, numbers.A.slice(200), 'Messages 201 to 250 of 250 shown']]) {
++    render(result, { ...viewA, page });
++    expectPageLabel(label);
++    expect(cardNumbers()).toEqual(expected);
++    expect(timelineNumbers()).toEqual(expected);
++  }
++  render(result, viewB);
++  expect(cardNumbers()).toEqual(numbers.B);
++  expect(timelineNumbers()).toEqual(numbers.B);
++  expect(pagers()).toHaveLength(0);
++}
++
++test('test_render_sender_filter_pages_only_matching_original_message_numbers', () => {
++  const { result, numbers } = interleavedOrderLog();
++  expectNarrowedPages(result, numbers, filterBySender('A'), filterBySender('B'));
++});
++
++test('test_render_selected_order_pages_only_order_members', () => {
++  const { result, numbers } = interleavedOrderLog();
++  expectNarrowedPages(result, numbers, viewOrder('C-A'), viewOrder('C-B'));
++});
++
++test('test_render_filtered_summary_panels_stay_constant_across_pages', () => {
++  const { result } = interleavedOrderLog();
++  const view = filterBySender('A');
++  render(result, { ...view, page: 1 });
++  const first = summaryPanels();
++  expect(first.stats[0]).toBe('250 of 450 messages');
++  expect(first.options).toHaveLength(5);
++  expect(cells(select('.trade-table tbody tr'))).toEqual(['SYM-A', '1', '10', '5', '0', '0', '–', '+10']);
++  expect(cards()).toHaveLength(200);
++  render(result, { ...view, page: 2 });
++  expect(cards()).toHaveLength(50);
++  expect(summaryPanels()).toEqual(first);
++});
++
++test('test_render_selected_order_summary_and_story_stay_constant_across_pages', () => {
++  const { result, numbers } = interleavedOrderLog();
++  const view = viewOrder('C-A');
++  render(result, { ...view, page: 1 });
++  expect(cardNumbers()).toEqual(numbers.A.slice(0, 200));
++  const first = summaryPanels();
++  expect(first.options).toEqual([
++    ['All', 'A-account', 'B-account'], ['All', 'A', 'B'], ['All', 'A-sender', 'B-sender'],
++    ['All', 'A-target', 'B-target'], ['All', 'A-sub', 'B-sub'],
++  ]);
++  expect(cells(select('.trade-table tbody tr'))).toEqual(['SYM-A', '1', '10', '5', '0', '0', '–', '+10']);
++  const story = select('div.order-story').textContent;
++  expect(story).toContain('10 filled @ 5');
++  render(result, { ...view, page: 2 });
++  expect(cardNumbers()).toEqual(numbers.A.slice(200));
++  expect(summaryPanels()).toEqual(first);
++  expect(select('div.order-story').textContent).toBe(story);
++});
+diff --git a/test/styles.test.js b/test/styles.test.js
+index 7297738..f8bf510 100644
+--- a/test/styles.test.js
++++ b/test/styles.test.js
+@@ -123,3 +123,21 @@ test('test_styles_stat_second_of_four_is_green', () => {
+   expect(rulesFor('.stat:nth-child(2):nth-last-child(4)').length).toBeGreaterThan(0);
+   expect(styleFor('.stat:nth-child(2):nth-last-child(4)').get('color')).toBe('var(--ok)');
+ });
++
++
++test('test_styles_pager_controls_wrap_and_use_existing_theme_tokens', () => {
++  const pager = styleFor('.pager');
++  const button = styleFor('.pager button');
++  const disabled = styleFor('.pager button:disabled');
++  expect(pager.get('display')).toBe('flex');
++  expect(pager.get('flex-wrap')).toBe('wrap');
++  expect(button.get('background')).toBe('var(--panel)');
++  expect(button.get('color')).toBe('var(--ink)');
++  expect(disabled.get('color')).toBe('var(--muted)');
++  for (const rule of rules.filter(rule => selectors(rule).some(selector => /^\.(?:pager|page-)/.test(selector)))) {
++    for (const [property, value] of rule.declarations) {
++      expect(property).not.toMatch(/^--/);
++      expect(value).not.toMatch(/#[\da-f]{3,8}\b|\b(?:rgb|rgba|hsl|hsla)\s*\(/i);
++    }
++  }
++});
+-- 
+2.43.0
+
