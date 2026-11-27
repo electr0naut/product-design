@@ -1,8 +1,9 @@
-# D20 review (`agent-harness` branch `d20-runner-evidence` @ `0458287`)
+# D20 review (`agent-harness` branch `d20-runner-evidence` @ `c06cd27`)
 
-**Approved. Fast-forward `master` to `0458287e25d122daf91ab74845a6cbe392e8195f`** (it contains D19, so one
-deploy covers both). Verified in the reviewing session on a fresh worktree: `522 passed, 3 skipped in 93.11s`;
-ruff check and format are clean. I read the pipeline, the isolated scorer, the publisher, the alert and the
+**Approved. Fast-forward `master` to `c06cd273c5c47dec63a9c008c4206f9e5c53525f`.** I first reviewed `0458287`
+(`522 passed, 3 skipped`); `c06cd27` adds only tests on top of it (47 lines in `tests/test_d20.py`, which pin
+that decisions come before any acceptance run). Verified on a fresh worktree at `c06cd27`: `523 passed, 3
+skipped in 94.20s`; ruff check and format are clean. I read the pipeline, the isolated scorer, the publisher, the alert and the
 wiring into the runner, the loader and the decisions.
 
 - **The order is built into the board,** not into the runner's timing: an unassigned `accept <KEY>` card after
@@ -26,13 +27,13 @@ wiring into the runner, the loader and the decisions.
 ## Deploy (Ubay runs this; it installs both units)
 
 ```
-harness-deploy 0458287e25d122daf91ab74845a6cbe392e8195f --install-unit
+harness-deploy c06cd273c5c47dec63a9c008c4206f9e5c53525f --install-unit
 ```
 
 ## After the deploy, in this order
 
-1. **Post the seven exact ids** (`D19-code-review.md`). I push the `refresh_copies` and `retire_hidden`
-   decisions in one commit.
+1. **The ids are received, and D19 is already deployed,** so the `refresh_copies` and `retire_hidden` decisions
+   are pushed now, in one commit (`D-20261127-1` and `D-20261127-2`). Confirm on the PR that both were applied.
 2. **When both are applied, three live checks, before any FIX Lens ticket:**
    - **One fixture ticket through the new pipeline** (a sample repository, not `fix-lens`): the loader creates
      the `accept` card, the next card waits on it, the runner completes it after the scribe, and a second
