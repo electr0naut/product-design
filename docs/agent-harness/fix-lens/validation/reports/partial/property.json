@@ -1,0 +1,90 @@
+[
+ {
+  "id": "PB-01",
+  "feature": "Property: a well-formed SOH message is accepted and read back field for field",
+  "version": "FIX.4.2 + FIX.4.4",
+  "status": "PASS",
+  "actual": "300 random messages, values over all of Unicode except SOH and line ends"
+ },
+ {
+  "id": "PB-02",
+  "feature": "Property: text delimiter forms follow TR-002 (literal delimiter in a value; the ambiguous case is an error)",
+  "version": "FIX.4.2 + FIX.4.4",
+  "status": "PASS",
+  "actual": "300 messages with literal delimiters read back exactly; 0 ambiguous ones reported as errors"
+ },
+ {
+  "id": "PB-03",
+  "feature": "Property: one changed character is always reported, neighbours intact",
+  "version": "FIX.4.2 + FIX.4.4",
+  "status": "PASS",
+  "actual": "300 single-character corruptions, each reported as message 2 with messages 1 and 3 intact"
+ },
+ {
+  "id": "PB-04",
+  "feature": "Property: arbitrary hostile text never throws; message numbers are consecutive",
+  "version": "FIX.4.2 + FIX.4.4",
+  "status": "PASS",
+  "actual": "300 hostile texts; slowest answer so far 3.3 ms"
+ },
+ {
+  "id": "PB-05",
+  "feature": "Property: decoding two logs joined equals the two decodes joined",
+  "version": "FIX.4.2 + FIX.4.4",
+  "status": "PASS",
+  "actual": "40 split points of a 2-session log"
+ },
+ {
+  "id": "PB-06",
+  "feature": "Randomised valid order lifecycles (40 seeds) against decimal ground truth",
+  "version": "FIX.4.2 + FIX.4.4",
+  "status": "FAIL",
+  "actual": "seed 9014 ZETA.avgSell: shown 3.1071, expected ['3.1072'] (exact {'bought': '67.5', 'sold': '11', 'buyNotional': '188.10585', 'sellNotional': '34.17865'})"
+ },
+ {
+  "id": "PB-07",
+  "feature": "Weighted average price of random fills against decimal arithmetic",
+  "version": "FIX.4.4",
+  "status": "PASS",
+  "actual": "3000 random fill sets, all averages equal to the decimal value at 4 places (0 exact ties accepted either way)"
+ },
+ {
+  "id": "D1-detail",
+  "feature": "QuickFIX differential: verdicts by kind of damage (agree, disagree)",
+  "version": "FIX.4.2 + FIX.4.4",
+  "status": "INFO",
+  "actual": {
+   "valid": [
+    201,
+    0
+   ],
+   "BodyLength+1": [
+    201,
+    0
+   ],
+   "CheckSum+1": [
+    201,
+    0
+   ],
+   "one character changed": [
+    179,
+    0
+   ],
+   "no trailer": [
+    201,
+    0
+   ],
+   "9 and 35 swapped": [
+    201,
+    0
+   ]
+  }
+ },
+ {
+  "id": "DF-01",
+  "feature": "Differential: accept / reject verdicts equal QuickFIX's parser",
+  "version": "FIX.4.2 + FIX.4.4",
+  "status": "PASS",
+  "actual": "1184 messages (valid and damaged five ways): QuickFIX quickfix and FIX Lens agree on every accept / reject verdict"
+ }
+]
