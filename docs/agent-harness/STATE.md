@@ -1,10 +1,11 @@
 # Harness state
 
-Written by the runner at 2026-11-27T14:26:58+0100. Host-only copy: `state.json`.
+Written by the runner at 2026-11-27T14:37:02+0100. Host-only copy: `state.json`.
 Kit: `6c483e64d2f0fc26a787f51c7b39cf4c8b2d7953`
 
 ## What changed
-- block: FXL-17 · gatekeeper (fix 1)
+- decision applied D-20261127-9: approved test/filters.test.js at bfb67b789917 for FXL-17
+- decision applied D-20261127-10: unblocked t_bb611a50 (FXL-17 · gatekeeper (fix 1))
 
 ## Tickets
 - **SMK-1** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
@@ -14,13 +15,13 @@ Kit: `6c483e64d2f0fc26a787f51c7b39cf4c8b2d7953`
 - **FXL-11** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
 - **FXL-12** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
 - **FXL-13** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
-- **FXL-17** (open): gatekeeper (fix 1): blocked, implementer: done, implementer (fix 1): done, planner: done, reviewer (fix 1): todo, scribe: todo, triage: done
+- **FXL-17** (open): gatekeeper (fix 1): done, implementer: done, implementer (fix 1): done, planner: done, reviewer (fix 1): done, scribe: ready, triage: done
 - **FXL-14** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: todo
 - **FXL-15** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: todo
 - **FXL-16** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: todo
 
 ## Blocks
-- FXL-17 · gatekeeper (fix 1) (`t_bb611a50`), head `bfb67b789917b5f15fa0cbfdc1b3bffcf76bc1ee`: FXL-17: the fix pass edited or deleted tests that exist on base (test/filters.test.js); a person must decide
+- none
 
 ## Holds
 - none
