@@ -251,7 +251,9 @@ test("no dynamic import, no setAttribute, and no attribute-like property is assi
 });
 
 test("index.html has no inline script, style element, style attribute or event attribute", () => {
-  const h = HTML.replace(/<!--[\s\S]*?-->/g, "");
+  // Repeated until stable, so a nested fragment such as "<!<!---->--" cannot leave a comment opener behind.
+  let h = HTML;
+  for (let prev = null; prev !== h;) { prev = h; h = h.replace(/<!--[\s\S]*?-->/g, ""); }
   expect(h).not.toMatch(/<style\b/i);
   expect(h).not.toMatch(/\sstyle\s*=/i);
   expect(h).not.toMatch(/\son[a-z]+\s*=/i);
