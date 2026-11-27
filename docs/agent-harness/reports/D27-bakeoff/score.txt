@@ -1,0 +1,24 @@
+judged real 12 | judged wrong 8 | not judged 12 | all keys known True
+Claude (recorded)  on real: {'stands': 8, 'refuted': 4}   on wrong: {'refuted': 8}
+qwen4-max          on real: {'stands': 7, 'refuted': 4, 'None': 1}   on wrong: {'refuted': 8}
+qwen3.7-plus       on real: {'stands': 8, 'refuted': 3, 'unsure': 1}   on wrong: {'refuted': 7, 'stands': 1}
+== qwen4-max
+ round 1: Claude blocked, model refuted (would let through): []
+          Claude blocked, model not 'stands': []
+          high/critical Claude refuted, model did not (goes on to a proof): []
+          medium differences (no effect on the gate): [('FXL-5', 'F1', 'unsure', 'stands'), ('FXL-8', 'F1', 'stands', None)]
+ round 2: Claude blocked, model refuted (would let through): []
+          Claude blocked, model not 'stands': []
+          high/critical Claude refuted, model did not (goes on to a proof): []
+          medium differences (no effect on the gate): []
+ replies rejected: 2 of 45 | findings with no verdict after the re-ask: 1
+== qwen3.7-plus
+ round 1: Claude blocked, model refuted (would let through): []
+          Claude blocked, model not 'stands': [('FXL-1B', 'F3', 'unsure')]
+          high/critical Claude refuted, model did not (goes on to a proof): [('FXL-7', 'F2', 'high', 'stands')]
+          medium differences (no effect on the gate): [('FXL-16', 'F4', 'refuted', 'stands'), ('FXL-2', 'F2', 'refuted', 'stands'), ('FXL-5', 'F1', 'unsure', 'stands')]
+ round 2: Claude blocked, model refuted (would let through): []
+          Claude blocked, model not 'stands': []
+          high/critical Claude refuted, model did not (goes on to a proof): [('FXL-9', 'F3', 'high', 'stands')]
+          medium differences (no effect on the gate): []
+ replies rejected: 4 of 48 | findings with no verdict after the re-ask: 0
