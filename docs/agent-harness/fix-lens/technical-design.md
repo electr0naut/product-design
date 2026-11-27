@@ -1,8 +1,9 @@
-# FIX Lens - Technical Design (copy of Confluence page 1409027, v1.2)
+# FIX Lens - Technical Design (copy of Confluence page 1409027, v1.2.1)
 
-**Version:** 1.2, for PRD v1.2 (Gate 3 approved 2026-11-26).
-**Status:** Approved by Ubay Gonzalez (2026-11-26). It replaces v1.1, which was approved under delegation on
-2026-11-25.
+**Version:** 1.2.1, for PRD v1.2 (Gate 3 approved 2026-11-26).
+**Status:** v1.2 approved by Ubay Gonzalez (2026-11-26); it replaces v1.1, which was approved under delegation on
+2026-11-25. The v1.2.1 clarifications (four corrections and seven additions, none changing the PRD) were approved
+by Ubay Gonzalez on 2026-11-27.
 **Built by:** the agent delivery harness. Tickets FXL-1 to FXL-8 are built. This version adds FXL-9 to FXL-16.
 
 Sections marked **(changed)** differ from v1.1. Sections marked **(new)** are additions. Everything else is
@@ -41,11 +42,12 @@ The dictionaries are JavaScript modules, not JSON files: a JSON module import is
 ## 2. Data model (changed)
 
 All positions are **0-based character offsets into the pasted text** (JavaScript string indices), shown to the
-user as 1-based.
+user as 1-based. A ParseError's `position` is the exception: it is already 1-based.
 
 - **Field:** `{ tag: number, value: string, position: number }`. `position` is where the tag starts.
-- **Message:** `{ number, start, end, fields, beginString, msgType }`. `number` is 1-based, in order of
-  appearance among all message candidates (valid or malformed). `start` and `end` are offsets in the paste.
+- **Message:** `{ number, start, end, fields }`. `number` is 1-based, in order of appearance among all message
+  candidates (valid or malformed). `start` and `end` are offsets in the paste. There is no `beginString` or
+  `msgType` property: the version and the type are the first values of tags 8 and 35 in `fields`.
 - **ParseError:** `{ number, position, rule, text }`. `rule` is one of `field_without_equals`, `bad_tag`,
   `header_order`, `missing_checksum`, `checksum_format`, `body_length`, `checksum`. `text` is the plain-words
   message (AC-015).
@@ -54,8 +56,8 @@ user as 1-based.
   doesn't list.
 - **DecodedMessage:** `{ number, label, supported, fields }`, with `fields` the DecodedFields in message order.
 - **TimelineEvent:** `{ number, kind, name, sendingTime, sender, target, seqNum, clOrdId, orderId, origClOrdId,
-  execRefId, detail }`. `kind` is `session` or `order`. `origClOrdId` and `execRefId` are null when the message
-  has no tag 41 or 19.
+  execRefId, detail }`. `kind` is `session` or `order`. `origClOrdId` is tag 41 on order events only, and
+  `execRefId` is tag 19 on TradeCancel and TradeCorrect events only; both are null everywhere else.
 - **Analysis:** `{ ok, limit, messages, errors, decoded, timeline }`. When a limit is exceeded, `ok` is false,
   `limit` holds the measured size and count, and every other list is empty (AC-018).
 - **OrderGroup:** `{ clOrdIds: string[], orderIds: string[], numbers: number[] }` (section 12).
@@ -138,9 +140,9 @@ both numbers and suggests splitting the log (AC-016, AC-017).
 - **`tools/build-dictionary.mjs`** reads the XML with a small streaming parser in the script itself, with no
   dependency. It writes `src/dictionary/fix42.js` and `fix44.js`. Each file is exactly `export default `, one
   JSON object, and `;`. The object has the form
-  `{ "<tag>": { "name", "type", "enums": { "<value>": "<symbolicName>" } } }`.
-  - `type` is the Orchestra datatype name. `enums` is present only for fields with a code set. Description text
-    is never copied.
+  `{ "fields": { "<tag>": { "name", "type", "enumValues": { "<value>": "<symbolicName>" } } }, "commit": "<pinned commit>" }`.
+  - `type` is the Orchestra datatype name. `enumValues` is present only for fields with a code set. Description
+    text is never copied.
   - Keys are sorted, so the output is byte-for-byte reproducible.
 - **Generated files are committed.** A test runs the build into a temp folder and checks the output is identical
   to the committed files, and that the licence files are present.
@@ -163,7 +165,8 @@ pair (SenderCompID 49, TargetCompID 56); a missing 49 or 56 is the empty string 
 **seen** only after its first message has been processed.
 
 For each message (`seq` is 34 as a number; if 34 is missing or not a number, skip steps 1 to 3):
-1. **Logon (35=A) with 141=Y:** set `expected[dir] = 1`.
+1. **Logon (35=A) with 141=Y, when 43 isn't `Y`:** set `expected[dir] = 1`. A PossDup message never advances or
+   resets (PRD TR-003).
 2. **SequenceGap check:** only if the direction has been seen, 43 isn't `Y`, the message isn't a SequenceReset
    in Reset mode (35=4 without 123=Y; FIX ignores its MsgSeqNum), and `seq > expected[dir]`. The gap event comes
    **before** the message's own event, with `detail: "expected N, received M"`. The first message of a direction
@@ -214,13 +217,17 @@ For each message (`seq` is 34 as a number; if 34 is missing or not a number, ski
   'self'; connect-src 'none'; form-action 'none'">` (AC-020). It's the only CSP meta tag;
 - has a `<header>` with the product name, the line of AC-025, and `<button id="theme-button" type="button">`;
 - has `<p id="not-started">FIX Lens did not start. Open it through a web server, not as a file from
-  disk.</p>` (AC-024). `main.js` removes this element as its first statement;
+  disk.</p>` (AC-024), **outside** `<main>`. `main.js` removes this element as its first statement;
+- has `<main hidden>` around the textarea, the Decode button, `#summary` and `.results`, so that the message
+  stands in place of the tool until the script runs. Right after removing the message, `main.js` sets
+  `hidden = false` on `<main>`;
 - has `<textarea id="paste" autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off"
   translate="no">`. Turning spellcheck off matters: enhanced browser spellcheck can send the text to a service
   (AC-019, AC-020, AC-022);
 - has `<button id="decode-button" type="button">Decode</button>`;
-- has three sections: `<section id="summary">`, `<section id="timeline">` and `<section id="decode">`
-  (AC-011);
+- has three sections: `<section id="summary">`, and `<section id="timeline">` and `<section id="decode">` inside
+  an element with class `results` (AC-011). `#timeline` and `#decode` each start with an `h2` (`Timeline`,
+  `Decode`) that `render` keeps;
 - loads `src/main.js` as a module and `styles.css` as a stylesheet. There's **no inline script or style and no
   `style=` attribute**, because the CSP blocks them.
 
@@ -238,6 +245,9 @@ What is shown: `passing = applyFilters(decoded, view.filters)`; with `view.order
 `passing` that are in that order's group; otherwise `shown = passing`. The timeline shows the events whose
 message number is in `shown`. `narrowed` is true when a filter is set or an order is selected.
 
+**Over a size limit** (`result.ok` is false), `#summary` and `#timeline` are empty apart from the heading, and
+`#decode` shows one `p.warning` with the warning text and nothing else.
+
 Inside `#summary`, in this order:
 
 1. **The order banner**, only when an order is selected: `div.order-story` with the order's ClOrdIDs and
@@ -245,12 +255,17 @@ Inside `#summary`, in this order:
    `button.show-all` with the text `Show all messages`, which calls `handlers.clear()`.
    - **Terms:** from the group's first NewOrder (35=D), or its first message when it has none: the meaning of
      54, the value of 38, the value of 55, `@ <44>` when 44 is present, the meaning of 40, joined by spaces.
-   - **State:** from the group's last ExecutionReport (35=8): the meaning of 39, then, when 14 is a number above
-     zero, ` · <14> filled @ <6>`. No ExecutionReport: no state.
+   - **State:** from the group's last ExecutionReport (35=8): the meaning of 39 and, when 14 is a number above
+     zero, `<14> filled @ <6>` (or `<14> filled` when 6 is missing), joined by ` · `. No ExecutionReport: no
+     state.
+   - A part whose tag is missing is left out, with no stray separator. A span that would be empty
+     (`span.order-terms`, `span.order-state`) is not created. Terms and state come from the whole order,
+     whatever the filters are.
    - "The meaning of" a tag is its `enumName`, or its value when it has none or the name is `unknown value`.
 2. **The summary strip** `div.stats` of `span.stat` elements (AC-026, AC-053):
    - not narrowed: `N messages` (valid plus malformed), `N valid`, `N malformed`, `N sequence gaps`, `N orders`;
-   - narrowed: `N of M messages`, then the sequence gaps and orders among the messages shown.
+   - narrowed: `N of M messages`, where M counts valid and malformed messages, then the sequence gaps and the
+     orders among the messages shown: the orders of the full log that have at least one message shown.
    - A count of one uses the singular: `1 message`, `1 sequence gap`, `1 order`.
 3. **The trading summary** `div.trades` (section 13): a `table.trade-table` whose header cells are `Symbol`,
    `Buy orders`, `Bought`, `Avg buy`, `Sell orders`, `Sold`, `Avg sell`, `Net`; then `p.note` with the text of
@@ -288,8 +303,9 @@ Every `button.order-link` calls `handlers.pick(id)` with the id alone. An OrderI
   `@media (prefers-color-scheme: dark) { :root:not(.theme-light) { ... } }`, and again on `:root.theme-dark`.
   The two dark blocks hold the same values.
 - The properties are `--bg`, `--panel`, `--ink`, `--muted`, `--line`, `--soft`, `--accent`, `--accent-ink`,
-  `--ok`, `--warn`, `--warn-bg`, `--bad`, `--bad-bg`, `--order`, `--order-bg`, `--session-bg`. Every colour in
-  the stylesheet is one of them.
+  `--ok`, `--warn`, `--warn-bg`, `--bad`, `--bad-bg`, `--order`, `--order-bg`, `--session-bg`. Each value is a
+  six-digit hex colour (`#rrggbb`). Every colour in the stylesheet is one of them: outside the three blocks
+  there is no hex colour and no `rgb(`, `rgba(`, `hsl(` or `hsla(`.
 - `#theme-button` sets `document.documentElement.className` to `theme-dark` or `theme-light`, and its own text to
   the theme it would switch to: `Light theme` or `Dark theme`. Its first state comes from
   `matchMedia('(prefers-color-scheme: dark)')`. Nothing is stored.
@@ -413,6 +429,16 @@ deduplicated. For each ExecutionReport, by `executionKind`:
   - **not found:** it is **unmatched**. Nothing else changes.
 - Any other kind: nothing.
 
+Five rules complete the above:
+- An empty value counts as a missing tag for Symbol 55, ExecID 17 and ExecRefID 19.
+- A Fill that makes no execution (no Symbol, another side) is not remembered, so a later TradeCancel that names
+  it is unmatched.
+- A TradeCorrect that names an execution in the log, but whose own LastQty is not a finite number above zero,
+  changes nothing and is not unmatched.
+- An unmatched TradeCancel or TradeCorrect is remembered by its OrderID and ExecID, so a resend of it is not
+  counted again.
+- Messages of an unsupported version count for nothing in the summary, their NewOrderSingles included.
+
 `side` is `"buy"` for Side 54 `1` or `3`, `"sell"` for `2`, `4`, `5` or `6` (AC-047). A report with another
 side, or with no Symbol 55, makes no execution. `px` is 31 as a number, or null when it isn't a finite number.
 
@@ -428,7 +454,8 @@ unmatched reports whose number is in it.
 - `format(n)`: `n` rounded to 4 decimal places, written without trailing zeros and without a thousands
   separator. `1500` is `1500`; `71.25` is `71.25`; `0.1 + 0.2` is `0.3`.
 - Bought and Sold: `format(filledQty)`. Average: `format(notional / pricedQty)`, or `–` (an en dash) when
-  `pricedQty` is zero. Net: `format(buy.filledQty - sell.filledQty)`, with a leading `+` when above zero.
+  `pricedQty` is zero. Net: `format(buy.filledQty - sell.filledQty)`, with a leading `+` when the rounded value is above
+  zero. A value that rounds to zero is written `0`, never `-0` or `+0`.
 
 ## 14. Filters (US-009) (new)
 
