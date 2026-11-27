@@ -33,6 +33,8 @@ repository, a unit file's text or a log.
 - The outbox copy step: the exact rule for what is copied, and tests for each thing it must refuse (a link, a
   path outside `reports/`, a name without the job's id, an existing report of another job, a file that is not
   `.md`, a file over a size cap).
-- What a job can read: confirm the bundle holds the review branch only, and that the hidden acceptance tests
-  and the host-only state are outside anything `harness-job` can read.
+- What a job can read: confirm the bundle holds the review branch only and that the host-only state
+  (`~/.local/state/agent-harness/`, the trusted repos) is outside anything `harness-job` can read. The hidden
+  acceptance tests are on the review branch, so a job can read them, as the standing session can today; what
+  must hold is that no worker container can read a job's files or its bundle. Say how that is ensured.
 - What happens to a job that is still running when its time is up, and what the ledger then says.
