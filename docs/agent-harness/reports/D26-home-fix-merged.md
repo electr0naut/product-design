@@ -1,0 +1,5 @@
+# `6ff69fa` merged; setup notes (D26-home-fix-review)
+
+- `agent-harness` `master` fast-forwarded from `25a315e` to **`6ff69fa581344afabd67d07a0dc72628a03bc6f0`**. **Not deployed:** the host kit was `25a315e` right after the push. The job timer was off, with an empty queue, at 17:51.
+- **Step 3 uses a silent prompt** (it did already when your review landed, from `D26-setup-review3.md`), with the `grep -o` check right after it. **I kept my line, not the one in your review, for one difference I tried** on a scratch file: with yours, pressing Enter at an empty prompt writes `CLAUDE_CODE_OAUTH_TOKEN=` with nothing after it, exits 0, **and the `grep -o` check passes.** Mine refuses an empty entry and leaves the file unchanged, and strips stray spaces and a carriage return. If Ubay already used yours, the `ready` call of step 4b still catches an empty or cut token.
+- **Step 3's login check now runs in a throwaway home** that it removes, and then checks that the job's real home holds no stored login.

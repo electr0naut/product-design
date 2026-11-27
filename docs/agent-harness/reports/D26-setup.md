@@ -42,12 +42,15 @@ sudo bash -c 'IFS= read -rs -p "Paste the token, then press Enter (nothing will 
 **Check that it is there, without showing it:** `sudo grep -o '^[A-Z_]*=' /etc/harness-job/claude.env` **must print `CLAUDE_CODE_OAUTH_TOKEN=`.** If it prints nothing, the file does not hold it: do not go on. (If `setup-token` showed the token over two screen lines, only the first may have been pasted: widen the terminal. Step 4b's `ready` call catches a cut token.)
 Then `clear; tmux clear-history 2>/dev/null` and close that terminal. Undo: `sudo truncate -s 0 /etc/harness-job/claude.env`, and revoke the token.
 
-**Check the login (untested).** The first must say you are not logged in; the second must show `authMethod` `oauth_token`. **`claude.ai` in either is wrong: stop and tell the reviewer.**
+**Check the login (untested),** in a **throwaway home**, so that the check leaves nothing in the job user's own home. The first command makes it; the second must say you are **not** logged in; the third, which loads the token file, must show `authMethod` `oauth_token`. **`claude.ai` in either is wrong: stop and tell the reviewer.** The fourth removes the folder; the last must print `no stored login` (it looks at the job's real home).
 ```
-sudo -u harness-job -H /usr/local/bin/claude auth status
-sudo systemd-run --pipe --wait -p User=harness-job -p EnvironmentFile=/etc/harness-job/claude.env -E HOME=/home/harness-job /usr/local/bin/claude auth status
+sudo -u harness-job mkdir /home/harness-job/login-check-home
+sudo -u harness-job env HOME=/home/harness-job/login-check-home /usr/local/bin/claude auth status
+sudo systemd-run --pipe --wait -p User=harness-job -p EnvironmentFile=/etc/harness-job/claude.env -E HOME=/home/harness-job/login-check-home /usr/local/bin/claude auth status
+sudo rm -rf /home/harness-job/login-check-home
+sudo test -e /home/harness-job/.claude/.credentials.json && echo "STOP: a stored login" || echo "no stored login"
 ```
-**If the second one says `loggedIn: false` / `authMethod: none` (it then exits with status 1), the file did not set the variable.** Check the names only, never the value: `sudo ls -la /etc/harness-job` (there must be only `claude.env`; remove any other file there, such as a `claude.env5~`, and if it held the token revoke that token) and `sudo grep -o '^[A-Z_]*=' /etc/harness-job/claude.env` (it must print exactly `CLAUDE_CODE_OAUTH_TOKEN=`). **`oauth_token` does not show that the token is valid:** any value, even a wrong one, shows it. Step 4b starts by proving it works.
+**If the third command says `loggedIn: false` / `authMethod: none` (it then exits with status 1), the file did not set the variable.** Check the names only, never the value: `sudo ls -la /etc/harness-job` (there must be only `claude.env`; remove any other file there, such as a `claude.env5~`, and if it held the token revoke that token) and `sudo grep -o '^[A-Z_]*=' /etc/harness-job/claude.env` (it must print exactly `CLAUDE_CODE_OAUTH_TOKEN=`). **`oauth_token` does not show that the token is valid:** any value, even a wrong one, shows it. Step 4b starts by proving it works.
 
 Then do **4**, and then **4b**, which needs both.
 
@@ -142,7 +145,7 @@ sudo rm -rf /home/harness-job/cloud-check /home/harness-job/cloud-check-home /ho
 ```
 Removing the folder does not end a login: if you signed in during a check, also sign that session out in your Claude account, and delete any cloud session it created.
 3. **Repeat the unit install line of step 9 and `daemon-reload`** (with `KIT` set as at the top), then run all of step 9's checks again. Only then start the timer.
-Between 2 and 3 you will need step 4b again (as the reviewer says), which makes new check folders: clean them the same way afterwards. Step 3's login check also writes `.claude` files into the job's real home: remove them with the same line.
+Between 2 and 3 you will need step 4b again (as the reviewer says), which makes new check folders: clean them the same way afterwards. The first setup run's login check wrote `.claude` files into the job's real home; the clean-up line removes them. (Step 3 now uses a throwaway home.)
 
 ## 9. The job units. Check first, then start the timer (untested)
 | command | does | undo |
