@@ -1,0 +1,561 @@
+From d520fe761770e239ef94aeee82954ebc68709f51 Mon Sep 17 00:00:00 2001
+From: implementer <implementer@localhost>
+Date: Fri, 27 Nov 2026 15:38:20 +0100
+Subject: [PATCH] FXL-16: Show the trading summary and the filters
+
+---
+ src/main.js         |  14 +-
+ src/render.js       | 108 ++++++++++++--
+ test/render.test.js | 345 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 450 insertions(+), 17 deletions(-)
+
+diff --git a/src/main.js b/src/main.js
+index ae3dad0..22dd2c5 100644
+--- a/src/main.js
++++ b/src/main.js
+@@ -32,10 +32,22 @@ const handlers = {
+     view.orderId = null;
+     renderCurrent();
+   },
++  setFilter(key, value) {
++    if (key == null) {
++      view.filters = {};
++    } else if (value == null) {
++      delete view.filters[key];
++    } else {
++      view.filters[key] = value;
++    }
++    renderCurrent();
++  },
+ };
+ const renderCurrent = () => render(result, view, handlers);
+ 
+ document.querySelector('#decode-button').addEventListener('click', () => {
+   result = analyse(input.value);
+-  handlers.clear();
++  view.orderId = null;
++  view.filters = {};
++  renderCurrent();
+ });
+diff --git a/src/render.js b/src/render.js
+index 4cca95b..784830a 100644
+--- a/src/render.js
++++ b/src/render.js
+@@ -1,4 +1,6 @@
+ import { findOrder, orderGroups } from './orders.js';
++import { tradeSummary } from './summary.js';
++import { FILTERS, filterOptions, applyFilters } from './filters.js';
+ 
+ // Text and classes travel separately: call sites supply only fixed class names.
+ function add(parent, tag, className, text) {
+@@ -14,11 +16,33 @@ const sequence = seqNum => seqNum == null ? '' : `seq ${seqNum}`;
+ const time = sendingTime => sendingTime?.slice(sendingTime.indexOf('-') + 1) ?? '';
+ const count = (n, singular) => `${n} ${singular}${n === 1 ? '' : 's'}`;
+ 
+-function renderStats(section, { decoded, errors, timeline, orders, total, selected }) {
++const TRADE_COLUMNS = ['Symbol', 'Buy orders', 'Bought', 'Avg buy', 'Sell orders', 'Sold', 'Avg sell', 'Net'];
++const TRADE_NOTE = 'Bought and sold are filled quantities from execution reports in this log, counted once per ExecID, after trade cancels and corrections.';
++const NO_TRADES = 'No orders or fills in the messages shown.';
++const NO_MATCHES = 'No messages match the current filters.';
++const NO_MESSAGES = 'No FIX messages found in the pasted text.';
++const NO_EVENTS = 'No timeline events found.';
++const NOT_AVAILABLE = '–';
++
++const round4 = value => Number(value.toFixed(4));
++const format = value => String(round4(value));
++const average = side => side.pricedQty === 0 ? NOT_AVAILABLE : format(side.notional / side.pricedQty);
++const netText = value => {
++  const rounded = round4(value);
++  return rounded > 0 ? `+${rounded}` : String(rounded);
++};
++const unmatchedText = n => n === 1
++  ? '1 trade cancel or correction refers to an execution that is not in this log.'
++  : `${n} trade cancels or corrections refer to an execution that is not in this log.`;
++
++function renderStats(section, { decoded, errors, events, groups, shown, total, narrowed }) {
+   const strip = add(section, 'div', 'stats');
+-  const gaps = timeline.filter(event => event.name === 'SequenceGap').length;
+-  if (selected) {
+-    add(strip, 'span', 'stat', `${decoded.length} of ${total} messages`);
++  const gaps = events.filter(event => event.name === 'SequenceGap').length;
++  const orders = narrowed
++    ? groups.filter(group => group.numbers.some(number => shown.has(number))).length
++    : groups.length;
++  if (narrowed) {
++    add(strip, 'span', 'stat', `${shown.size} of ${total} messages`);
+   } else {
+     add(strip, 'span', 'stat', count(total, 'message'));
+     add(strip, 'span', 'stat', `${decoded.length} valid`);
+@@ -28,6 +52,49 @@ function renderStats(section, { decoded, errors, timeline, orders, total, select
+   add(strip, 'span', 'stat', count(orders, 'order'));
+ }
+ 
++function renderTrades(section, summary) {
++  const trades = add(section, 'div', 'trades');
++  if (summary.rows.length === 0) {
++    add(trades, 'p', 'empty', NO_TRADES);
++    return;
++  }
++  const table = add(trades, 'table', 'trade-table');
++  const head = add(table, 'thead');
++  const columns = add(head, 'tr');
++  for (const label of TRADE_COLUMNS) add(columns, 'th', null, label);
++  const body = add(table, 'tbody');
++  for (const { symbol, buy, sell } of summary.rows) {
++    const row = add(body, 'tr');
++    const values = [symbol, buy.orders, format(buy.filledQty), average(buy),
++      sell.orders, format(sell.filledQty), average(sell), netText(buy.filledQty - sell.filledQty)];
++    for (const value of values) add(row, 'td', null, value);
++  }
++  add(trades, 'p', 'note', TRADE_NOTE);
++  if (summary.unmatched > 0) add(trades, 'p', 'note unmatched', unmatchedText(summary.unmatched));
++}
++
++function renderFilters(section, decoded, view, handlers) {
++  const panel = add(section, 'div', 'filters');
++  const options = filterOptions(decoded);
++  const chosen = view?.filters ?? {};
++  for (const { key, label } of FILTERS) {
++    const wrapper = add(panel, 'label', 'filter');
++    add(wrapper, 'span', null, label);
++    const select = add(wrapper, 'select');
++    add(select, 'option', null, 'All');
++    const values = options[key];
++    for (const value of values) add(select, 'option', null, value);
++    if (chosen[key] != null && values.includes(chosen[key])) select.selectedIndex = values.indexOf(chosen[key]) + 1;
++    select.disabled = values.length === 0;
++    select.addEventListener('change', () => handlers?.setFilter?.(key, values[select.selectedIndex - 1] ?? null));
++  }
++  if (FILTERS.some(({ key }) => chosen[key] != null)) {
++    const button = add(panel, 'button', 'clear-filters', 'Clear filters');
++    button.type = 'button';
++    button.addEventListener('click', () => handlers?.setFilter?.(null, null));
++  }
++}
++
+ const fieldOf = (message, tag) => message.fields.find(field => field.tag === tag);
+ const valueOf = (message, tag) => fieldOf(message, tag)?.value;
+ 
+@@ -91,7 +158,7 @@ function eventClass(event) {
+ 
+ function renderTimeline(section, events, handlers) {
+   if (!events.length) {
+-    add(section, 'p', 'empty', 'No timeline events found.');
++    add(section, 'p', 'empty', NO_EVENTS);
+     return;
+   }
+   const list = add(section, 'ol', 'events');
+@@ -140,10 +207,10 @@ function renderCard(section, message, handlers) {
+   }
+ }
+ 
+-function renderMessages(section, decoded, errors, handlers) {
++function renderMessages(section, decoded, errors, handlers, narrowed) {
+   const entries = [...decoded.map(message => ({ number: message.number, message })),
+     ...errors.map(error => ({ number: error.number, error }))];
+-  if (!entries.length) add(section, 'p', 'empty', 'No FIX messages found in the pasted text.');
++  if (!entries.length) add(section, 'p', 'empty', narrowed ? NO_MATCHES : NO_MESSAGES);
+   for (const { message, error, number } of entries.sort((a, b) => a.number - b.number)) {
+     if (message) {
+       renderCard(section, message, handlers);
+@@ -173,19 +240,28 @@ export function render(result, view, handlers) {
+   }
+   const groups = orderGroups(result.decoded);
+   const group = view?.orderId == null ? null : findOrder(groups, view.orderId);
++  const chosen = view?.filters ?? {};
+   const total = result.decoded.length + result.errors.length;
+-  let { decoded, errors, timeline: events } = result;
++  const narrowed = Boolean(group) || FILTERS.some(({ key }) => chosen[key] != null);
++  const passing = narrowed ? applyFilters(result.decoded, chosen) : result.decoded;
++  let decoded = passing;
++  let errors = result.errors;
++  let events = result.timeline;
++  let shown = new Set(passing.map(message => message.number));
+   if (group) {
+-    // Project the existing events; recreating them would invent sequence gaps.
+     const numbers = new Set(group.numbers);
+-    decoded = decoded.filter(message => numbers.has(message.number));
+-    events = events.filter(event => numbers.has(event.number));
++    decoded = passing.filter(message => numbers.has(message.number));
++    shown = new Set(decoded.map(message => message.number));
++    const wholeOrder = result.decoded.filter(message => numbers.has(message.number));
++    renderOrderStory(summary, group, wholeOrder, handlers);
++  }
++  if (narrowed) {
+     errors = [];
+-    renderOrderStory(summary, group, decoded, handlers);
++    events = result.timeline.filter(event => shown.has(event.number));
+   }
+-  renderStats(summary, {
+-    decoded, errors, timeline: events, orders: group ? 1 : groups.length, total, selected: Boolean(group),
+-  });
++  renderStats(summary, { decoded, errors, events, groups, shown, total, narrowed });
++  renderTrades(summary, tradeSummary(result.decoded, narrowed ? shown : undefined));
++  renderFilters(summary, result.decoded, view, handlers);
+   renderTimeline(timeline, events, handlers);
+-  renderMessages(decode, decoded, errors, handlers);
++  renderMessages(decode, decoded, errors, handlers, narrowed);
+ }
+diff --git a/test/render.test.js b/test/render.test.js
+index 95906c0..736e763 100644
+--- a/test/render.test.js
++++ b/test/render.test.js
+@@ -5,6 +5,7 @@ import { render } from '../src/render.js';
+ import { analyse } from '../src/analyse.js';
+ import { lookup, enumName } from '../src/dictionary.js';
+ import { buildMessage } from './helpers/fix.js';
++import { tradeSummary } from '../src/summary.js';
+ 
+ const html = readFileSync('index.html', 'utf8');
+ beforeEach(() => {
+@@ -406,3 +407,347 @@ test('test_render_literal_order_and_story_values_leave_attributes_fixed', () =>
+   expect(shape()).toEqual(fixed);
+   expect(select('.marker, [data-marker], #summary i, #summary u, #timeline b')).toBeNull();
+ });
++
++
++// ---- FXL-16: the trading summary and the filters ----
++
++vi.mock('../src/summary.js', async importOriginal => {
++  const actual = await importOriginal();
++  return { ...actual, tradeSummary: vi.fn(actual.tradeSummary) };
++});
++
++const NOTE = 'Bought and sold are filled quantities from execution reports in this log, counted once per ExecID, after trade cancels and corrections.';
++const tradeRows = () => all('#summary div.trades table.trade-table tbody tr').map(cells);
++const filterLabels = () => all('#summary div.filters label.filter');
++const filterSelects = () => all('#summary div.filters label.filter select');
++const tradePanel = () => select('#summary div.trades');
++const filterView = filters => ({ orderId: null, filters });
++const setSelect = (node, index) => {
++  node.selectedIndex = index;
++  node.dispatchEvent(new Event('change'));
++};
++
++const logA = [
++  '35=D 11=C1 1=ACC1 55=VOD.L 54=1 38=1000',
++  '35=8 37=O1 11=C1 17=E1 150=F 55=VOD.L 54=1 32=400 31=71.25',
++  '35=8 37=O1 11=C1 17=E2 150=F 55=VOD.L 54=1 32=600 31=71.5',
++  '35=8 43=Y 37=O1 11=C1 17=E2 150=F 55=VOD.L 54=1 32=600 31=71.5',
++  '35=8 37=O1 11=C1 17=E3 19=E1 150=G 55=VOD.L 54=1 32=300 31=71.2',
++  '35=8 37=O1 11=C1 17=E4 19=E2 150=H 55=VOD.L 54=1 32=0 31=0',
++  '35=D 11=C2 1=ACC2 55=VOD.L 54=2 38=500',
++  '35=8 37=O2 11=C2 17=E5 150=F 55=VOD.L 54=2 32=200 31=72',
++  '35=8 37=O2 11=C2 17=E6 19=E5 150=G 55=VOD.L 54=2 32=250 31=72.1',
++  '35=8 37=O2 11=C2 17=E7 19=E6 150=G 55=VOD.L 54=2 32=260 31=72.2',
++  '35=8 37=O9 11=C9 17=E8 19=ZZ 150=H 55=VOD.L 54=1 32=0',
++  '35=8 37=O8 11=C3 17=E9 19=YY 150=G 55=BARC.L 54=5 32=50 31=2.5',
++  '35=D 11=C3 1=ACC1 55=BARC.L 54=5 38=50',
++  '35=8 37=O3 11=C4 17=E10 150=F 55=AZN.L 54=1 32=10',
++  '35=8 37=O3 11=C4 17=E11 150=F 55=AZN.L 54=8 32=10 31=100',
++  '35=8 37=O3 11=C4 17=E12 150=F 54=1 32=10 31=100',
++  '35=8 37=O3 11=C4 17=E13 150=F 55=AZN.L 54=1 32=0 31=100',
++  '35=8 37=O1 11=C1 17=E14 19=E2 150=G 55=VOD.L 54=1 32=999 31=1',
++  '35=8 37=O3 11=C4 17=E15 150=0 55=AZN.L 54=1 32=5 31=100',
++];
++
++function frame(line, number) {
++  const [type, ...fields] = line.split(' ').map(field => field.split('='));
++  return buildMessage([[8, 'FIX.4.4'], type, [49, 'SENDER'], [56, 'TARGET'], [34, number], ...fields]);
++}
++
++const logAResult = () => analyse(logA.map((line, index) => frame(line, index + 1)).join('\n'));
++const fillMessage = (symbol, side, execId, qty, price) => fix('8', [37, `O-${symbol}`], [11, `C-${symbol}`],
++  [17, execId], [150, 'F'], [55, symbol], [54, side], [32, qty], [31, price]);
++
++test('test_render_summary_section_order_after_stats', () => {
++  show(order('D', 'C1', [55, 'VOD.L'], [54, '1']), fix('0'));
++  const children = [...select('#summary').children];
++  expect(children.map(node => `${node.localName}.${node.className}`))
++    .toEqual(['div.stats', 'div.trades', 'div.filters']);
++  const trades = children[1];
++  const filters = children[2];
++  expect(trades.matches('div.trades')).toBe(true);
++  expect(filters.matches('div.filters')).toBe(true);
++  expect(children.indexOf(trades)).toBeLessThan(children.indexOf(filters));
++
++  render(analyseLog(order('D', 'C1', [55, 'VOD.L'], [54, '1'])), viewOrder('C1'));
++  expect([...select('#summary').children].map(node => node.className))
++    .toEqual(['order-story', 'stats', 'trades', 'filters']);
++});
++
++test('test_render_trades_table_headers_and_rows', () => {
++  const result = analyseLog(
++    order('D', 'C1', [55, 'VOD.L'], [54, '1']),
++    order('8', 'C1', [37, 'O1'], [17, 'E1'], [150, 'F'], [55, 'VOD.L'], [54, '1'], [32, '10'], [31, '2']),
++    order('D', 'C2', [55, 'BARC.L'], [54, '2']),
++  );
++  render(result);
++  const table = select('#summary div.trades table.trade-table');
++  expect(table).not.toBeNull();
++  expect(texts(table.querySelectorAll('thead th')))
++    .toEqual(['Symbol', 'Buy orders', 'Bought', 'Avg buy', 'Sell orders', 'Sold', 'Avg sell', 'Net']);
++  const expected = tradeSummary(result.decoded).rows.map(row => row.symbol);
++  expect(expected).toEqual(['BARC.L', 'VOD.L']);
++  expect(tradeRows().map(row => row[0])).toEqual(expected);
++  expect(tradeRows()).toHaveLength(expected.length);
++});
++
++test('test_render_format_rounds_to_four_decimals_without_trailing_zeros', () => {
++  render(analyseLog(
++    fillMessage('AAA', '1', 'E1', '1500', '1'),
++    fillMessage('BBB', '1', 'E2', '71.25', '1'),
++    fillMessage('CCC', '1', 'E3', '0.1', '1'),
++    fillMessage('CCC', '1', 'E4', '0.2', '1'),
++    fillMessage('DDD', '1', 'E5', '1234.56789', '1'),
++    fillMessage('EEE', '1', 'E6', '2', '1'),
++    fillMessage('EEE', '1', 'E7', '1', '0'),
++  ));
++  const bySymbol = Object.fromEntries(tradeRows().map(row => [row[0], row]));
++  expect(bySymbol.AAA[2]).toBe('1500');
++  expect(bySymbol.AAA[3]).toBe('1');
++  expect(bySymbol.BBB[2]).toBe('71.25');
++  expect(bySymbol.CCC[2]).toBe('0.3');
++  expect(bySymbol.DDD[2]).toBe('1234.5679');
++  expect(bySymbol.EEE[2]).toBe('3');
++  expect(bySymbol.EEE[3]).toBe('0.6667');
++  expect(bySymbol.AAA[1]).toBe('0');
++  expect(bySymbol.AAA[4]).toBe('0');
++});
++
++test('test_render_format_net_leading_plus_and_zero_never_signed', () => {
++  render(analyseLog(
++    fillMessage('AAA', '1', 'E1', '0.1', '1'),
++    fillMessage('AAA', '1', 'E2', '0.2', '1'),
++    fillMessage('AAA', '2', 'E3', '0.3', '1'),
++    fillMessage('BBB', '1', 'E4', '10', '1'),
++    fillMessage('CCC', '2', 'E5', '50', '1'),
++  ));
++  const bySymbol = Object.fromEntries(tradeRows().map(row => [row[0], row]));
++  expect(bySymbol.AAA[7]).toBe('0');
++  expect(bySymbol.BBB[7]).toBe('+10');
++  expect(bySymbol.CCC[7]).toBe('-50');
++});
++
++test('test_render_logA_trades_body_rows_exact', () => {
++  render(logAResult());
++  expect(tradeRows()).toEqual([
++    ['AZN.L', '0', '10', '–', '0', '0', '–', '+10'],
++    ['BARC.L', '0', '0', '–', '1', '50', '2.5', '-50'],
++    ['VOD.L', '1', '300', '71.2', '1', '260', '72.2', '+40'],
++  ]);
++});
++
++test('test_render_trades_notes_text_and_unmatched_singular_plural', () => {
++  render(logAResult());
++  const notes = all('#summary div.trades p.note');
++  expect(notes).toHaveLength(2);
++  expect(notes[0].textContent).toBe(NOTE);
++  expect(notes[0].matches('.unmatched')).toBe(false);
++  expect(notes[1].matches('p.note.unmatched')).toBe(true);
++  expect(notes[1].textContent)
++    .toBe('2 trade cancels or corrections refer to an execution that is not in this log.');
++  expect(tradePanel().querySelector('p.empty')).toBeNull();
++
++  render(analyseLog(
++    order('8', 'C1', [37, 'O1'], [17, 'E1'], [150, 'F'], [55, 'VOD.L'], [54, '1'], [32, '10'], [31, '2']),
++    order('8', 'C1', [37, 'O1'], [17, 'E2'], [150, 'H'], [19, 'NOPE'], [55, 'VOD.L'], [54, '1'], [32, '0']),
++  ));
++  expect(all('#summary div.trades p.note.unmatched').map(node => node.textContent))
++    .toEqual(['1 trade cancel or correction refers to an execution that is not in this log.']);
++});
++
++test('test_render_trades_empty_shows_p_empty_no_table', () => {
++  show(fix('0'), fix('A'));
++  const trades = tradePanel();
++  expect(trades).not.toBeNull();
++  expect(trades.querySelector('table')).toBeNull();
++  expect(trades.querySelectorAll('p.empty')).toHaveLength(1);
++  expect(trades.querySelector('p.empty').textContent).toBe('No orders or fills in the messages shown.');
++});
++
++test('test_render_filters_five_labels_in_order_with_selects', () => {
++  render(analyseLog(order('D', 'C1', [1, 'ACC1']), order('D', 'C2', [1, 'ACC2'])));
++  const labels = filterLabels();
++  expect(labels).toHaveLength(5);
++  expect(labels.map(label => label.querySelector('span').textContent))
++    .toEqual(['Account', 'SenderCompID', 'SenderSubID', 'TargetCompID', 'TargetSubID']);
++  expect(labels.map(label => [...label.children].map(child => child.localName)))
++    .toEqual([['span', 'select'], ['span', 'select'], ['span', 'select'], ['span', 'select'], ['span', 'select']]);
++  const selects = filterSelects();
++  expect(texts(selects[0].options)).toEqual(['All', 'ACC1', 'ACC2']);
++  expect(texts(selects[1].options)).toEqual(['All', 'A']);
++  expect(texts(selects[2].options)).toEqual(['All']);
++  expect(texts(selects[3].options)).toEqual(['All', 'B']);
++  expect(texts(selects[4].options)).toEqual(['All']);
++  expect(selects.map(node => node.disabled)).toEqual([false, false, true, false, true]);
++  expect(selects.map(node => node.selectedIndex)).toEqual([0, 0, 0, 0, 0]);
++  for (const option of all('#summary div.filters option')) expect(option.hasAttribute('value')).toBe(false);
++});
++
++test('test_render_filter_select_change_calls_setFilter_with_value_or_null', () => {
++  const result = analyseLog(order('D', 'C1', [1, 'ACC1']), order('D', 'C2', [1, 'ACC2']));
++  const setFilter = vi.fn();
++  render(result, filterView({}), { setFilter });
++  const account = filterSelects()[0];
++  setSelect(account, 2);
++  expect(setFilter.mock.calls).toEqual([['account', 'ACC2']]);
++  setFilter.mockClear();
++  setSelect(account, 0);
++  expect(setFilter.mock.calls).toEqual([['account', null]]);
++  setFilter.mockClear();
++  account.options[1].value = 'tampered';
++  setSelect(account, 1);
++  expect(setFilter.mock.calls).toEqual([['account', 'ACC1']]);
++
++  render(result, filterView({ account: 'ACC2' }), { setFilter });
++  expect(filterSelects()[0].selectedIndex).toBe(2);
++  expect(filterSelects()[0].selectedOptions[0].textContent).toBe('ACC2');
++  expect(filterSelects().slice(1).map(node => node.selectedIndex)).toEqual([0, 0, 0, 0]);
++});
++
++test('test_render_clear_filters_button_present_only_when_filter_set', () => {
++  const result = analyseLog(order('D', 'C1', [1, 'ACC1']), order('D', 'C2', [1, 'ACC2']));
++  const setFilter = vi.fn();
++  render(result, filterView({ account: 'ACC1' }), { setFilter });
++  const clear = select('#summary div.filters button.clear-filters');
++  expect(clear).not.toBeNull();
++  expect(clear.textContent).toBe('Clear filters');
++  expect(clear.getAttribute('type')).toBe('button');
++  clear.click();
++  expect(setFilter.mock.calls).toEqual([[null, null]]);
++
++  render(result, filterView({}), { setFilter });
++  expect(select('#summary div.filters button.clear-filters')).toBeNull();
++});
++
++test('test_render_filtered_log_passes_shown_to_tradeSummary', () => {
++  const result = logAResult();
++  tradeSummary.mockClear();
++  render(result);
++  expect(tradeSummary.mock.calls).toHaveLength(1);
++  expect(tradeSummary.mock.calls[0][0]).toBe(result.decoded);
++  expect(tradeSummary.mock.calls[0][1]).toBeUndefined();
++
++  tradeSummary.mockClear();
++  render(result, filterView({ account: 'ACC2' }));
++  expect(tradeSummary.mock.calls).toHaveLength(1);
++  expect(tradeSummary.mock.calls[0][0]).toBe(result.decoded);
++  const shown = tradeSummary.mock.calls[0][1];
++  expect(shown).toBeInstanceOf(Set);
++  expect([...shown].sort((left, right) => left - right)).toEqual([7, 8, 9, 10]);
++});
++
++test('test_render_logA_account_ACC2_only_vod_sell_row', () => {
++  render(logAResult(), filterView({ account: 'ACC2' }));
++  expect(tradeRows()).toEqual([['VOD.L', '0', '0', '–', '1', '260', '72.2', '-260']]);
++  expect(all('#summary div.trades p.note.unmatched')).toHaveLength(0);
++});
++
++test('test_render_filtered_summary_strip_N_of_M_and_no_valid_malformed', () => {
++  const result = analyseLog(order('D', 'C1', [1, 'ACC1']), order('D', 'C2', [1, 'ACC2']), malformed);
++  render(result, filterView({ account: 'ACC2' }));
++  expect(stats()).toEqual(['1 of 3 messages', '0 sequence gaps', '1 order']);
++  expect(stats().join(' ')).not.toMatch(/valid|malformed/);
++  expect(cardNumbers()).toEqual(['#2']);
++  expect(all('#decode article.malformed')).toHaveLength(0);
++});
++
++test('test_render_filtered_empty_decode_p_empty', () => {
++  const result = analyseLog(order('D', 'C1', [1, 'ACC1']), order('D', 'C2', [1, 'ACC2']), fix('0'));
++  render(result, filterView({ account: 'ACC1', senderCompId: 'ZZZ' }));
++  expect(select('#decode > p.empty').textContent).toBe('No messages match the current filters.');
++  expect(timelineNumbers()).toEqual([]);
++  expect(tradeRows()).toEqual([]);
++  expect(stats()).toEqual(['0 of 3 messages', '0 sequence gaps', '0 orders']);
++});
++
++test('test_render_filter_and_selected_order_apply_together', () => {
++  const result = analyseLog(
++    order('D', 'C1', [1, 'ACC1'], [55, 'VOD.L'], [54, '1']),
++    order('8', 'C1', [37, 'O1'], [17, 'E1'], [150, 'F'], [55, 'VOD.L'], [54, '1'], [32, '10'], [31, '2']),
++    order('D', 'C2', [1, 'ACC2'], [55, 'BARC.L'], [54, '2']),
++    order('8', 'C2', [37, 'O2'], [17, 'E2'], [150, 'F'], [55, 'BARC.L'], [54, '2'], [32, '20'], [31, '3']),
++  );
++  render(result, { orderId: 'O1', filters: { account: 'ACC1' } });
++  expect(timelineNumbers()).toEqual(['#1', '#2']);
++  expect(cardNumbers()).toEqual(['#1', '#2']);
++  expect(tradeRows()).toEqual([['VOD.L', '1', '10', '2', '0', '0', '–', '+10']]);
++  expect(stats()[0]).toBe('2 of 4 messages');
++
++  render(result, { orderId: 'O1', filters: { account: 'ACC2' } });
++  expect(select('#decode > p.empty').textContent).toBe('No messages match the current filters.');
++  expect(timelineNumbers()).toEqual([]);
++  expect(stats()[0]).toBe('0 of 4 messages');
++});
++
++test('test_render_filtering_preserves_full_log_gaps_and_numbers', () => {
++  const party = (sender, target, seq, ...fields) =>
++    buildMessage([[8, 'FIX.4.4'], [35, 'D'], [49, sender], [56, target], [34, seq], ...fields]);
++  const result = analyseLog(
++    party('CLIENT', 'BROKER', '1', [11, 'C1'], [55, 'VOD.L'], [54, '1']),
++    party('CLIENT', 'BROKER', '3', [11, 'C2'], [55, 'VOD.L'], [54, '1']),
++    buildMessage([[8, 'FIX.4.4'], [35, '8'], [49, 'CLIENT'], [56, 'BROKER'], [34, '4'], [37, 'O1'],
++      [11, 'C1'], [17, 'E1'], [150, 'F'], [55, 'VOD.L'], [54, '1'], [32, '100'], [31, '2']]),
++    buildMessage([[8, 'FIX.4.4'], [35, '8'], [49, 'BROKER'], [56, 'CLIENT'], [34, '1'], [37, 'O1'],
++      [11, 'C1'], [17, 'E2'], [19, 'E1'], [150, 'H'], [55, 'VOD.L'], [54, '1'], [32, '0']]),
++  );
++  render(result, filterView({ senderCompId: 'CLIENT' }));
++  const gaps = all('#timeline .event.gap');
++  expect(gaps.map(row => texts(row.children)))
++    .toEqual([['#2', '', 'SequenceGap', 'CLIENT → BROKER', 'seq 3', 'expected 2, received 3']]);
++  expect(timelineNumbers()).toEqual(['#1', '#2', '#2', '#3']);
++  expect(cardNumbers()).toEqual(['#1', '#2', '#3']);
++  expect(stats()).toEqual(['3 of 4 messages', '1 sequence gap', '2 orders']);
++  expect(tradeRows()).toEqual([['VOD.L', '2', '0', '–', '0', '0', '–', '0']]);
++});
++
++test('test_main_setFilter_renders_and_clears_all_five', async () => {
++  vi.resetModules();
++  const storage = () => [localStorage.length, sessionStorage.length, document.cookie];
++  const before = storage();
++  await import('../src/main.js');
++  const input = select('#paste');
++  input.value = [
++    order('D', 'C1', [1, 'ACC1'], [55, 'VOD.L'], [54, '1']),
++    order('D', 'C2', [1, 'ACC2'], [55, 'BARC.L'], [54, '2']),
++  ].join('\n');
++  select('#decode-button').click();
++  expect(cardNumbers()).toEqual(['#1', '#2']);
++
++  setSelect(filterSelects()[0], 2);
++  expect(cardNumbers()).toEqual(['#2']);
++  expect(filterSelects()[0].selectedIndex).toBe(2);
++  setSelect(filterSelects()[1], 1);
++  expect(cardNumbers()).toEqual(['#2']);
++  expect(filterSelects()[1].selectedIndex).toBe(1);
++
++  select('#summary button.clear-filters').click();
++  expect(cardNumbers()).toEqual(['#1', '#2']);
++  expect(filterSelects().map(node => node.selectedIndex)).toEqual([0, 0, 0, 0, 0]);
++
++  setSelect(filterSelects()[0], 1);
++  expect(cardNumbers()).toEqual(['#1']);
++  select('#decode-button').click();
++  expect(cardNumbers()).toEqual(['#1', '#2']);
++  expect(filterSelects().map(node => node.selectedIndex)).toEqual([0, 0, 0, 0, 0]);
++  expect(storage()).toEqual(before);
++});
++
++test('test_render_filter_option_texts_set_via_textContent', () => {
++  const account = '<b class="marker">ACC</b>';
++  const symbol = '<i>VOD</i>';
++  const result = analyseLog(
++    order('D', 'C1', [1, account], [55, symbol], [54, '1']),
++    order('8', 'C1', [37, 'O1'], [17, 'E1'], [150, 'F'], [55, symbol], [54, '1'], [32, '10'], [31, '2']),
++  );
++  render(result, filterView({ account }));
++  const accountSelect = filterSelects()[0];
++  expect(texts(accountSelect.options)).toEqual(['All', account]);
++  expect(accountSelect.selectedIndex).toBe(1);
++  const option = accountSelect.options[1];
++  expect(option.textContent).toBe(account);
++  expect(option.hasAttribute('value')).toBe(false);
++  expect(tradeRows()[0][0]).toBe(symbol);
++  expect(select('#summary div.filters').textContent).toContain(account);
++  expect(all('#summary b, #summary i, #summary [class="marker"]')).toHaveLength(0);
++  expect(all('#summary div.filters option').every(node => !node.hasAttribute('value'))).toBe(true);
++});
+-- 
+2.43.0
+
