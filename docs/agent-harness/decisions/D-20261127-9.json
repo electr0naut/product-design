@@ -1,0 +1,8 @@
+{
+  "id": "D-20261127-9",
+  "action": "approve_test_edit",
+  "key": "FXL-17",
+  "head": "bfb67b789917b5f15fa0cbfdc1b3bffcf76bc1ee",
+  "files": ["test/filters.test.js"],
+  "reason": "FXL-17-block-diff: the fix pass changed 4 lines inside a test this ticket's own first pass added, making it stricter; the only base test removed is the one the ticket names as replaced; the source change is the one line the ticket asks for"
+}
