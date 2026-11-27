@@ -28,12 +28,14 @@ Acceptance criteria
   - `span.order-terms`: from the group's first NewOrder (35=D), or its first message when it has none: the
     meaning of 54, the value of 38, the value of 55, `@ <44>` when 44 is present, and the meaning of 40, joined
     by spaces;
-  - `span.order-state`: from the group's last ExecutionReport (35=8): the meaning of 39, then, when 14 is a number
-    above zero, ` · <14> filled @ <6>`. With no ExecutionReport there is no `span.order-state`;
+  - `span.order-state`: from the group's last ExecutionReport (35=8): the meaning of 39 and, when 14 is a number
+    above zero, `<14> filled @ <6>` (or `<14> filled` when 6 is missing), joined by ` · `. With no
+    ExecutionReport there is no `span.order-state`;
   - `button.show-all` with the text `Show all messages`, which calls `handlers.clear()`.
 
   "The meaning of" a tag is the field's `enumName`, or its value when it has none or the name is
-  `unknown value`.
+  `unknown value`. A part whose tag is missing is left out, with no stray separator, and a span that would be
+  empty is not created.
 - AC5: For this FIX.4.4 log: NewOrder 11=C1, 54=1, 38=500, 55=VOD.L, 44=71.25, 40=2; ExecutionReport 11=C1,
   37=O1, 150=0, 39=0, 14=0, 6=0; ExecutionReport 11=C1, 37=O1, 150=F, 39=2, 14=500, 6=71.25, 32=500, 31=71.25;
   with `view.orderId` `O1` the banner shows `C1 · O1`, the terms `Buy 500 VOD.L @ 71.25 Limit` and the state

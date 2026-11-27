@@ -22,10 +22,13 @@ Acceptance criteria
   this page. Nothing you paste is sent, stored or logged.`; `<button id="theme-button" type="button">`;
   `<p id="not-started">FIX Lens did not start. Open it through a web server, not as a file from disk.</p>`;
   `<section id="summary">`; and `#timeline` and `#decode` inside an element with class `results`, each starting
-  with an `h2` (`Timeline`, `Decode`) that `render` keeps. The CSP meta tag is unchanged and still first in
+  with an `h2` (`Timeline`, `Decode`) that `render` keeps. The textarea, the Decode button, `#summary` and
+  `.results` are inside `<main hidden>`, and `#not-started` is outside it, so that the message stands in place
+  of the tool until the script runs. The CSP meta tag is unchanged and still first in
   `<head>`.
-- AC2: `src/main.js` removes `#not-started` as its first statement. A test loads `index.html` without running the
-  script and finds the element and its text.
+- AC2: `src/main.js` removes `#not-started` as its first statement, and then shows the tool by setting
+  `hidden = false` on the `<main>` element. A test loads `index.html` without running the script and finds the
+  message, its text, and the hidden `<main>`.
 - AC3: After a decode, `#summary` holds `div.stats` with five `span.stat` elements, in this order: `N messages`
   (valid plus malformed), `N valid`, `N malformed`, `N sequence gaps`, `N orders` (the number of groups from
   `orderGroups`). A count of one is singular: `1 message`, `1 sequence gap`, `1 order`.

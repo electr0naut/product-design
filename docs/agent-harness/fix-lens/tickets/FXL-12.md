@@ -91,7 +91,14 @@ Acceptance criteria
   its ExecID is unmatched.
 - AC8: A report with no ExecID 17 is never matched and never treated as a resend: two identical Fills without
   tag 17 are two executions.
-- AC9: ExecutionReports of an unsupported version make no execution.
+- AC9: Messages of an unsupported version count for nothing: their ExecutionReports make no execution and their
+  NewOrderSingles are not counted as orders.
 - AC10: Rows are sorted by symbol with plain string comparison: `Zeta` comes before `alpha`.
-- AC11: `tradeSummary` does not change its arguments. For 1,000 valid order messages it finishes in under 1
+- AC11: A TradeCorrect that names an execution in the log, but whose own LastQty 32 is not a finite number above
+  zero, changes nothing and is not unmatched. No figure in the result is ever `NaN`.
+- AC12: An unmatched report is remembered by its OrderID and ExecID: a resend of an unmatched TradeCancel, or of
+  an unmatched TradeCorrect, is not counted again in `unmatched`.
+- AC13: An empty value counts as a missing tag for Symbol 55, ExecID 17 and ExecRefID 19: `55=` makes no
+  execution and no order, and two Fills with `17=` are two executions.
+- AC14: `tradeSummary` does not change its arguments. For 1,000 valid order messages it finishes in under 1
   second.

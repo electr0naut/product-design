@@ -35,10 +35,10 @@ in Python, independently of the product code.
 | `acc-delimiters.test.js` | FXL-9 | 14 |
 | `acc-events.test.js` | FXL-10 | 11 |
 | `acc-orders.test.js` | FXL-11 | 10 |
-| `acc-summary.test.js` | FXL-12 | 14 |
+| `acc-summary.test.js` | FXL-12 | 17 |
 | `acc-filters.test.js` | FXL-13 | 8 |
-| `acc-presentation.test.js` | FXL-14 | 20 |
-| `acc-order-story.test.js` | FXL-15 | 11 |
+| `acc-presentation.test.js` | FXL-14 | 21 |
+| `acc-order-story.test.js` | FXL-15 | 12 |
 | `acc-trades.test.js` | FXL-16 | 14 |
 
 **Checked before use.** A second agent built v1.2 from the design alone, without seeing this folder. Against that

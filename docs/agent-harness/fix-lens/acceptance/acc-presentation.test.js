@@ -54,6 +54,17 @@ test("main.js removes the not-started message, and Decode fills the page", async
   expect(all("#timeline li.event").length).toBe(2);
 });
 
+test("the tool is hidden until the script starts, with the message outside it", async () => {
+  page();
+  const main = q("main");
+  expect(main.hasAttribute("hidden")).toBe(true);
+  for (const sel of ["#paste", "#decode-button", "#summary", ".results"]) expect(main.querySelector(sel), sel).not.toBeNull();
+  expect(main.querySelector("#not-started")).toBeNull();
+  expect(q("#not-started")).not.toBeNull();
+  await boot();
+  expect(q("main").hidden).toBe(false);
+});
+
 test("the summary strip has five counts, with singular forms", () => {
   show([NEW, ACK, GAPPED, BAD].join("\n"));
   expect(texts("#summary .stats .stat")).toEqual(["4 messages", "3 valid", "1 malformed", "1 sequence gap", "1 order"]);

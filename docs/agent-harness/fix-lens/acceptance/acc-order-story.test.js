@@ -113,12 +113,25 @@ test("the banner of a replaced order: every id, no price, and a state without fi
   expect(b.querySelector(".order-state").textContent).toBe("New");
 });
 
-test("an order with no ExecutionReport has no state", () => {
+test("an order with no ExecutionReport has no state, and empty terms make no span", () => {
   page();
   render(analyse(LOG), { orderId: "C9", filters: NOFILTER }, calls());
   expect(q("#summary .order-story strong").textContent).toBe("C9 · C8");
   expect(q("#summary .order-story .order-state")).toBeNull();
+  expect(q("#summary .order-story .order-terms")).toBeNull();
   expect(texts("#decode article .num")).toEqual(["#9"]);
+});
+
+test("missing parts of the terms and the state leave no stray separator", () => {
+  const text = [cli(1, "D", [[11, "P1"], [55, "VOD.L"], [38, "10"]]), brk(1, [[11, "P1"], [37, "Q1"], [150, "F"], [14, "10"], [6, "7.5"]]),
+    cli(2, "D", [[11, "P2"], [54, "1"], [55, "VOD.L"]]), brk(2, [[11, "P2"], [37, "Q2"], [150, "F"], [39, "2"], [14, "4"]])].join("\n");
+  page();
+  render(analyse(text), { orderId: "P1", filters: NOFILTER }, calls());
+  expect(q("#summary .order-story .order-terms").textContent).toBe("10 VOD.L");
+  expect(q("#summary .order-story .order-state").textContent).toBe("10 filled @ 7.5");
+  render(analyse(text), { orderId: "P2", filters: NOFILTER }, calls());
+  expect(q("#summary .order-story .order-terms").textContent).toBe("Buy VOD.L");
+  expect(q("#summary .order-story .order-state").textContent).toBe("Filled · 4 filled");
 });
 
 test("the summary strip is narrowed while an order is selected", () => {

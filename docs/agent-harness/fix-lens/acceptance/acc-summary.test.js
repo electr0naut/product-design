@@ -134,8 +134,35 @@ test("the same ExecID under another OrderID is another execution", () => {
     { unmatched: 0, rows: [{ symbol: "X", buy: side(0, 0, 2, 15, 40, 15), sell: ZERO }] });
 });
 
-test("an unsupported version makes no execution", () => {
-  expect(tradeSummary(decodedOf("FIX.4.1", ["35=8 37=O1 17=E1 150=2 55=X 54=1 32=10 31=2"]))).toEqual({ rows: [], unmatched: 0 });
+test("an unsupported version counts for nothing: no execution and no order", () => {
+  expect(tradeSummary(decodedOf("FIX.4.1", ["35=8 37=O1 17=E1 150=2 55=X 54=1 32=10 31=2", "35=D 11=C1 55=X 54=1 38=10"])))
+    .toEqual({ rows: [], unmatched: 0 });
+});
+
+test("a correction without a usable quantity changes nothing, and no figure is NaN", () => {
+  for (const qty of ["32=abc", "32=0", "32=-5", ""]) {
+    const s = tradeSummary(decodedOf("FIX.4.4", [
+      "35=8 37=O1 17=E1 150=F 55=X 54=1 32=100 31=10",
+      `35=8 37=O1 17=E2 19=E1 150=G 55=X 54=1 ${qty} 31=99`.replace(/\s+/g, " "),
+    ]));
+    same(s, { unmatched: 0, rows: [{ symbol: "X", buy: side(0, 0, 1, 100, 1000, 100), sell: ZERO }] });
+  }
+});
+
+test("a resent unmatched report is counted once", () => {
+  const cancel = "35=8 37=O9 17=E8 19=ZZ 150=H 55=X 54=1";
+  const correct = "35=8 37=O9 17=E9 19=YY 150=G 55=X 54=1 32=0";
+  expect(tradeSummary(decodedOf("FIX.4.4", [cancel, cancel, correct, correct]))).toEqual({ rows: [], unmatched: 2 });
+});
+
+test("an empty Symbol or ExecID counts as missing", () => {
+  const s = tradeSummary(decodedOf("FIX.4.4", [
+    "35=8 37=O1 17=E1 150=F 55= 54=1 32=10 31=2",
+    "35=D 11=C1 55= 54=1 38=10",
+    "35=8 37=O2 17= 150=F 55=X 54=1 32=10 31=2",
+    "35=8 37=O2 17= 150=F 55=X 54=1 32=10 31=2",
+  ]));
+  same(s, { unmatched: 0, rows: [{ symbol: "X", buy: side(0, 0, 2, 20, 40, 20), sell: ZERO }] });
 });
 
 test("rows are sorted with plain string comparison", () => {
