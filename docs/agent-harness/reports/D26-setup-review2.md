@@ -26,3 +26,12 @@ have the result yet.
 
 `D-20261127-14` came back `signature: by a listed key`, so step 6 is active. The rest of
 `D26-setup-review.md` (what is switched on, what was installed) still stands.
+
+## Confirmed on the machine (Ubay's run, 2026-11-27, nothing installed)
+With `-p ProtectSystem=strict -p ProtectHome=read-only -p ReadWritePaths=/home/harness-job/jobs`:
+```
+touch: cannot touch '/home/harness-job/.probe3': Read-only file system
+home-is-read-only
+jobs-folder-is-writable
+```
+So the fix is `ProtectHome=read-only`, as ordered above. `.probe3` was not created.
