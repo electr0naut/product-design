@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- a CommonJS script, run with node directly */
 // Real-browser checks and timings (Playwright + Chromium). The product is served read-only by python3 -m http.server.
 //   FIX_LENS_DIR=<product> node tests/browser_test.cjs --perf <perf dir> [--lifted <copy with the limit raised>]
 const { chromium } = require('playwright');
