@@ -44,7 +44,9 @@ in Python, independently of the product code.
 **Checked before use.** A second agent built v1.2 from the design alone, without seeing this folder. Against that
 build, 99 of the 102 new tests passed at once. The other three were places where the design is silent and the
 tickets pin the behaviour (no empty `span.order-state`, the size warning as `p.warning`, a net that rounds to
-zero written `0`); with those three behaviours added, all 102 pass. The page files (`acc-presentation`,
+zero written `0`); with those three behaviours added, all 102 pass. Five more tests were then added for points that
+agent's report showed were open (the hidden `<main>`, banner parts, and four trading-summary rules), 107 in all;
+with those behaviours added to the build as well, all 107 pass, together with the 54 v1.1 tests that stay. The page files (`acc-presentation`,
 `acc-order-story`, `acc-trades`) run in jsdom from the repo root and also drive `src/main.js` through the page.
 
 **v1.1 tests that v1.2 changes on purpose.** Run against the v1.2 build, 54 of the 59 v1.1 tests still pass. The
