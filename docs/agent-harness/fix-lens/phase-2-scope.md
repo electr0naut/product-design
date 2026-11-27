@@ -1,7 +1,8 @@
 # FIX Lens after v1.2: phases 2, 3 and 4 (scope outline, not yet a PRD)
 
-**Status: the split into phases is Ubay's decision of 2026-11-27. Nothing here is designed or ticketed; each
-phase still needs its PRD and technical design approved.**
+**Status: the phasing is agreed by Ubay (2026-11-27: "agreed on the phasing of the project"): phase 2 is
+themes C, D and E; phase 3 is A, B and G; phase 4 is F and H. Nothing here is designed or ticketed; each phase
+still needs its PRD and technical design approved.**
 Ubay, 2026-11-27: "lets take from the prompt a phase 2 of the project, after this first deliverable", and then,
 on the eight themes below: "lets keep A, B, F, G, H for phases 3 and 4". So **phase 2 is themes C, D and E.**
 The prompt is his validation brief (`validation/BRIEF-original.md`): everything it asks of a FIX log analysis
@@ -45,8 +46,7 @@ zones and latency stays with theme G.
 decode-and-explain tool. Cross-checking quantities and reconstructing order state (D) moves it towards a
 reconciliation aid, which may need the same approval route as the BRD.
 
-## Phases 3 and 4: themes A, B, F, G and H (Ubay's decision; the split between the two is still open)
-My proposal for the split, for Ubay to change:
+## Phases 3 and 4: themes A, B, F, G and H (agreed by Ubay)
 - **Phase 3: A and B, with G.** Large logs and files, the other input forms, and time and latency. A is the
   change of architecture, and B and G both lean on it: PCAP and log-prefixed files bring their own
   timestamps.
@@ -57,6 +57,28 @@ My proposal for the split, for Ubay to change:
 Phase 1's promise is "nothing you paste is sent, stored or logged". Files of a million messages can still be
 read inside the page (in pieces, off the main thread, with results paged). Ten million and more probably
 cannot be made pleasant there; that would mean a companion that runs on the technician's own machine.
+
+## The maximum for now: 10,000 messages (Ubay, 2026-11-27)
+"A meaning huge files. 10000 is the max for now." So theme A is about files well beyond that, and the tool's
+limit is to go from 1,000 to 10,000 messages. That is a change to the approved PRD (AC-016 to AC-018, TR-005)
+and to the design, so it needs Ubay's approval of the wording before any ticket.
+
+Measured on 2026-11-27 with the limit lifted in a scratch copy of v1.2, in a real browser (headless Chromium,
+a mix of orders and fills, pipe-delimited):
+
+| messages | bytes | logic only | Decode to painted | one filter change |
+|---:|---:|---:|---:|---:|
+| 1,000 | 154,025 | 52 ms | 1.2 s | 0.3 s |
+| 5,000 | 782,116 | 223 ms | 5.6 s | 1.5 s |
+| 10,000 | 1,575,034 | 450 ms | 11.1 s | 3.4 s |
+
+- **The logic is ready for 10,000:** it scales in a straight line and takes under half a second.
+- **The page is not:** it draws every message card at once (about 1.1 ms per message, and over a million page
+  elements at 10,000 messages), so Decode takes 11 seconds and every filter change over 3.
+- **The byte limit has to move too:** 10,000 messages of this kind are 1.6 MB, over today's 1,048,576.
+
+So raising the limit is a change to how the page draws (cards a page at a time), not to the analysis. Rough
+size: three or four tickets. Proposed as v1.3, before or after Ubay's real-log test, as he chooses.
 
 ## What carries over from the validation
 The validation of phase 1 leaves a generator, ground-truth manifests, a differential comparison with an

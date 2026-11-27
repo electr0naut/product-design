@@ -174,6 +174,9 @@ The tool reads one pasted log of at most 1,000 messages or 1,048,576 bytes. Meas
   and cancellations. Do not benchmark only repetitive, trivially parseable messages.
 - At each limit: just under, at, and just over.
 - Over the limit (10,000 messages, once): the tool must refuse clearly and quickly, with no partial output.
+- **10,000 messages is the owner's maximum for now** (2026-11-27). With the limit lifted in a copy of the
+  product, measure the logic modules and the page at 2,500, 5,000 and 10,000 messages. Report these as
+  information for the planned limit, not as defects of v1.2, which refuses such logs by design.
 - Hostile input inside the size limit: one very long message, very long values, very many fields, text built
   to make the framing rules backtrack.
 
