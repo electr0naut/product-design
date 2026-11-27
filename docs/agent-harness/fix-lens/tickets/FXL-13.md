@@ -12,6 +12,10 @@ from `src/orders.js`. Nothing on the page changes in this ticket.
 
 No existing test file is expected to change. Add `test/filters.test.js`.
 
+The source rules of technical design section 8.4 apply to every file under `src/`: no assignment to `.id`,
+`.name`, `.title`, `.src`, `.value`, `.style` or `.cssText`, no `setAttribute`, no `import(`. Build objects
+with literals. `test/static-checks.test.js` enforces this since FXL-9.
+
 Acceptance criteria
 - AC0: A test imports `FILTERS`, `filterOptions` and `applyFilters` from `src/filters.js`. `FILTERS` is, in this
   order, `{ key: "account", tag: 1, label: "Account" }`, `{ key: "senderCompId", tag: 49, label: "SenderCompID" }`,

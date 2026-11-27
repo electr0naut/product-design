@@ -12,8 +12,8 @@ normalise the text. Section 15 lists the v1.1 behaviour this replaces. The shape
 errors do not change, and positions stay offsets into the pasted text.
 
 `test/framing.test.js`, `test/framing-f1.test.js`, `test/framing-f1b.test.js`, `test/framing-f2.test.js`,
-`test/framing-f2b.test.js`, `test/helpers.test.js` and `test/helpers/fix.js` are expected to change in this
-ticket. Tests that assert `field_without_equals` for a `|`-delimited message describe v1.1 and change with it.
+`test/framing-f2b.test.js`, `test/helpers.test.js`, `test/helpers/fix.js` and `test/static-checks.test.js` are
+expected to change in this ticket. Tests that assert `field_without_equals` for a `|`-delimited message describe v1.1 and change with it.
 
 Every message below was computed independently of the code, with BodyLength and CheckSum over SOH.
 
@@ -57,3 +57,10 @@ Acceptance criteria
   characters is `field_without_equals`, and a `|`, `^A` or `<SOH>` in such a message is ordinary text.
 - AC11: `test/helpers/fix.js` takes the delimiter form as an option, and the size limits and the 100-message
   performance test still pass.
+- AC12: The source check is extended now, so that every module written for v1.2 is held to it from the start
+  (technical design section 8.4). `test/static-checks.test.js` also fails on: any `import(` call; any import of a
+  path ending `.json`; an assignment to `.id`, `.name`, `.title`, `.src`, `.value`, `.style` or `.cssText` in
+  `src/**/*.js`; and, in `index.html`, a `<script>` without `src`, a `<style>` element, a `style=` attribute or
+  an `on...=` attribute. It checks that `src/dictionary/fix42.js` and `fix44.js` are each exactly
+  `export default `, one JSON value and `;`. Each new rule has a test showing that it fails on a small bad
+  example, and the check passes on the delivered code.

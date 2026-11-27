@@ -12,6 +12,10 @@ and the TimelineEvent shape of section 2. Sequence-number handling (steps 1 to 3
 `test/timeline.test.js` is expected to change in this ticket: the event keys gain `origClOrdId` and `execRefId`,
 and the names of some ExecutionReports change (design section 15).
 
+The source rules of technical design section 8.4 apply to every file under `src/`: no assignment to `.id`,
+`.name`, `.title`, `.src`, `.value`, `.style` or `.cssText`, no `setAttribute`, no `import(`. Build objects
+with literals. `test/static-checks.test.js` enforces this since FXL-9.
+
 Acceptance criteria
 - AC0: A test imports `executionKind` from `src/execution.js` and `timeline` from `src/timeline.js`. Every event
   has exactly the keys `number`, `kind`, `name`, `sendingTime`, `sender`, `target`, `seqNum`, `clOrdId`,

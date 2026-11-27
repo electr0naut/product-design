@@ -55,6 +55,10 @@ the test helper, adding 49, 56 and 34. The expected values were computed indepen
  5  35=8 37=O1 11=C1 17=0 20=3 150=2 39=1 55=IBM 54=1 32=45 31=51.5
 ```
 
+The source rules of technical design section 8.4 apply to every file under `src/`: no assignment to `.id`,
+`.name`, `.title`, `.src`, `.value`, `.style` or `.cssText`, no `setAttribute`, no `import(`. Build objects
+with literals. `test/static-checks.test.js` enforces this since FXL-9.
+
 Acceptance criteria
 - AC0: A test imports `tradeSummary` from `src/summary.js` and calls `tradeSummary(analyse(text).decoded)`. The
   result has exactly the keys `rows` and `unmatched`. A row has exactly `symbol`, `buy` and `sell`, and each side

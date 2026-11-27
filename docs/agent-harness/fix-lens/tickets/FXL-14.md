@@ -70,8 +70,6 @@ Acceptance criteria
   `matchMedia('(prefers-color-scheme: dark)')`. Nothing is stored.
 - AC14: `.results` is a two-column grid from `min-width: 900px`, with `#timeline` sticky, and one column below
   that.
-- AC15: `test/static-checks.test.js` also fails on: any `import(` call; any import of a path ending `.json`;
-  an assignment to `.id`, `.name`, `.title`, `.src`, `.value`, `.style` or `.cssText` in `src/**/*.js`; and, in
-  `index.html`, a `<script>` without `src`, a `<style>` element, a `style=` attribute or an `on...=` attribute.
-  It checks that `src/dictionary/fix42.js` and `fix44.js` are each exactly `export default `, one JSON value and
-  `;`. It passes on the delivered code.
+- AC15: The source check that FXL-9 extended (no `import(` call, no `.json` import, no assignment to `.id`,
+  `.name`, `.title`, `.src`, `.value`, `.style` or `.cssText` in `src/**/*.js`, and no inline script, style or
+  event attribute in `index.html`) passes on the new page and code, without any of its rules being loosened.
