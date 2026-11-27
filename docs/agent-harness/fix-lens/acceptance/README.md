@@ -33,6 +33,7 @@ in Python, independently of the product code.
 | File | Ticket | Tests |
 |---|---|---|
 | `acc-delimiters.test.js` | FXL-9 | 14 |
+| `acc-framing-rules.test.js` | FXL-9 (added after it landed) | 10 |
 | `acc-events.test.js` | FXL-10 | 11 |
 | `acc-orders.test.js` | FXL-11 | 10 |
 | `acc-summary.test.js` | FXL-12 | 17 |
@@ -62,3 +63,17 @@ five that do not are retired with the harness's `retire_hidden` decision, never 
 FXL-13 lands: retire the five `acc-render` tests, delete the file here, refresh, then load FXL-14 to FXL-16. The
 two replaced tests in `acc-check` and `acc-timeline` already pass on the v1.1 code, as do all 59 tests of the
 folder as it stands.
+
+## Added after FXL-9 landed: `acc-framing-rules.test.js`
+
+Mutation testing of FXL-9 left 70 mutants of `src/framing.js` alive. Applied one by one and compared on generated
+pastes, 35 change behaviour, and 28 of those were caught by no test, here or in the project
+(`reports/FXL-9-survivors-classified.md`). This file holds the rules the design pins and nothing was holding: a
+delimiter followed by digits without `=`, a delimiter at the end of the text, `8=FIX` after a digit, a tag with a
+letter after its digits, a CheckSum of the wrong length, the header order and where its error points, a
+BodyLength that is not a number, the position of a missing CheckSum, and the shape of every error text. It
+passes on the landed code and on the independent build, and kills 14 of the 28. The other 14 are in places the
+design does not pin (a candidate's `end` after a CheckSum with no delimiter, input that is not a string,
+bad-tag pieces in `fields`, the wording of one problem text, a delimiter spelled at the very end of the text).
+
+It reaches the host copy with the next `refresh_copies`, in the commit that retires the `acc-render` tests.
