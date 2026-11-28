@@ -1,0 +1,305 @@
+From 4c479c6c4fbaa00b632c16d35d20984f5749fbc9 Mon Sep 17 00:00:00 2001
+From: Hermes Agent <hermes@agent.local>
+Date: Sat, 28 Nov 2026 01:38:15 +0100
+Subject: [PATCH] FXL-23: Scope and replay trading executions
+
+---
+ src/summary.js       | 109 ++++++++++++++++--------------
+ test/summary.test.js | 155 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 215 insertions(+), 49 deletions(-)
+
+diff --git a/src/summary.js b/src/summary.js
+index afed38c..0fd19d0 100644
+--- a/src/summary.js
++++ b/src/summary.js
+@@ -19,64 +19,75 @@ function tradeSide(side) {
+ function replayExecutions(decoded) {
+   const executions = [];
+   const unmatchedNumbers = [];
+-  const orders = new Map();
+-
+-  for (const message of decoded) {
+-    if (!message.supported || tag(message, 35) !== '8') continue;
+-    const kind = executionKind(message);
+-    if (kind !== 'Fill' && kind !== 'TradeCancel' && kind !== 'TradeCorrect') continue;
+-
+-    const orderId = tag(message, 37) ?? '';
+-    const execId = tag(message, 17);
+-    let reports = orders.get(orderId);
+-    if (execId && reports?.has(execId)) continue;
+-
+-    function remember(execution) {
+-      if (!execId) return;
+-      if (!reports) {
+-        reports = new Map();
+-        orders.set(orderId, reports);
++  const senders = new Map();
++
++  // Index all fills before replaying adjustments in log order.
++  for (const fillPass of [true, false]) {
++    for (const message of decoded) {
++      if (!message.supported || tag(message, 35) !== '8') continue;
++      const kind = executionKind(message);
++      if (fillPass ? kind !== 'Fill' : kind !== 'TradeCancel' && kind !== 'TradeCorrect') continue;
++
++      const senderId = tag(message, 49) ?? '';
++      const orderId = tag(message, 37) ?? '';
++      const execId = tag(message, 17);
++      let orders = senders.get(senderId);
++      let reports = orders?.get(orderId);
++      if (execId && reports?.has(execId)) continue;
++
++      function remember(execution) {
++        if (!execId) return;
++        if (!orders) {
++          orders = new Map();
++          senders.set(senderId, orders);
++        }
++        if (!reports) {
++          reports = new Map();
++          orders.set(orderId, reports);
++        }
++        reports.set(execId, execution);
+       }
+-      reports.set(execId, execution);
+-    }
+ 
+-    if (kind !== 'Fill') {
+-      const refId = tag(message, 19);
+-      const execution = refId ? reports?.get(refId) : undefined;
+-      if (execution) {
+-        if (kind === 'TradeCancel') {
+-          if (execution.active) {
+-            execution.active = false;
+-            remember(execution);
+-          }
+-        } else if (!execution.active) {
+-          remember(execution);
+-        } else {
+-          const qty = finiteNumber(tag(message, 32));
+-          if (qty !== null && qty > 0) {
+-            execution.qty = qty;
+-            execution.px = finiteNumber(tag(message, 31));
++      if (kind !== 'Fill') {
++        const refId = tag(message, 19);
++        const execution = refId ? reports?.get(refId) : undefined;
++        if (execution) {
++          if (kind === 'TradeCancel') {
++            if (execution.active) {
++              execution.active = false;
++              remember(execution);
++            }
++          } else if (!execution.active) {
+             remember(execution);
++          } else {
++            const qty = finiteNumber(tag(message, 32));
++            if (qty !== null && qty > 0) {
++              execution.qty = qty;
++              execution.px = finiteNumber(tag(message, 31));
++              remember(execution);
++            }
+           }
++          continue;
+         }
+-        continue;
++        unmatchedNumbers.push(message.number);
++        // Reserve the key for resend detection, even if there is no execution to reference.
++        remember(null);
++        if (kind === 'TradeCancel') continue;
+       }
+-      unmatchedNumbers.push(message.number);
+-      // Reserve the key for resend detection, even if there is no execution to reference.
+-      remember(null);
+-      if (kind === 'TradeCancel') continue;
+-    }
+ 
+-    const symbol = tag(message, 55);
+-    const side = tradeSide(tag(message, 54));
+-    const qty = finiteNumber(tag(message, 32));
+-    if (!symbol || !side || qty === null || qty <= 0) continue;
++      const symbol = tag(message, 55);
++      const side = tradeSide(tag(message, 54));
++      const qty = finiteNumber(tag(message, 32));
++      if (!symbol || !side || qty === null || qty <= 0) continue;
+ 
+-    // All aliases share one record, so cancellation deactivates them together.
+-    const execution = { number: message.number, symbol, side, qty, px: finiteNumber(tag(message, 31)), active: true };
+-    executions.push(execution);
+-    remember(execution);
++      // All aliases share one record, so cancellation deactivates them together.
++      const execution = { number: message.number, symbol, side, qty, px: finiteNumber(tag(message, 31)), active: true };
++      executions.push(execution);
++      remember(execution);
++    }
+   }
++  // Unmatched corrections can add executions during the second pass.
++  executions.sort((a, b) => a.number - b.number);
+   return { executions, unmatchedNumbers };
+ }
+ 
+diff --git a/test/summary.test.js b/test/summary.test.js
+index 093e335..64d15eb 100644
+--- a/test/summary.test.js
++++ b/test/summary.test.js
+@@ -276,3 +276,158 @@ test('test_tradeSummary_opposing_overflowing_notionals_do_not_produce_nan', () =
+   expect(rows[0].buy.fills).toBe(2);
+   expect(rows[0].buy.notional).not.toBeNaN();
+ });
++
++
++function decodedReports(reports, version = 'FIX.4.4') {
++  return reports.map((tags, i) => ({
++    number: i + 1,
++    supported: true,
++    beginString: version,
++    fields: Object.entries({ 8: version, 35: '8', 55: 'ABC', 54: '1', ...tags })
++      .map(([tag, value]) => ({ tag: Number(tag), value })),
++  }));
++}
++
++const northFill = { 49: 'NORTH', 56: 'CLIENT', 37: '1', 17: '1', 150: 'F', 32: '100', 31: '10' };
++const southFill = { ...northFill, 49: 'SOUTH', 32: '200', 31: '11' };
++const twoVenueSummary = { rows: [row('ABC', metrics(0, 0, 2, 300, 3200, 300))], unmatched: 0 };
++const brokerFill = { ...northFill, 49: 'BRK', 37: 'O1', 17: 'E1' };
++const brokerCancel = { 49: 'BRK', 37: 'O1', 17: 'E2', 19: 'E1', 150: 'H' };
++const brokerCorrect = { ...brokerCancel, 150: 'G', 32: '80', 31: '9' };
++const correctedSummary = { rows: [row('ABC', fill(80, 720))], unmatched: 0 };
++
++test('test_tradeSummary_same_order_and_exec_ids_from_two_senders_count_both_fills', () => {
++  expect(tradeSummary(decodedReports([northFill, southFill]))).toEqual(twoVenueSummary);
++  const fix42 = [northFill, southFill].map(report => ({ ...report, 20: '0', 150: '2' }));
++  expect(tradeSummary(decodedReports(fix42, 'FIX.4.2'))).toEqual(twoVenueSummary);
++});
++
++test('test_tradeSummary_same_sender_resend_to_another_target_counts_once', () => {
++  const before = tradeSummary(decodedReports([northFill, southFill]));
++  const after = tradeSummary(decodedReports([northFill, southFill, { ...northFill, 56: 'OTHER' }]));
++  expect(after).toEqual(before);
++  expect(after).toEqual(twoVenueSummary);
++});
++
++test('test_tradeSummary_cancel_before_fill_removes_fill_even_after_resend', () => {
++  const cancel42 = { ...brokerCancel, 20: '1', 150: '2' };
++  const fill42 = { ...brokerFill, 20: '0', 150: '2' };
++  for (const [version, cancel, original] of [
++    ['FIX.4.4', brokerCancel, brokerFill], ['FIX.4.2', cancel42, fill42],
++  ]) {
++    expect(tradeSummary(decodedReports([cancel, original], version))).toEqual(empty);
++    expect(tradeSummary(decodedReports([cancel, original, original], version))).toEqual(empty);
++  }
++});
++
++test('test_tradeSummary_correction_before_fill_updates_original_message_contribution', () => {
++  const decoded = decodedReports([brokerCorrect, brokerFill]);
++  const snapshot = structuredClone(decoded);
++  const shown = new Set([2]);
++  for (const report of decoded) {
++    report.fields.forEach(Object.freeze);
++    Object.freeze(report.fields);
++    Object.freeze(report);
++  }
++  Object.freeze(decoded);
++  expect(tradeSummary(decoded)).toStrictEqual(correctedSummary);
++  expect(tradeSummary(decoded, new Set([1]))).toStrictEqual(empty);
++  expect(tradeSummary(decoded, shown)).toStrictEqual(correctedSummary);
++  expect(decoded).toEqual(snapshot);
++  expect([...shown]).toEqual([2]);
++});
++
++test('test_tradeSummary_cancel_before_referenced_correction_counts_unmatched', () => {
++  const cancelAlias = { ...brokerCancel, 17: 'E3', 19: 'E2' };
++  const missingRef = { ...brokerCancel, 17: 'E4', 19: 'UNKNOWN' };
++  const usualOrder = decodedReports([brokerFill, brokerCorrect, cancelAlias, missingRef]);
++  expect(tradeSummary(usualOrder)).toEqual({ rows: [], unmatched: 1 });
++  expect(tradeSummary(usualOrder, new Set([1, 2, 3]))).toEqual(empty);
++
++  const earlyCancel = decodedReports([cancelAlias, brokerCorrect, brokerFill]);
++  expect(tradeSummary(earlyCancel)).toEqual({ ...correctedSummary, unmatched: 1 });
++  expect(tradeSummary(earlyCancel, new Set([3]))).toEqual(correctedSummary);
++});
++
++test('test_tradeSummary_adjustment_with_later_fill_key_loses_to_fill', () => {
++  const laterFill = { ...brokerFill, 17: 'E2', 32: '200', 31: '11' };
++  for (const adjustment of [brokerCancel, brokerCorrect]) {
++    expect(tradeSummary(decodedReports([brokerFill, adjustment, laterFill]))).toEqual(twoVenueSummary);
++  }
++});
++
++test('test_tradeSummary_unmatched_correction_between_fills_preserves_accumulation_order', () => {
++  const first = { ...brokerFill, 32: '1', 31: '1e16' };
++  const correction = { ...brokerCorrect, 19: 'UNKNOWN', 32: '1', 31: '-1e16' };
++  const correctLaterFill = { ...brokerCorrect, 17: 'E4', 19: 'E3', 32: '1', 31: '1' };
++  const last = { ...brokerFill, 17: 'E3', 32: '1', 31: '2' };
++  expect(tradeSummary(decodedReports([first, correction, correctLaterFill, last]))).toEqual({
++    rows: [row('ABC', metrics(0, 0, 3, 3, 1, 3))], unmatched: 1,
++  });
++});
++
++test('test_tradeSummary_references_to_another_sender_or_order_count_unmatched', () => {
++  for (const execType of ['H', 'G']) {
++    const otherSender = { ...brokerCancel, 49: 'OTHER', 150: execType };
++    const otherOrder = { ...brokerCancel, 37: 'O2', 17: 'E3', 150: execType };
++    expect(tradeSummary(decodedReports([brokerFill, otherSender, otherOrder]))).toEqual({
++      rows: [row('ABC', fill(100, 1000))], unmatched: 2,
++    });
++  }
++});
++
++test('test_tradeSummary_missing_sender_or_order_uses_empty_component', () => {
++  for (const tag of [49, 37]) {
++    const original = { ...brokerFill };
++    const cancel = { ...brokerCancel };
++    delete original[tag];
++    delete cancel[tag];
++    const resend = { ...original, [tag]: '' };
++    const anonymous = [original, resend];
++    const singleFill = { rows: [row('ABC', fill(100, 1000))], unmatched: 0 };
++    expect(tradeSummary(decodedReports(anonymous))).toEqual(singleFill);
++    expect(tradeSummary(decodedReports([...anonymous, cancel]))).toEqual(empty);
++    // The empty component never aliases an actual sender or order value.
++    expect(tradeSummary(decodedReports([...anonymous, brokerFill, cancel]))).toEqual(singleFill);
++  }
++});
++
++test('test_tradeSummary_embedded_separators_do_not_merge_distinct_execution_keys', () => {
++  for (const sep of ['|', ',', ':', '"', '\\']) {
++    const senderOrder = [
++      { ...northFill, 49: `A${sep}B`, 37: 'C' }, { ...southFill, 49: 'A', 37: `B${sep}C` },
++    ];
++    const orderExec = [
++      { ...northFill, 37: `A${sep}B`, 17: 'C' }, { ...southFill, 49: 'NORTH', 37: 'A', 17: `B${sep}C` },
++    ];
++    expect(tradeSummary(decodedReports(senderOrder))).toEqual(twoVenueSummary);
++    expect(tradeSummary(decodedReports(orderExec))).toEqual(twoVenueSummary);
++
++    // A reference with the first report's order/exec but the second report's sender
++    // is neither of the two keys, even though the sender and order include separators.
++    const wrongSenderCancel = { ...brokerCancel, 49: 'A', 37: 'C', 19: '1' };
++    expect(tradeSummary(decodedReports([...senderOrder, wrongSenderCancel]))).toEqual({
++      ...twoVenueSummary, unmatched: 1,
++    });
++  }
++});
++
++test('test_tradeSummary_ten_thousand_reverse_order_reports_summarize_under_one_second', () => {
++  const cancelled = 4500;
++  const survivors = 1000;
++  const qty = 3;
++  const price = 7;
++  const cancels = Array.from({ length: cancelled }, (_, i) => ({ ...brokerCancel, 17: `C${i}`, 19: `F${i}` }));
++  const fills = Array.from({ length: cancelled + survivors }, (_, i) => ({
++    ...brokerFill, 17: `F${i}`, 32: String(qty), 31: String(price),
++  }));
++  const decoded = decodedReports([...cancels, ...fills]);
++  expect(decoded).toHaveLength(10000);
++  const start = performance.now();
++  const summary = tradeSummary(decoded);
++  expect(performance.now() - start).toBeLessThan(1000);
++  expect(summary).toEqual({
++    rows: [row('ABC', metrics(0, 0, survivors, survivors * qty, survivors * qty * price, survivors * qty))],
++    unmatched: 0,
++  });
++});
+-- 
+2.43.0
+
