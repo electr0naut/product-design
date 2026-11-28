@@ -1,0 +1,6 @@
+{
+  "id": "D-20261127-22",
+  "action": "refresh_cards",
+  "key": "FXL-22",
+  "reason": "Hermes cuts the ticket a role receives at 4 KB (reports/V14-triage-truncation.md), so FXL-22 triage blocked on a cut ticket. The kit that writes the whole ticket to work/runs/FXL-22/ticket.md and tells each role to read it is deployed (9f1a4a1; Ubay: 'deployed', 2026-11-28). This gives the open FXL-22 cards that card text. Nothing is unblocked by this decision."
+}
