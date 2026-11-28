@@ -1,10 +1,15 @@
 # Harness state
 
-Written by the runner at 2026-11-28T01:04:32+0100. Host-only copy: `state.json`.
+Written by the runner at 2026-11-28T01:06:39+0100. Host-only copy: `state.json`.
 Kit: `9f1a4a1c122a802f5d25734dbca5318ab305c415`
 
 ## What changed
-- decision applied D-20261127-22: ticket.md written for FXL-22; card text replaced on: triage, planner, implementer, gatekeeper, reviewer, scribe [commit 6ac65b0160a5, 2026-11-28T00:03:17+00:00, signature: by a listed key]
+- decision applied D-20261127-23: ticket.md written for FXL-23; card text replaced on: triage, planner, implementer, gatekeeper, reviewer, scribe; triage waits on 'accept FXL-22' again [commit 501b01f95a68, 2026-11-28T00:03:58+00:00, signature: by a listed key]
+- decision applied D-20261127-24: unblocked t_e6592dfb (FXL-22 · triage) [commit 501b01f95a68, 2026-11-28T00:03:58+00:00, signature: by a listed key]
+- decision applied D-20261127-25: unblocked t_b6621679 (FXL-23 · triage) [commit 501b01f95a68, 2026-11-28T00:03:58+00:00, signature: by a listed key]
+- decision applied D-20261127-26: ticket.md written for FXL-24; card text replaced on: triage, planner, implementer, gatekeeper, reviewer, scribe; triage waits on 'accept FXL-23' again [commit 501b01f95a68, 2026-11-28T00:03:58+00:00, signature: by a listed key]
+- decision applied D-20261127-27: ticket.md written for FXL-25; card text replaced on: triage, planner, implementer, gatekeeper, reviewer, scribe [commit 501b01f95a68, 2026-11-28T00:03:58+00:00, signature: by a listed key]
+- decision applied D-20261127-28: ticket.md written for FXL-26; card text replaced on: triage, planner, implementer, gatekeeper, reviewer, scribe [commit 501b01f95a68, 2026-11-28T00:03:58+00:00, signature: by a listed key]
 
 ## Tickets
 - **SMK-1** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
@@ -22,15 +27,14 @@ Kit: `9f1a4a1c122a802f5d25734dbca5318ab305c415`
 - **FXL-19** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
 - **FXL-20** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
 - **FXL-21** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
-- **FXL-22** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: blocked
-- **FXL-23** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: blocked
+- **FXL-22** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: running
+- **FXL-23** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: todo
 - **FXL-24** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: todo
 - **FXL-25** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: todo
 - **FXL-26** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: todo
 
 ## Blocks
-- FXL-22 · triage (`t_e6592dfb`), head `None`: AC10 states 'findOrder also learns to find the order of one message' but doesn't specify the behavior. What is the input (a message object? a message number?)? What is the output (the order/group? the order id?)? What is the new function signature?
-- FXL-23 · triage (`t_b6621679`), head `None`: AC9 is truncated in the handoff ('The usual order still works as today: a fi… [truncated, 368 chars omitted]'). Cannot verify observability (Rule 1). Please provide the complete text of AC9.
+- none
 
 ## Holds
 - none
