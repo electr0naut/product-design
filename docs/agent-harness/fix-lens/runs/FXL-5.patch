@@ -1,0 +1,273 @@
+From 533f8ac4eb19b69cd7c0ab9d3fb94a5c324f7f35 Mon Sep 17 00:00:00 2001
+From: Hermes Agent <hermes@agent.local>
+Date: Thu, 26 Nov 2026 21:53:14 +0100
+Subject: [PATCH] Implement FIX session timeline and directional sequence gaps
+
+---
+ src/timeline.js       |  75 ++++++++++++++++++
+ test/timeline.test.js | 171 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 246 insertions(+)
+ create mode 100644 src/timeline.js
+ create mode 100644 test/timeline.test.js
+
+diff --git a/src/timeline.js b/src/timeline.js
+new file mode 100644
+index 0000000..17f0028
+--- /dev/null
++++ b/src/timeline.js
+@@ -0,0 +1,75 @@
++// Keep timeline labels independent of dictionary enum names.
++const SESSION_NAMES = {
++  A: 'Logon', 5: 'Logout', 0: 'Heartbeat', 1: 'TestRequest',
++  2: 'ResendRequest', 3: 'SessionReject', j: 'BusinessReject',
++};
++
++function integer(value) {
++  if (value === null || !/^\d+$/.test(value)) return null;
++  const number = Number(value);
++  return Number.isSafeInteger(number) ? number : null;
++}
++
++function executionName(version, execType) {
++  if (execType === null) return 'ExecutionReport (no ExecType)';
++  if (execType === '0') return 'Acknowledgement';
++  if (execType === '4') return 'Cancelled';
++  if (execType === '5') return 'Replaced';
++  if (version === 'FIX.4.2' && (execType === '1' || execType === '2')) return 'Fill';
++  if (version === 'FIX.4.4' && execType === 'F') return 'Fill';
++  return `ExecutionReport (ExecType ${execType})`;
++}
++
++/** Build ordered FIX events from splitMessages candidates, with local directional state. */
++export function timeline(messages) {
++  const events = [];
++  const expectedByDirection = new Map();
++  for (const message of messages) {
++    const value = tag => message.fields.find(field => field.tag === tag)?.value ?? null;
++    const type = value(35);
++    const sender = value(49);
++    const target = value(56);
++    const seqNum = value(34);
++    const seq = integer(seqNum);
++    const common = {
++      number: message.number, sendingTime: value(52), sender, target, seqNum,
++      clOrdId: null, orderId: null,
++    };
++    const direction = JSON.stringify([sender ?? '', target ?? '']);
++    let gap = null;
++
++    if (seq !== null && value(43) !== 'Y') {
++      // A valid resetting Logon starts a new sequence before its own check.
++      if (type === 'A' && value(141) === 'Y' && expectedByDirection.has(direction)) {
++        expectedByDirection.set(direction, 1);
++      }
++      const expected = expectedByDirection.get(direction);
++      const isReset = type === '4' && value(123) !== 'Y';
++      if (!isReset && expected !== undefined && seq > expected) {
++        gap = `expected ${expected}, received ${seq}`;
++      }
++      if (type === '4') {
++        const next = integer(value(36));
++        expectedByDirection.set(direction, next !== null && next > 0 ? next : seq + 1);
++      } else if (expected === undefined || seq >= expected) {
++        expectedByDirection.set(direction, seq + 1);
++      }
++    }
++
++    if (gap !== null) events.push({ ...common, kind: 'session', name: 'SequenceGap', detail: gap });
++    let name = null;
++    if (type === '4') name = value(123) === 'Y' ? 'GapFill' : 'Reset';
++    else if (type === '8') name = executionName(value(8), value(150));
++    else if (type === 'D') name = 'NewOrder';
++    else if (Object.hasOwn(SESSION_NAMES, type)) name = SESSION_NAMES[type];
++    if (name !== null) {
++      const isOrder = type === 'D' || type === '8';
++      events.push({
++        ...common, kind: isOrder ? 'order' : 'session', name,
++        clOrdId: isOrder ? value(11) : null,
++        orderId: isOrder ? value(37) : null, detail: null,
++      });
++    }
++  }
++  return events;
++}
+diff --git a/test/timeline.test.js b/test/timeline.test.js
+new file mode 100644
+index 0000000..d693ec3
+--- /dev/null
++++ b/test/timeline.test.js
+@@ -0,0 +1,171 @@
++import { test, expect } from "vitest";
++import { splitMessages } from "../src/framing.js";
++import { buildMessage } from "./helpers/fix.js";
++import { timeline } from "../src/timeline.js";
++
++function messages(specs) {
++  return splitMessages(specs.map(([type, seq, extras = [], version = "FIX.4.2", sender = "BUY", target = "SELL"]) =>
++    buildMessage([[8, version], [35, type], [49, sender], [56, target], ...(seq === null ? [] : [[34, seq]]), ...extras])
++  ).join("\n"));
++}
++const names = events => events.map(e => e.name);
++const gaps = events => events.filter(e => e.name === "SequenceGap");
++
++test("test_timeline_split_candidates_have_exact_event_keys", () => {
++  const events = timeline(messages([["A", 1], ["D", 2, [[11, "C1"]]]]));
++  expect(events).toHaveLength(2);
++  for (const e of events) expect(Object.keys(e).sort()).toEqual([
++    "number", "kind", "name", "sendingTime", "sender", "target", "seqNum", "clOrdId", "orderId", "detail"
++  ].sort());
++});
++
++test("test_timeline_out_of_order_sending_times_preserve_log_order", () => {
++  const events = timeline(messages([["A", 1, [[52, "20261201-12:00:00"]]], ["5", 2, [[52, "20261101-12:00:00"]]]]));
++  expect(events.map(e => [e.number, e.name, e.sendingTime])).toEqual([
++    [1, "Logon", "20261201-12:00:00"], [2, "Logout", "20261101-12:00:00"]
++  ]);
++});
++
++test("test_timeline_session_and_order_msgtypes_use_fixed_names", () => {
++  const types = ["A", "5", "0", "1", "2", "3", "j", "D", "4", "4"];
++  const events = timeline(messages(types.map((type, i) => [type, i + 1, i === 9 ? [[123, "Y"]] : []])));
++  expect(names(events)).toEqual(["Logon", "Logout", "Heartbeat", "TestRequest", "ResendRequest", "SessionReject", "BusinessReject", "NewOrder", "Reset", "GapFill"]);
++});
++
++test("test_timeline_unmapped_msgtype_emits_no_event", () => {
++  expect(timeline(messages([["Z", 1]]))).toEqual([]);
++});
++
++test("test_timeline_fix42_execution_types_map_to_names", () => {
++  expect(names(timeline(messages(["0", "1", "2", "4", "5"].map((v, i) => ["8", i + 1, [[150, v]]]))))).toEqual([
++    "Acknowledgement", "Fill", "Fill", "Cancelled", "Replaced"
++  ]);
++});
++
++test("test_timeline_fix44_execution_types_map_to_names", () => {
++  expect(names(timeline(messages(["0", "F", "4", "5", "2"].map((v, i) => ["8", i + 1, [[150, v]], "FIX.4.4"]))))).toEqual([
++    "Acknowledgement", "Fill", "Cancelled", "Replaced", "ExecutionReport (ExecType 2)"
++  ]);
++});
++
++test("test_timeline_unknown_execution_types_and_versions_fall_back", () => {
++  const specs = [["8", 1], ["8", 2, [[150, "X"]]], ...["0", "4", "5", "1", "2", "F"].map((v, i) => ["8", i + 3, [[150, v]], "FIX.5.0"])];
++  expect(names(timeline(messages(specs)))).toEqual([
++    "ExecutionReport (no ExecType)", "ExecutionReport (ExecType X)", "Acknowledgement", "Cancelled", "Replaced",
++    "ExecutionReport (ExecType 1)", "ExecutionReport (ExecType 2)", "ExecutionReport (ExecType F)"
++  ]);
++});
++
++test("test_timeline_message_metadata_and_order_ids_use_null_fallbacks", () => {
++  const events = timeline(messages([
++    ["D", 1, [[52, "RAW-TIME"], [11, "CL-1"], [37, "ORD-1"]]],
++    ["8", 3, [[150, "0"], [11, "CL-2"]]],
++    ["0", null]
++  ]));
++  expect(events[0]).toMatchObject({ number: 1, name: "NewOrder", sendingTime: "RAW-TIME", sender: "BUY", target: "SELL", seqNum: "1", clOrdId: "CL-1", orderId: "ORD-1", detail: null });
++  expect(events[1]).toMatchObject({ number: 2, name: "SequenceGap", sendingTime: null, sender: "BUY", target: "SELL", seqNum: "3", clOrdId: null, orderId: null, detail: "expected 2, received 3" });
++  expect(events[2]).toMatchObject({ number: 2, name: "Acknowledgement", clOrdId: "CL-2", orderId: null, detail: null });
++  expect(events[3]).toMatchObject({ number: 3, name: "Heartbeat", sendingTime: null, seqNum: null, clOrdId: null, orderId: null });
++});
++
++test("test_timeline_interleaved_directions_gap_before_triggering_event", () => {
++  const events = timeline(messages([
++    ["0", 1], ["0", 90, [], "FIX.4.2", "SELL", "BUY"], ["0", 2],
++    ["0", 91, [], "FIX.4.2", "SELL", "BUY"], ["D", 5]
++  ]));
++  expect(gaps(events)).toHaveLength(1);
++  expect(events.map(e => [e.number, e.name])).toEqual([
++    [1, "Heartbeat"], [2, "Heartbeat"], [3, "Heartbeat"], [4, "Heartbeat"], [5, "SequenceGap"], [5, "NewOrder"]
++  ]);
++  expect(gaps(events)[0].detail).toBe("expected 3, received 5");
++});
++
++test("test_timeline_first_direction_message_never_emits_gap", () => {
++  const events = timeline(messages([["A", 5, [[141, "Y"]]], ["0", 70, [], "FIX.4.2", "SELL", "BUY"]]));
++  expect(names(events)).toEqual(["Logon", "Heartbeat"]);
++  expect(gaps(events)).toHaveLength(0);
++});
++
++test("test_timeline_lower_sequence_does_not_reduce_expected", () => {
++  const events = timeline(messages([8, 9, 5, 10].map(n => ["0", n])));
++  expect(names(events)).toEqual(["Heartbeat", "Heartbeat", "Heartbeat", "Heartbeat"]);
++});
++
++test("test_timeline_missing_or_invalid_seqnum_preserves_expected", () => {
++  const events = timeline(messages([["0", 1], ["0", 2], ["0", null], ["0", "NaN"], ["4", null, [[36, "50"]]], ["4", "NaN", [[36, "60"]]], ["0", 3], ["0", 5]]));
++  expect(gaps(events).map(e => e.detail)).toEqual(["expected 4, received 5"]);
++});
++
++test("test_timeline_possdup_ignores_gap_and_sequence_reset_state", () => {
++  const events = timeline(messages([["0", 1], ["0", 5, [[43, "Y"]]], ["4", 20, [[43, "Y"], [36, "50"]]], ["0", 2], ["0", 3]]));
++  expect(gaps(events)).toHaveLength(0);
++  expect(names(events)).toEqual(["Heartbeat", "Heartbeat", "Reset", "Heartbeat", "Heartbeat"]);
++});
++
++test("test_timeline_sequence_reset_newseqno_sets_expected_without_gap", () => {
++  for (const extras of [[[36, "10"]], [[123, "Y"], [36, "10"]]]) {
++    const events = timeline(messages([["0", 1], ["4", extras.length === 1 ? 50 : 2, extras], ["0", 10], ["0", 11]]));
++    expect(gaps(events)).toHaveLength(0);
++    expect(names(events)).toEqual(["Heartbeat", extras.length === 1 ? "Reset" : "GapFill", "Heartbeat", "Heartbeat"]);
++  }
++});
++
++test("test_timeline_sequence_reset_without_newseqno_uses_seqnum_plus_one", () => {
++  const events = timeline(messages([["0", 1], ["4", 50], ["0", 51], ["0", 52]]));
++  expect(gaps(events)).toHaveLength(0);
++  expect(names(events)).toEqual(["Heartbeat", "Reset", "Heartbeat", "Heartbeat"]);
++});
++
++test("test_timeline_logon_reset_seqnum_restarts_direction_before_check", () => {
++  const events = timeline(messages([["0", 7], ["A", 1, [[141, "Y"]]], ["0", 2]]));
++  expect(gaps(events)).toHaveLength(0);
++  expect(names(events)).toEqual(["Heartbeat", "Logon", "Heartbeat"]);
++});
++
++
++test("test_timeline_kind_is_session_or_order", () => {
++  const events = timeline(messages([["A", 1], ["D", 2], ["8", 5, [[150, "0"]]]]));
++  expect(events.map(e => [e.name, e.kind])).toEqual([
++    ["Logon", "session"], ["NewOrder", "order"],
++    ["SequenceGap", "session"], ["Acknowledgement", "order"]
++  ]);
++});
++
++test("test_timeline_gapfill_above_expected_emits_gap_before_event", () => {
++  const events = timeline(messages([["0", 1], ["4", 5, [[123, "Y"], [36, "10"]]], ["0", 10]]));
++  expect(events.map(e => [e.number, e.name, e.detail])).toEqual([
++    [1, "Heartbeat", null], [2, "SequenceGap", "expected 2, received 5"],
++    [2, "GapFill", null], [3, "Heartbeat", null]
++  ]);
++});
++
++
++test("test_timeline_logon_reset_without_seqnum_preserves_expected", () => {
++  for (const invalid of [null, "abc"]) {
++    const events = timeline(messages([["0", 7], ["A", invalid, [[141, "Y"]]], ["0", 10]]));
++    expect(gaps(events).map(e => e.detail)).toEqual(["expected 8, received 10"]);
++  }
++});
++
++test("test_timeline_invalid_newseqno_falls_back_to_seqnum_plus_one", () => {
++  for (const invalid of ["0", "-1", "abc", null]) {
++    const fields = invalid === null ? [] : [[36, invalid]];
++    const events = timeline(messages([["0", 1], ["4", 5, fields], ["0", 6]]));
++    expect(gaps(events).map(e => e.detail)).toEqual([]);
++  }
++});
++
++test("test_timeline_missing_and_empty_direction_fields_share_key", () => {
++  const senderRows = [
++    buildMessage([[8, "FIX.4.4"], [35, "0"], [56, "SELL"], [34, 1]]),
++    buildMessage([[8, "FIX.4.4"], [35, "0"], [49, ""], [56, "SELL"], [34, 5]]),
++  ];
++  const targetRows = [
++    buildMessage([[8, "FIX.4.4"], [35, "0"], [49, "BUY"], [34, 1]]),
++    buildMessage([[8, "FIX.4.4"], [35, "0"], [49, "BUY"], [56, ""], [34, 5]]),
++  ];
++  for (const rows of [senderRows, targetRows]) {
++    expect(gaps(timeline(splitMessages(rows.join("\n")))).map(e => e.detail))
++      .toEqual(["expected 2, received 5"]);
++  }
++});
+-- 
+2.43.0
+

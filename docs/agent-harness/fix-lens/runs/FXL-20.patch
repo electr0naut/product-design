@@ -1,0 +1,147 @@
+From d75fb74d2b227893df60bdda126fea1e50618f03 Mon Sep 17 00:00:00 2001
+From: Hermes Agent <hermes@agent.local>
+Date: Fri, 27 Nov 2026 20:17:19 +0100
+Subject: [PATCH] FXL-20: Add standalone message paging helpers
+
+---
+ src/paging.js       | 28 ++++++++++++++
+ test/paging.test.js | 92 +++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 120 insertions(+)
+ create mode 100644 src/paging.js
+ create mode 100644 test/paging.test.js
+
+diff --git a/src/paging.js b/src/paging.js
+new file mode 100644
+index 0000000..57152d6
+--- /dev/null
++++ b/src/paging.js
+@@ -0,0 +1,28 @@
++export const PAGE_SIZE = 200;
++
++const pageNumberFormat = new Intl.NumberFormat('en-US');
++
++export function pageOf(entries, requestedPage) {
++  const total = entries.length;
++  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
++  const page = Number.isInteger(requestedPage)
++    ? Math.min(pages, Math.max(1, requestedPage))
++    : 1;
++  const start = (page - 1) * PAGE_SIZE;
++  const end = Math.min(total, start + PAGE_SIZE);
++
++  return {
++    page,
++    pages,
++    from: total === 0 ? 0 : start + 1,
++    to: end,
++    total,
++    items: entries.slice(start, end),
++  };
++}
++
++export function pageLabel({ from, to, total }, narrowed) {
++  const format = pageNumberFormat.format;
++  const suffix = narrowed === true ? ' shown' : '';
++  return `Messages ${format(from)} to ${format(to)} of ${format(total)}${suffix}`;
++}
+diff --git a/test/paging.test.js b/test/paging.test.js
+new file mode 100644
+index 0000000..f419c8c
+--- /dev/null
++++ b/test/paging.test.js
+@@ -0,0 +1,92 @@
++import { expect, test } from 'vitest';
++import { PAGE_SIZE, pageOf, pageLabel } from '../src/paging.js';
++
++function makeEntries(count) {
++  return Array.from({ length: count }, (_, index) => ({ index }));
++}
++
++test('test_paging_named_imports_expose_page_size_and_exact_result_keys', () => {
++  expect(PAGE_SIZE).toBe(200);
++  expect(typeof pageLabel).toBe('function');
++  expect(Object.keys(pageOf(makeEntries(1), 1)).sort()).toEqual([
++    'from', 'items', 'page', 'pages', 'to', 'total',
++  ]);
++});
++
++test('test_page_of_entry_count_boundaries_return_expected_totals_and_page_counts', () => {
++  for (const [count, pages] of [[1, 1], [200, 1], [201, 2], [400, 2], [401, 3], [10000, 50]]) {
++    expect(pageOf(makeEntries(count), 1)).toMatchObject({ total: count, pages });
++  }
++});
++
++test('test_page_of_full_and_partial_pages_preserve_offsets_and_entry_identity', () => {
++  const entries = makeEntries(450);
++  for (const [source, page, from, to, length] of [
++    [entries, 1, 1, 200, 200],
++    [entries, 2, 201, 400, 200],
++    [entries, 3, 401, 450, 50],
++    [makeEntries(201), 2, 201, 201, 1],
++  ]) {
++    const result = pageOf(source, page);
++    expect(result).toMatchObject({ page, from, to });
++    expect(result.items).toHaveLength(length);
++    for (let i = 0; i < length; i += 1) {
++      expect(result.items[i]).toBe(source[from - 1 + i]);
++    }
++  }
++});
++
++test('test_page_of_noninteger_requests_fall_back_to_first_page', () => {
++  const entries = makeEntries(450);
++  for (const request of [undefined, null, NaN, 1.5, Infinity, '2']) {
++    expect(pageOf(entries, request).page).toBe(1);
++  }
++});
++
++test('test_page_of_out_of_range_integers_clamp_to_page_bounds', () => {
++  const entries = makeEntries(450);
++  for (const request of [0, -2]) {
++    expect(pageOf(entries, request).page).toBe(1);
++  }
++  expect(pageOf(entries, 99)).toMatchObject({ page: 3, from: 401, to: 450 });
++});
++
++test('test_page_of_empty_entries_returns_zero_range_for_every_request_kind', () => {
++  for (const request of [1, 0, -2, 99, undefined, null, NaN, 1.5, Infinity, '2']) {
++    expect(pageOf([], request)).toStrictEqual({
++      page: 1, pages: 1, from: 0, to: 0, total: 0, items: [],
++    });
++  }
++});
++
++test('test_page_of_frozen_full_page_returns_fresh_array_without_mutation', () => {
++  const entries = Object.freeze(makeEntries(200));
++  const original = entries.slice();
++  const { items } = pageOf(entries, 1);
++  expect(items).not.toBe(entries);
++  expect(pageOf(entries, 1).items).not.toBe(items);
++  expect(entries).toHaveLength(200);
++  for (let i = 0; i < original.length; i += 1) {
++    expect(entries[i]).toBe(original[i]);
++  }
++});
++
++test('test_page_label_narrowed_flag_controls_suffix_using_only_range_fields', () => {
++  const info = new Proxy({ from: 2, to: 4, total: 7 }, {
++    get(target, key) {
++      if (!Object.hasOwn(target, key)) throw new Error(`Unexpected field: ${String(key)}`);
++      return target[key];
++    },
++  });
++  expect(pageLabel(info)).toBe('Messages 2 to 4 of 7');
++  expect(pageLabel(info, false)).toBe('Messages 2 to 4 of 7');
++  expect(pageLabel(info, true)).toBe('Messages 2 to 4 of 7 shown');
++});
++
++test('test_page_label_grouping_examples_use_literal_commas_in_any_locale', () => {
++  expect(pageLabel({ from: 201, to: 400, total: 10000 })).toBe('Messages 201 to 400 of 10,000');
++  expect(pageLabel({ from: 1, to: 200, total: 1240 }, true)).toBe('Messages 1 to 200 of 1,240 shown');
++  expect(pageLabel({ from: 9801, to: 10000, total: 10000 })).toBe('Messages 9,801 to 10,000 of 10,000');
++  expect(pageLabel({ from: 1, to: 200, total: 999 })).toBe('Messages 1 to 200 of 999');
++  expect(pageLabel({ from: 0, to: 0, total: 0 })).toBe('Messages 0 to 0 of 0');
++});
+-- 
+2.43.0
+

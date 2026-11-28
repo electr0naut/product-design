@@ -1,0 +1,105 @@
+From d8a2477cea40512f8405c5dcae5e4a215618dc41 Mon Sep 17 00:00:00 2001
+From: Hermes Agent <hermes@agent.local>
+Date: Thu, 26 Nov 2026 22:15:27 +0100
+Subject: [PATCH] Add standalone FIX paste size limits
+
+---
+ src/limits.js       | 12 +++++++++
+ test/limits.test.js | 66 +++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 78 insertions(+)
+ create mode 100644 src/limits.js
+ create mode 100644 test/limits.test.js
+
+diff --git a/src/limits.js b/src/limits.js
+new file mode 100644
+index 0000000..22b05ed
+--- /dev/null
++++ b/src/limits.js
+@@ -0,0 +1,12 @@
++import { splitMessages } from "./framing.js";
++
++/** Measure a pasted log before processing it further. */
++export function checkLimits(text) {
++  const bytes = new TextEncoder().encode(text).length;
++  const messages = splitMessages(text).length;
++  const ok = bytes <= 1048576 && messages <= 1000;
++  const warning = ok
++    ? null
++    : `Log has ${bytes} bytes and ${messages} message candidates; split the log into smaller chunks.`;
++  return { ok, bytes, messages, warning };
++}
+diff --git a/test/limits.test.js b/test/limits.test.js
+new file mode 100644
+index 0000000..b99a69a
+--- /dev/null
++++ b/test/limits.test.js
+@@ -0,0 +1,66 @@
++import { test, expect } from "vitest";
++import { checkLimits } from "../src/limits.js";
++
++const candidate = "8=FIX.4.2|10=000|";
++
++test("test_checkLimits_result_has_exact_public_keys", () => {
++  expect(Object.keys(checkLimits("hello")).sort()).toEqual(["bytes", "messages", "ok", "warning"]);
++});
++
++test("test_checkLimits_exact_byte_limit_is_accepted", () => {
++  const result = checkLimits("x".repeat(1048576));
++  expect(result.bytes).toBe(1048576);
++  expect(result.messages).toBe(0);
++  expect(result.ok).toBe(true);
++});
++
++test("test_checkLimits_one_byte_over_limit_is_refused", () => {
++  const result = checkLimits("x".repeat(1048577));
++  expect(result.bytes).toBe(1048577);
++  expect(result.messages).toBe(0);
++  expect(result.ok).toBe(false);
++});
++
++test("test_checkLimits_multibyte_text_counts_utf8_bytes", () => {
++  const result = checkLimits("x".repeat(1048575) + "é");
++  expect(result.bytes).toBe(1048577);
++  expect(result.messages).toBe(0);
++  expect(result.ok).toBe(false);
++});
++
++test("test_checkLimits_thousand_candidates_is_accepted", () => {
++  const result = checkLimits(candidate.repeat(1000));
++  expect(result.bytes).toBe(new TextEncoder().encode(candidate).length * 1000);
++  expect(result.messages).toBe(1000);
++  expect(result.ok).toBe(true);
++});
++
++test("test_checkLimits_thousand_one_candidates_is_refused", () => {
++  const result = checkLimits(candidate.repeat(1001));
++  expect(result.bytes).toBe(new TextEncoder().encode(candidate).length * 1001);
++  expect(result.bytes).toBeLessThan(1048576);
++  expect(result.messages).toBe(1001);
++  expect(result.ok).toBe(false);
++});
++
++test("test_checkLimits_refusal_reports_measures_and_split_advice", () => {
++  const text = candidate.repeat(1001);
++  const result = checkLimits(text);
++  expect(result.ok).toBe(false);
++  expect(result.bytes).toBe(new TextEncoder().encode(text).length);
++  expect(result.messages).toBe(1001);
++  expect(result.warning).toEqual(expect.any(String));
++  expect(result.warning).toContain(String(result.bytes));
++  expect(result.warning).toContain(String(result.messages));
++  expect(result.warning).toMatch(/split.*smaller chunks/i);
++});
++
++test("test_checkLimits_accepted_paste_has_no_warning", () => {
++  const text = candidate;
++  expect(checkLimits(text)).toEqual({
++    ok: true,
++    bytes: new TextEncoder().encode(text).length,
++    messages: 1,
++    warning: null,
++  });
++});
+-- 
+2.43.0
+

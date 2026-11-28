@@ -1,0 +1,1827 @@
+{
+ "node": "v22.23.5",
+ "baselineMaxRssMb": 55.4453125,
+ "rows": [
+  {
+   "suite": "inside the limits",
+   "dataset": "mix-100",
+   "product": "v1.2",
+   "importMs": 9.092084,
+   "firstMs": 12.629519000000002,
+   "ok": true,
+   "bytes": 19456,
+   "messages": 100,
+   "valid": 100,
+   "malformed": 0,
+   "warning": null,
+   "partialOutput": false,
+   "analyse": {
+    "min": 2.820902000000004,
+    "median": 4.573162999999994,
+    "max": 9.943488000000002
+   },
+   "modules": {
+    "checkLimits": {
+     "min": 0.6364360000000033,
+     "median": 0.7151400000000194,
+     "max": 1.1376960000000054
+    },
+    "splitMessages": {
+     "min": 0.6102140000000134,
+     "median": 0.6611589999999978,
+     "max": 1.1802549999999883
+    },
+    "checkMessage": {
+     "min": 1.5986560000000054,
+     "median": 1.9584509999999966,
+     "max": 2.7353789999999947
+    },
+    "decode": {
+     "min": 0.37004699999999957,
+     "median": 0.4126290000000097,
+     "max": 0.8527960000000121
+    },
+    "timeline": {
+     "min": 0.14665099999999143,
+     "median": 0.18508499999998662,
+     "max": 0.29149199999997677
+    },
+    "orderGroups": {
+     "min": 0.22762300000002256,
+     "median": 0.2864889999999889,
+     "max": 0.9616049999999916
+    },
+    "tradeSummary": {
+     "min": 0.12142500000001633,
+     "median": 0.1484790000000089,
+     "max": 1.2451030000000003
+    },
+    "filterOptions": {
+     "min": 0.060997999999983676,
+     "median": 0.16476199999999608,
+     "max": 0.584177000000011
+    },
+    "applyFiltersAccount": {
+     "min": 0.24202600000000984,
+     "median": 0.27038799999999696,
+     "max": 1.0292200000000093
+    },
+    "applyFiltersSender": {
+     "min": 0.018423000000012735,
+     "median": 0.020913000000007287,
+     "max": 0.1008510000000058
+    }
+   },
+   "orders": 19,
+   "directions": 10,
+   "heapRetainedMb": 5.8098297119140625,
+   "keep": 100,
+   "maxRssMb": 59.79296875,
+   "processRepeatsAnalyseMedianMs": [
+    2.826481000000001,
+    4.573162999999994,
+    4.939614000000006
+   ]
+  },
+  {
+   "suite": "inside the limits",
+   "dataset": "mix-250",
+   "product": "v1.2",
+   "importMs": 8.788235,
+   "firstMs": 22.548029,
+   "ok": true,
+   "bytes": 50810,
+   "messages": 250,
+   "valid": 250,
+   "malformed": 0,
+   "warning": null,
+   "partialOutput": false,
+   "analyse": {
+    "min": 6.345686000000001,
+    "median": 7.461432000000002,
+    "max": 15.520275000000012
+   },
+   "modules": {
+    "checkLimits": {
+     "min": 1.0114859999999908,
+     "median": 1.423072999999988,
+     "max": 3.2915160000000014
+    },
+    "splitMessages": {
+     "min": 0.979219999999998,
+     "median": 1.1377280000000098,
+     "max": 1.663784000000021
+    },
+    "checkMessage": {
+     "min": 3.039668000000006,
+     "median": 4.727989999999977,
+     "max": 6.037205999999969
+    },
+    "decode": {
+     "min": 0.5656459999999583,
+     "median": 0.7491459999999961,
+     "max": 1.7707429999999817
+    },
+    "timeline": {
+     "min": 0.11987099999998918,
+     "median": 0.13004000000000815,
+     "max": 0.3417440000000056
+    },
+    "orderGroups": {
+     "min": 0.41653700000000526,
+     "median": 0.5540750000000116,
+     "max": 1.1730499999999893
+    },
+    "tradeSummary": {
+     "min": 0.13670400000000882,
+     "median": 0.20695099999994682,
+     "max": 1.1696660000000065
+    },
+    "filterOptions": {
+     "min": 0.07559099999997443,
+     "median": 0.19119000000000597,
+     "max": 0.6432250000000295
+    },
+    "applyFiltersAccount": {
+     "min": 0.15362800000002608,
+     "median": 0.1871110000000158,
+     "max": 0.7215329999999653
+    },
+    "applyFiltersSender": {
+     "min": 0.03756400000003168,
+     "median": 0.044445999999993546,
+     "max": 0.17659900000001016
+    }
+   },
+   "orders": 39,
+   "directions": 10,
+   "heapRetainedMb": 6.684272766113281,
+   "keep": 250,
+   "maxRssMb": 73.3359375,
+   "processRepeatsAnalyseMedianMs": [
+    9.28090800000001,
+    7.461432000000002,
+    7.613730000000004
+   ]
+  },
+  {
+   "suite": "inside the limits",
+   "dataset": "mix-500",
+   "product": "v1.2",
+   "importMs": 8.995843999999998,
+   "firstMs": 40.374292,
+   "ok": true,
+   "bytes": 103224,
+   "messages": 500,
+   "valid": 500,
+   "malformed": 0,
+   "warning": null,
+   "partialOutput": false,
+   "analyse": {
+    "min": 14.191490000000044,
+    "median": 16.970481999999976,
+    "max": 21.802887999999996
+   },
+   "modules": {
+    "checkLimits": {
+     "min": 2.1367259999999533,
+     "median": 2.48052100000001,
+     "max": 4.072513000000015
+    },
+    "splitMessages": {
+     "min": 2.069028000000003,
+     "median": 2.19440800000001,
+     "max": 3.628978000000018
+    },
+    "checkMessage": {
+     "min": 5.756105999999988,
+     "median": 7.959581999999955,
+     "max": 10.570380999999998
+    },
+    "decode": {
+     "min": 0.9206440000000384,
+     "median": 0.9846930000001066,
+     "max": 2.5373480000000654
+    },
+    "timeline": {
+     "min": 0.2568030000001045,
+     "median": 0.26870099999996455,
+     "max": 0.5318760000000111
+    },
+    "orderGroups": {
+     "min": 0.8075250000000551,
+     "median": 0.8981089999999767,
+     "max": 1.5729499999999916
+    },
+    "tradeSummary": {
+     "min": 0.18074699999999666,
+     "median": 0.2308420000000524,
+     "max": 2.3326999999999316
+    },
+    "filterOptions": {
+     "min": 0.1576230000000578,
+     "median": 0.20489900000006855,
+     "max": 0.9524830000000293
+    },
+    "applyFiltersAccount": {
+     "min": 0.3633749999999054,
+     "median": 0.4953090000000202,
+     "max": 1.0053890000000365
+    },
+    "applyFiltersSender": {
+     "min": 0.038016000000084205,
+     "median": 0.04182700000001205,
+     "max": 0.12723800000003394
+    }
+   },
+   "orders": 71,
+   "directions": 10,
+   "heapRetainedMb": 8.041664123535156,
+   "keep": 500,
+   "maxRssMb": 97.58984375,
+   "processRepeatsAnalyseMedianMs": [
+    19.758961999999997,
+    16.970481999999976,
+    16.97298599999999
+   ]
+  },
+  {
+   "suite": "inside the limits",
+   "dataset": "mix-999",
+   "product": "v1.2",
+   "importMs": 9.246053000000003,
+   "firstMs": 84.53394,
+   "ok": true,
+   "bytes": 207200,
+   "messages": 999,
+   "valid": 999,
+   "malformed": 0,
+   "warning": null,
+   "partialOutput": false,
+   "analyse": {
+    "min": 31.616495000000043,
+    "median": 36.549892,
+    "max": 46.72189999999995
+   },
+   "modules": {
+    "checkLimits": {
+     "min": 5.070816000000036,
+     "median": 7.011166000000003,
+     "max": 8.854776000000015
+    },
+    "splitMessages": {
+     "min": 4.045074,
+     "median": 5.124664999999936,
+     "max": 7.496539999999982
+    },
+    "checkMessage": {
+     "min": 16.158377000000087,
+     "median": 19.612080000000105,
+     "max": 21.20627300000001
+    },
+    "decode": {
+     "min": 1.954482999999982,
+     "median": 2.255367999999862,
+     "max": 9.36637699999983
+    },
+    "timeline": {
+     "min": 0.5084609999998975,
+     "median": 0.6458339999999225,
+     "max": 2.1863029999999526
+    },
+    "orderGroups": {
+     "min": 0.7490159999999833,
+     "median": 0.9155359999999746,
+     "max": 4.721512000000075
+    },
+    "tradeSummary": {
+     "min": 0.39842799999996714,
+     "median": 0.46220599999992373,
+     "max": 2.2610990000000584
+    },
+    "filterOptions": {
+     "min": 0.3331439999999475,
+     "median": 0.3898580000000038,
+     "max": 2.4182729999999992
+    },
+    "applyFiltersAccount": {
+     "min": 0.915081999999984,
+     "median": 1.0964830000000347,
+     "max": 1.9350170000000162
+    },
+    "applyFiltersSender": {
+     "min": 0.07019900000000234,
+     "median": 0.13110200000005534,
+     "max": 0.2841759999998885
+    }
+   },
+   "orders": 137,
+   "directions": 10,
+   "heapRetainedMb": 10.799713134765625,
+   "keep": 999,
+   "maxRssMb": 142.875,
+   "processRepeatsAnalyseMedianMs": [
+    36.40123700000004,
+    36.549892,
+    48.06128899999999
+   ]
+  },
+  {
+   "suite": "inside the limits",
+   "dataset": "mix-1000",
+   "product": "v1.2",
+   "importMs": 16.862275999999994,
+   "firstMs": 126.141312,
+   "ok": true,
+   "bytes": 208290,
+   "messages": 1000,
+   "valid": 1000,
+   "malformed": 0,
+   "warning": null,
+   "partialOutput": false,
+   "analyse": {
+    "min": 42.025559000000044,
+    "median": 50.06344900000002,
+    "max": 65.25591199999997
+   },
+   "modules": {
+    "checkLimits": {
+     "min": 9.850709999999935,
+     "median": 11.222365999999965,
+     "max": 14.56932299999994
+    },
+    "splitMessages": {
+     "min": 4.878549000000021,
+     "median": 7.245486000000028,
+     "max": 12.547141999999894
+    },
+    "checkMessage": {
+     "min": 18.573053999999956,
+     "median": 26.595371999999998,
+     "max": 37.85173400000008
+    },
+    "decode": {
+     "min": 2.1310229999999137,
+     "median": 4.512135000000171,
+     "max": 18.861036000000013
+    },
+    "timeline": {
+     "min": 0.9125329999999394,
+     "median": 1.32391500000017,
+     "max": 5.294842999999901
+    },
+    "orderGroups": {
+     "min": 1.190834999999879,
+     "median": 1.757421999999906,
+     "max": 6.63377800000012
+    },
+    "tradeSummary": {
+     "min": 0.5153139999999894,
+     "median": 0.7622779999999238,
+     "max": 4.027182000000039
+    },
+    "filterOptions": {
+     "min": 0.26822999999990316,
+     "median": 0.4143669999998565,
+     "max": 6.782358000000158
+    },
+    "applyFiltersAccount": {
+     "min": 0.9138089999999011,
+     "median": 1.1585450000000037,
+     "max": 1.738162999999986
+    },
+    "applyFiltersSender": {
+     "min": 0.04708700000014687,
+     "median": 0.12644300000010844,
+     "max": 1.3422739999998612
+    }
+   },
+   "orders": 164,
+   "directions": 10,
+   "heapRetainedMb": 10.843589782714844,
+   "keep": 1000,
+   "maxRssMb": 146.2421875,
+   "processRepeatsAnalyseMedianMs": [
+    38.98665299999999,
+    50.06344900000002,
+    48.15223500000002
+   ]
+  },
+  {
+   "suite": "over the limit",
+   "dataset": "mix-1001",
+   "product": "v1.2",
+   "importMs": 13.518781999999995,
+   "firstMs": 26.171503,
+   "ok": false,
+   "bytes": 207520,
+   "messages": 1001,
+   "valid": 0,
+   "malformed": 0,
+   "warning": "Log has 207520 bytes and 1001 message candidates; split the log into smaller chunks.",
+   "partialOutput": false,
+   "analyse": {
+    "min": 4.921561999999994,
+    "median": 6.758776999999981,
+    "max": 12.424862000000005
+   },
+   "heapRetainedMb": 5.3045806884765625,
+   "keep": 0,
+   "maxRssMb": 85.8828125,
+   "processRepeatsAnalyseMedianMs": [
+    8.262653999999998,
+    6.758776999999981,
+    10.076308000000012
+   ]
+  },
+  {
+   "suite": "over the limit",
+   "dataset": "mix-10000",
+   "product": "v1.2",
+   "importMs": 11.113870999999996,
+   "firstMs": 87.88504300000001,
+   "ok": false,
+   "bytes": 2146439,
+   "messages": 10000,
+   "valid": 0,
+   "malformed": 0,
+   "warning": "Log has 2146439 bytes and 10000 message candidates; split the log into smaller chunks.",
+   "partialOutput": false,
+   "analyse": {
+    "min": 53.57305199999996,
+    "median": 68.03667899999994,
+    "max": 80.514497
+   },
+   "heapRetainedMb": 7.159202575683594,
+   "keep": 0,
+   "maxRssMb": 194.90625,
+   "processRepeatsAnalyseMedianMs": [
+    68.30240500000002,
+    68.03667899999994,
+    70.55864400000002
+   ]
+  },
+  {
+   "suite": "variants",
+   "dataset": "bytes-1048575",
+   "product": "v1.2",
+   "importMs": 8.949583000000004,
+   "firstMs": 80.91211200000001,
+   "ok": true,
+   "bytes": 1048575,
+   "messages": 1000,
+   "valid": 1000,
+   "malformed": 0,
+   "warning": null,
+   "partialOutput": false,
+   "analyse": {
+    "min": 51.360839,
+    "median": 55.53985799999998,
+    "max": 87.20610099999999
+   },
+   "modules": {
+    "checkLimits": {
+     "min": 9.060985000000073,
+     "median": 9.657091000000037,
+     "max": 14.44260700000018
+    },
+    "splitMessages": {
+     "min": 8.620523999999932,
+     "median": 12.508446999999933,
+     "max": 17.055249000000003
+    },
+    "checkMessage": {
+     "min": 25.495177999999896,
+     "median": 29.184113000000025,
+     "max": 37.880333000000064
+    },
+    "decode": {
+     "min": 1.995157000000063,
+     "median": 3.360500000000002,
+     "max": 4.372818999999936
+    },
+    "timeline": {
+     "min": 0.5330379999998058,
+     "median": 0.9326399999999921,
+     "max": 2.2503139999998893
+    },
+    "orderGroups": {
+     "min": 0.7566789999998491,
+     "median": 0.8406380000001263,
+     "max": 3.08768699999996
+    },
+    "tradeSummary": {
+     "min": 0.39875899999992725,
+     "median": 0.4548260000001392,
+     "max": 2.307270000000017
+    },
+    "filterOptions": {
+     "min": 0.38011900000014975,
+     "median": 0.4298350000001392,
+     "max": 1.9399049999999534
+    },
+    "applyFiltersAccount": {
+     "min": 0.7143180000000484,
+     "median": 1.2232890000000225,
+     "max": 1.9541110000000117
+    },
+    "applyFiltersSender": {
+     "min": 0.0756340000000364,
+     "median": 0.08698400000002948,
+     "max": 0.18787199999997028
+    }
+   },
+   "orders": 164,
+   "directions": 11,
+   "heapRetainedMb": 11.641586303710938,
+   "keep": 1000,
+   "maxRssMb": 151.5078125,
+   "processRepeatsAnalyseMedianMs": [
+    59.065372000000025,
+    55.53985799999998,
+    64.029271
+   ]
+  },
+  {
+   "suite": "variants",
+   "dataset": "bytes-1048576",
+   "product": "v1.2",
+   "importMs": 11.586732000000005,
+   "firstMs": 109.82842000000001,
+   "ok": true,
+   "bytes": 1048576,
+   "messages": 1000,
+   "valid": 1000,
+   "malformed": 0,
+   "warning": null,
+   "partialOutput": false,
+   "analyse": {
+    "min": 51.196165000000065,
+    "median": 56.023101,
+    "max": 73.54947400000003
+   },
+   "modules": {
+    "checkLimits": {
+     "min": 9.434855999999854,
+     "median": 10.377326999999923,
+     "max": 13.74008200000003
+    },
+    "splitMessages": {
+     "min": 8.614923999999974,
+     "median": 9.811115999999856,
+     "max": 10.923136999999997
+    },
+    "checkMessage": {
+     "min": 24.67488000000003,
+     "median": 26.152241000000004,
+     "max": 28.621288999999933
+    },
+    "decode": {
+     "min": 1.971271999999999,
+     "median": 2.0742659999998523,
+     "max": 3.622472000000016
+    },
+    "timeline": {
+     "min": 0.5396780000000945,
+     "median": 0.5885550000000421,
+     "max": 1.7091149999998834
+    },
+    "orderGroups": {
+     "min": 0.771974999999884,
+     "median": 0.9098220000000765,
+     "max": 2.962671999999884
+    },
+    "tradeSummary": {
+     "min": 0.4050280000001294,
+     "median": 0.49465699999996104,
+     "max": 2.2641239999998106
+    },
+    "filterOptions": {
+     "min": 0.21920300000010684,
+     "median": 0.28995000000008986,
+     "max": 1.5931009999999333
+    },
+    "applyFiltersAccount": {
+     "min": 0.716329000000087,
+     "median": 0.8792570000000524,
+     "max": 1.2712389999999232
+    },
+    "applyFiltersSender": {
+     "min": 0.07476900000006026,
+     "median": 0.08476999999993495,
+     "max": 0.4468380000000707
+    }
+   },
+   "orders": 164,
+   "directions": 11,
+   "heapRetainedMb": 11.634429931640625,
+   "keep": 1000,
+   "maxRssMb": 149.984375,
+   "processRepeatsAnalyseMedianMs": [
+    55.47360900000001,
+    56.023101,
+    67.15541800000005
+   ]
+  },
+  {
+   "suite": "variants",
+   "dataset": "bytes-1048577",
+   "product": "v1.2",
+   "importMs": 9.066931000000004,
+   "firstMs": 32.82039800000001,
+   "ok": false,
+   "bytes": 1048577,
+   "messages": 1000,
+   "valid": 0,
+   "malformed": 0,
+   "warning": "Log has 1048577 bytes and 1000 message candidates; split the log into smaller chunks.",
+   "partialOutput": false,
+   "analyse": {
+    "min": 10.406366999999989,
+    "median": 16.423427000000004,
+    "max": 19.506012999999996
+   },
+   "heapRetainedMb": 6.10638427734375,
+   "keep": 0,
+   "maxRssMb": 89.78515625,
+   "processRepeatsAnalyseMedianMs": [
+    11.695609999999988,
+    16.423427000000004,
+    16.84668499999998
+   ]
+  },
+  {
+   "suite": "variants",
+   "dataset": "malformed-010pct-1000",
+   "product": "v1.2",
+   "importMs": 9.414414999999998,
+   "firstMs": 65.226621,
+   "ok": true,
+   "bytes": 208290,
+   "messages": 1000,
+   "valid": 900,
+   "malformed": 100,
+   "warning": null,
+   "partialOutput": false,
+   "analyse": {
+    "min": 29.319808000000023,
+    "median": 34.637302999999974,
+    "max": 54.35053400000001
+   },
+   "modules": {
+    "checkLimits": {
+     "min": 4.225820999999996,
+     "median": 5.215221000000042,
+     "max": 5.904116999999928
+    },
+    "splitMessages": {
+     "min": 4.196542000000022,
+     "median": 5.252127999999971,
+     "max": 6.399193000000082
+    },
+    "checkMessage": {
+     "min": 13.131639000000064,
+     "median": 24.102086999999983,
+     "max": 27.00075300000003
+    },
+    "decode": {
+     "min": 3.3519920000001093,
+     "median": 4.114091000000144,
+     "max": 8.751709000000119
+    },
+    "timeline": {
+     "min": 0.5036110000000917,
+     "median": 0.931086999999934,
+     "max": 1.6764820000000782
+    },
+    "orderGroups": {
+     "min": 0.5407979999999952,
+     "median": 1.724285000000009,
+     "max": 2.703518000000031
+    },
+    "tradeSummary": {
+     "min": 0.3445440000000417,
+     "median": 0.477388000000019,
+     "max": 2.2533670000000257
+    },
+    "filterOptions": {
+     "min": 0.19175799999993615,
+     "median": 0.31256200000007084,
+     "max": 1.4762980000000425
+    },
+    "applyFiltersAccount": {
+     "min": 0.6452999999999065,
+     "median": 0.7076460000000679,
+     "max": 1.1703120000001945
+    },
+    "applyFiltersSender": {
+     "min": 0.06947900000000118,
+     "median": 0.07601899999986017,
+     "max": 0.16658799999981966
+    }
+   },
+   "orders": 164,
+   "directions": 10,
+   "heapRetainedMb": 10.526786804199219,
+   "keep": 900,
+   "maxRssMb": 154.7265625,
+   "processRepeatsAnalyseMedianMs": [
+    30.594246000000055,
+    34.637302999999974,
+    31.419779000000005
+   ]
+  },
+  {
+   "suite": "variants",
+   "dataset": "malformed-050pct-1000",
+   "product": "v1.2",
+   "importMs": 9.690790999999997,
+   "firstMs": 79.97880599999999,
+   "ok": true,
+   "bytes": 208290,
+   "messages": 1000,
+   "valid": 486,
+   "malformed": 514,
+   "warning": null,
+   "partialOutput": false,
+   "analyse": {
+    "min": 27.247795999999994,
+    "median": 34.57628799999998,
+    "max": 49.752612
+   },
+   "modules": {
+    "checkLimits": {
+     "min": 4.430618999999979,
+     "median": 8.349294999999984,
+     "max": 9.467638999999963
+    },
+    "splitMessages": {
+     "min": 8.01878899999997,
+     "median": 8.261580000000095,
+     "max": 9.76741000000004
+    },
+    "checkMessage": {
+     "min": 20.933420999999953,
+     "median": 25.12045000000012,
+     "max": 27.16647399999988
+    },
+    "decode": {
+     "min": 1.755728999999974,
+     "median": 2.3021420000000035,
+     "max": 5.789541000000099
+    },
+    "timeline": {
+     "min": 0.502706999999873,
+     "median": 0.5419380000000729,
+     "max": 1.1621820000000298
+    },
+    "orderGroups": {
+     "min": 0.45175300000005336,
+     "median": 1.5310849999998482,
+     "max": 2.8606790000001183
+    },
+    "tradeSummary": {
+     "min": 0.35009100000002036,
+     "median": 0.5031340000000455,
+     "max": 2.4549010000000635
+    },
+    "filterOptions": {
+     "min": 0.1363770000000386,
+     "median": 0.27158600000007027,
+     "max": 1.583022999999912
+    },
+    "applyFiltersAccount": {
+     "min": 0.5432969999999386,
+     "median": 0.6281040000001212,
+     "max": 1.326345000000174
+    },
+    "applyFiltersSender": {
+     "min": 0.059688000000051034,
+     "median": 0.06388399999991634,
+     "max": 0.2157839999999851
+    }
+   },
+   "orders": 150,
+   "directions": 10,
+   "heapRetainedMb": 9.184501647949219,
+   "keep": 486,
+   "maxRssMb": 112.20703125,
+   "processRepeatsAnalyseMedianMs": [
+    31.034367999999972,
+    34.57628799999998,
+    37.386547999999976
+   ]
+  },
+  {
+   "suite": "variants",
+   "dataset": "malformed-100pct-1000",
+   "product": "v1.2",
+   "importMs": 12.178296000000003,
+   "firstMs": 78.90454400000002,
+   "ok": true,
+   "bytes": 208290,
+   "messages": 1000,
+   "valid": 0,
+   "malformed": 1000,
+   "warning": null,
+   "partialOutput": false,
+   "analyse": {
+    "min": 25.065540000000055,
+    "median": 37.669167000000016,
+    "max": 53.61655999999999
+   },
+   "modules": {
+    "checkLimits": {
+     "min": 4.80170099999998,
+     "median": 7.31771399999991,
+     "max": 10.134502999999995
+    },
+    "splitMessages": {
+     "min": 3.9758330000000797,
+     "median": 5.046517999999992,
+     "max": 6.051176999999939
+    },
+    "checkMessage": {
+     "min": 12.630567999999926,
+     "median": 17.943472000000156,
+     "max": 25.225570999999945
+    },
+    "decode": {
+     "min": 0.00021700000002056186,
+     "median": 0.0002740000002177112,
+     "max": 1.9284720000000561
+    },
+    "timeline": {
+     "min": 0.0002620000000206346,
+     "median": 0.0003150000000005093,
+     "max": 0.018822000000000116
+    },
+    "orderGroups": {
+     "min": 0.0005989999999655993,
+     "median": 0.0010700000000269938,
+     "max": 0.1971570000000611
+    },
+    "tradeSummary": {
+     "min": 0.0006079999998291896,
+     "median": 0.0022799999999278953,
+     "max": 0.20769100000006802
+    },
+    "filterOptions": {
+     "min": 0.0014120000000730215,
+     "median": 0.0019200000001546869,
+     "max": 0.07088900000007925
+    }
+   },
+   "orders": 0,
+   "directions": 0,
+   "heapRetainedMb": 7.325675964355469,
+   "keep": 0,
+   "maxRssMb": 105.109375,
+   "processRepeatsAnalyseMedianMs": [
+    38.40195299999999,
+    37.669167000000016,
+    27.239405999999974
+   ]
+  },
+  {
+   "suite": "variants",
+   "dataset": "sessions-01-1000",
+   "product": "v1.2",
+   "importMs": 8.918812000000003,
+   "firstMs": 67.59392299999999,
+   "ok": true,
+   "bytes": 208286,
+   "messages": 1000,
+   "valid": 1000,
+   "malformed": 0,
+   "warning": null,
+   "partialOutput": false,
+   "analyse": {
+    "min": 30.060743000000002,
+    "median": 33.92873799999995,
+    "max": 47.578044000000034
+   },
+   "modules": {
+    "checkLimits": {
+     "min": 4.292780999999991,
+     "median": 5.15026499999999,
+     "max": 11.717457999999965
+    },
+    "splitMessages": {
+     "min": 4.069837000000007,
+     "median": 4.998419000000013,
+     "max": 6.145605000000046
+    },
+    "checkMessage": {
+     "min": 12.013064999999983,
+     "median": 17.083221999999978,
+     "max": 20.06954799999994
+    },
+    "decode": {
+     "min": 1.7296219999998357,
+     "median": 2.158040000000028,
+     "max": 10.6777340000001
+    },
+    "timeline": {
+     "min": 0.49511900000015885,
+     "median": 0.6020370000001094,
+     "max": 3.723809000000074
+    },
+    "orderGroups": {
+     "min": 1.1429749999999785,
+     "median": 1.213984999999866,
+     "max": 4.044289000000163
+    },
+    "tradeSummary": {
+     "min": 0.44321800000011535,
+     "median": 0.7495509999998831,
+     "max": 3.2458899999999176
+    },
+    "filterOptions": {
+     "min": 0.19456300000001647,
+     "median": 0.32832100000018727,
+     "max": 2.511025000000018
+    },
+    "applyFiltersAccount": {
+     "min": 0.6792239999999765,
+     "median": 1.0012910000000375,
+     "max": 1.9117270000001554
+    },
+    "applyFiltersSender": {
+     "min": 0.046670000000176515,
+     "median": 0.08430900000007568,
+     "max": 0.603123000000096
+    }
+   },
+   "orders": 141,
+   "directions": 2,
+   "heapRetainedMb": 10.769767761230469,
+   "keep": 1000,
+   "maxRssMb": 140.1328125,
+   "processRepeatsAnalyseMedianMs": [
+    43.023573,
+    33.92873799999995,
+    43.129110999999966
+   ]
+  },
+  {
+   "suite": "variants",
+   "dataset": "sessions-20-1000",
+   "product": "v1.2",
+   "importMs": 9.357179000000002,
+   "firstMs": 64.870409,
+   "ok": true,
+   "bytes": 202771,
+   "messages": 1000,
+   "valid": 1000,
+   "malformed": 0,
+   "warning": null,
+   "partialOutput": false,
+   "analyse": {
+    "min": 27.044646,
+    "median": 30.743166000000002,
+    "max": 45.02010199999995
+   },
+   "modules": {
+    "checkLimits": {
+     "min": 4.09593899999993,
+     "median": 5.1822329999999965,
+     "max": 6.994011
+    },
+    "splitMessages": {
+     "min": 4.161809999999946,
+     "median": 5.082027000000039,
+     "max": 6.030442999999991
+    },
+    "checkMessage": {
+     "min": 12.679619000000002,
+     "median": 17.917163999999957,
+     "max": 30.17270599999995
+    },
+    "decode": {
+     "min": 2.2483850000000984,
+     "median": 3.7326459999999315,
+     "max": 10.460071000000198
+    },
+    "timeline": {
+     "min": 0.509172000000035,
+     "median": 0.5671890000000985,
+     "max": 4.620323999999982
+    },
+    "orderGroups": {
+     "min": 0.7970219999999699,
+     "median": 1.1427029999999831,
+     "max": 3.0406410000000506
+    },
+    "tradeSummary": {
+     "min": 0.5804900000000544,
+     "median": 0.700364000000036,
+     "max": 2.1291550000000825
+    },
+    "filterOptions": {
+     "min": 0.21206500000016604,
+     "median": 0.5386980000000676,
+     "max": 2.701964000000089
+    },
+    "applyFiltersAccount": {
+     "min": 0.7463580000001002,
+     "median": 0.8397319999999127,
+     "max": 1.5935020000001714
+    },
+    "applyFiltersSender": {
+     "min": 0.07412900000008449,
+     "median": 0.08612800000014431,
+     "max": 0.2109299999999621
+    }
+   },
+   "orders": 158,
+   "directions": 40,
+   "heapRetainedMb": 10.718315124511719,
+   "keep": 1000,
+   "maxRssMb": 147.2734375,
+   "processRepeatsAnalyseMedianMs": [
+    42.86509000000001,
+    30.743166000000002,
+    36.68543799999998
+   ]
+  },
+  {
+   "suite": "variants",
+   "dataset": "sessions-50-1000",
+   "product": "v1.2",
+   "importMs": 9.158752,
+   "firstMs": 69.129196,
+   "ok": true,
+   "bytes": 195040,
+   "messages": 1000,
+   "valid": 1000,
+   "malformed": 0,
+   "warning": null,
+   "partialOutput": false,
+   "analyse": {
+    "min": 26.430242999999905,
+    "median": 29.10565200000002,
+    "max": 37.696433999999954
+   },
+   "modules": {
+    "checkLimits": {
+     "min": 4.085239000000001,
+     "median": 4.714810999999941,
+     "max": 6.266974000000005
+    },
+    "splitMessages": {
+     "min": 3.9085400000000163,
+     "median": 4.958417000000054,
+     "max": 5.5261820000000625
+    },
+    "checkMessage": {
+     "min": 12.569224000000077,
+     "median": 18.601517999999942,
+     "max": 21.54072700000006
+    },
+    "decode": {
+     "min": 1.8284769999997934,
+     "median": 1.9201029999999264,
+     "max": 6.986872000000176
+    },
+    "timeline": {
+     "min": 0.5359470000000783,
+     "median": 0.5763310000002093,
+     "max": 0.9314010000000508
+    },
+    "orderGroups": {
+     "min": 0.730989000000136,
+     "median": 0.8937330000001111,
+     "max": 3.3328590000000986
+    },
+    "tradeSummary": {
+     "min": 0.3486279999999624,
+     "median": 0.4744470000000547,
+     "max": 2.0516520000001037
+    },
+    "filterOptions": {
+     "min": 0.24242900000012924,
+     "median": 0.3842369999999846,
+     "max": 1.5911610000000564
+    },
+    "applyFiltersAccount": {
+     "min": 0.6805509999999231,
+     "median": 0.7572219999999561,
+     "max": 1.2246229999998377
+    },
+    "applyFiltersSender": {
+     "min": 0.07536899999990965,
+     "median": 0.08261900000002242,
+     "max": 0.17629199999987577
+    }
+   },
+   "orders": 207,
+   "directions": 100,
+   "heapRetainedMb": 10.508529663085938,
+   "keep": 1000,
+   "maxRssMb": 110.24609375,
+   "processRepeatsAnalyseMedianMs": [
+    31.794786999999985,
+    29.10565200000002,
+    40.256294999999966
+   ]
+  },
+  {
+   "suite": "hostile input",
+   "dataset": "one message with a 1,000,000-character value",
+   "product": "v1.2",
+   "importMs": 12.780985999999999,
+   "firstMs": 80.97740999999999,
+   "ok": true,
+   "bytes": 1000076,
+   "messages": 1,
+   "valid": 1,
+   "malformed": 0,
+   "warning": null,
+   "partialOutput": false,
+   "analyse": {
+    "min": 26.42346699999996,
+    "median": 28.311646999999994,
+    "max": 67.84992500000001
+   },
+   "heapRetainedMb": 6.124656677246094,
+   "keep": 1,
+   "maxRssMb": 62.74609375,
+   "processRepeatsAnalyseMedianMs": [
+    49.664116000000035,
+    28.311646999999994,
+    28.910491000000007
+   ]
+  },
+  {
+   "suite": "hostile input",
+   "dataset": "one message with 100,000 fields",
+   "product": "v1.2",
+   "importMs": 12.122430000000001,
+   "firstMs": 292.122749,
+   "ok": true,
+   "bytes": 700071,
+   "messages": 1,
+   "valid": 1,
+   "malformed": 0,
+   "warning": null,
+   "partialOutput": false,
+   "analyse": {
+    "min": 160.65915800000005,
+    "median": 211.982462,
+    "max": 247.3346929999999
+   },
+   "heapRetainedMb": 21.258956909179688,
+   "keep": 1,
+   "maxRssMb": 258.34375,
+   "processRepeatsAnalyseMedianMs": [
+    205.69163800000013,
+    211.982462,
+    182.41726199999994
+   ]
+  },
+  {
+   "suite": "hostile input",
+   "dataset": "pipe form, 1,000,000 literal pipes in a value",
+   "product": "v1.2",
+   "importMs": 8.809639000000004,
+   "firstMs": 104.082168,
+   "ok": true,
+   "bytes": 1000022,
+   "messages": 1,
+   "valid": 0,
+   "malformed": 1,
+   "warning": null,
+   "partialOutput": false,
+   "analyse": {
+    "min": 100.16879,
+    "median": 108.79280399999999,
+    "max": 109.61335200000008
+   },
+   "heapRetainedMb": 6.072746276855469,
+   "keep": 0,
+   "maxRssMb": 57.265625,
+   "processRepeatsAnalyseMedianMs": [
+    112.17293900000004,
+    108.79280399999999,
+    107.95550600000001
+   ]
+  },
+  {
+   "suite": "hostile input",
+   "dataset": "caret form, 1,000,000 carets in a value",
+   "product": "v1.2",
+   "importMs": 9.723027000000002,
+   "firstMs": 73.01808700000001,
+   "ok": true,
+   "bytes": 1000025,
+   "messages": 1,
+   "valid": 0,
+   "malformed": 1,
+   "warning": null,
+   "partialOutput": false,
+   "analyse": {
+    "min": 66.531254,
+    "median": 66.876544,
+    "max": 69.54506600000002
+   },
+   "heapRetainedMb": 6.067329406738281,
+   "keep": 0,
+   "maxRssMb": 56.125,
+   "processRepeatsAnalyseMedianMs": [
+    68.21287799999999,
+    66.876544,
+    83.74132800000001
+   ]
+  },
+  {
+   "suite": "hostile input",
+   "dataset": "angle form, 250,000 near-miss \"<SOH\" in a value",
+   "product": "v1.2",
+   "importMs": 9.590937000000004,
+   "firstMs": 81.67925600000001,
+   "ok": true,
+   "bytes": 1000034,
+   "messages": 1,
+   "valid": 0,
+   "malformed": 1,
+   "warning": null,
+   "partialOutput": false,
+   "analyse": {
+    "min": 63.819177000000025,
+    "median": 77.50462099999999,
+    "max": 78.86148800000001
+   },
+   "heapRetainedMb": 6.0673675537109375,
+   "keep": 0,
+   "maxRssMb": 56.46875,
+   "processRepeatsAnalyseMedianMs": [
+    50.61819700000001,
+    77.50462099999999,
+    50.27956200000001
+   ]
+  },
+  {
+   "suite": "hostile input",
+   "dataset": "\"8=FIX\" 200,000 times with no delimiter",
+   "product": "v1.2",
+   "importMs": 9.081828999999999,
+   "firstMs": 41.214360000000006,
+   "ok": true,
+   "bytes": 1000000,
+   "messages": 1,
+   "valid": 0,
+   "malformed": 1,
+   "warning": null,
+   "partialOutput": false,
+   "analyse": {
+    "min": 35.11531400000001,
+    "median": 36.733192,
+    "max": 41.428627999999975
+   },
+   "heapRetainedMb": 6.042266845703125,
+   "keep": 0,
+   "maxRssMb": 56.28515625,
+   "processRepeatsAnalyseMedianMs": [
+    48.54083499999999,
+    36.733192,
+    39.40143499999999
+   ]
+  },
+  {
+   "suite": "hostile input",
+   "dataset": "\"8=FIX|\" 170,000 times (over the message limit)",
+   "product": "v1.2",
+   "importMs": 8.861321000000004,
+   "firstMs": 124.20546999999999,
+   "ok": false,
+   "bytes": 1020000,
+   "messages": 170000,
+   "valid": 0,
+   "malformed": 0,
+   "warning": "Log has 1020000 bytes and 170000 message candidates; split the log into smaller chunks.",
+   "partialOutput": false,
+   "analyse": {
+    "min": 81.17159300000003,
+    "median": 102.08317999999997,
+    "max": 126.95642000000001
+   },
+   "heapRetainedMb": 6.0851287841796875,
+   "keep": 0,
+   "maxRssMb": 306.2890625,
+   "processRepeatsAnalyseMedianMs": [
+    125.29708500000004,
+    102.08317999999997,
+    109.89476300000001
+   ]
+  },
+  {
+   "suite": "hostile input",
+   "dataset": "\"18=FIX\" 170,000 times (never a start)",
+   "product": "v1.2",
+   "importMs": 8.754228000000005,
+   "firstMs": 9.069595,
+   "ok": true,
+   "bytes": 1020000,
+   "messages": 0,
+   "valid": 0,
+   "malformed": 0,
+   "warning": null,
+   "partialOutput": false,
+   "analyse": {
+    "min": 6.360245000000006,
+    "median": 6.530065999999998,
+    "max": 6.690622000000005
+   },
+   "heapRetainedMb": 6.03985595703125,
+   "keep": 0,
+   "maxRssMb": 55.625,
+   "processRepeatsAnalyseMedianMs": [
+    6.619983000000005,
+    6.530065999999998,
+    7.703772000000001
+   ]
+  },
+  {
+   "suite": "hostile input",
+   "dataset": "pipe form, 300,000 empty-looking fields \"|1=|\"",
+   "product": "v1.2",
+   "importMs": 9.771021999999995,
+   "firstMs": 570.819891,
+   "ok": true,
+   "bytes": 900026,
+   "messages": 1,
+   "valid": 0,
+   "malformed": 1,
+   "warning": null,
+   "partialOutput": false,
+   "analyse": {
+    "min": 387.6358050000001,
+    "median": 408.34192800000005,
+    "max": 460.935829
+   },
+   "heapRetainedMb": 5.190345764160156,
+   "keep": 0,
+   "maxRssMb": 289.68359375,
+   "processRepeatsAnalyseMedianMs": [
+    431.9989260000002,
+    408.34192800000005,
+    422.8705229999998
+   ]
+  },
+  {
+   "suite": "hostile input",
+   "dataset": "1,000 messages chained by OrigClOrdID (one order)",
+   "product": "v1.2",
+   "importMs": 10.401351000000005,
+   "firstMs": 43.331469999999996,
+   "ok": true,
+   "bytes": 80675,
+   "messages": 1000,
+   "valid": 1000,
+   "malformed": 0,
+   "warning": null,
+   "partialOutput": false,
+   "analyse": {
+    "min": 19.574273000000005,
+    "median": 26.300591000000026,
+    "max": 30.655153000000013
+   },
+   "heapRetainedMb": 7.436958312988281,
+   "keep": 1000,
+   "maxRssMb": 90.90625,
+   "processRepeatsAnalyseMedianMs": [
+    17.660775999999984,
+    26.300591000000026,
+    18.422202
+   ]
+  },
+  {
+   "suite": "hostile input",
+   "dataset": "1 MiB of newlines and \"=\" signs",
+   "product": "v1.2",
+   "importMs": 8.983782000000005,
+   "firstMs": 1.6796919999999957,
+   "ok": true,
+   "bytes": 1048576,
+   "messages": 0,
+   "valid": 0,
+   "malformed": 0,
+   "warning": null,
+   "partialOutput": false,
+   "analyse": {
+    "min": 0.7230060000000051,
+    "median": 0.7753799999999984,
+    "max": 0.8097539999999981
+   },
+   "heapRetainedMb": 6.0702362060546875,
+   "keep": 0,
+   "maxRssMb": 55.6953125,
+   "processRepeatsAnalyseMedianMs": [
+    1.1352420000000052,
+    0.7753799999999984,
+    0.9543020000000055
+   ]
+  },
+  {
+   "suite": "limit lifted to 10,000 (information)",
+   "dataset": "mix-1000",
+   "product": "copy, limit lifted",
+   "importMs": 12.878452000000003,
+   "firstMs": 66.805455,
+   "ok": true,
+   "bytes": 208290,
+   "messages": 1000,
+   "valid": 1000,
+   "malformed": 0,
+   "warning": null,
+   "partialOutput": false,
+   "analyse": {
+    "min": 26.88816799999998,
+    "median": 33.57436099999998,
+    "max": 47.492999
+   },
+   "modules": {
+    "checkLimits": {
+     "min": 4.375139999999988,
+     "median": 5.655167000000006,
+     "max": 6.888850000000048
+    },
+    "splitMessages": {
+     "min": 4.2162739999999985,
+     "median": 5.437526000000048,
+     "max": 9.228216999999972
+    },
+    "checkMessage": {
+     "min": 12.382189999999923,
+     "median": 18.31163700000002,
+     "max": 32.131613000000016
+    },
+    "decode": {
+     "min": 2.1560000000001764,
+     "median": 4.447838999999931,
+     "max": 10.796308000000181
+    },
+    "timeline": {
+     "min": 0.5299600000000737,
+     "median": 0.5795900000000529,
+     "max": 6.604728000000023
+    },
+    "orderGroups": {
+     "min": 0.7188630000000558,
+     "median": 1.3751230000000305,
+     "max": 2.782831999999871
+    },
+    "tradeSummary": {
+     "min": 0.3959219999999277,
+     "median": 0.5841299999999592,
+     "max": 2.826227999999901
+    },
+    "filterOptions": {
+     "min": 0.3668040000000019,
+     "median": 0.41057800000021416,
+     "max": 2.728672000000188
+    },
+    "applyFiltersAccount": {
+     "min": 0.7035020000000713,
+     "median": 0.8900899999998728,
+     "max": 1.8675889999999526
+    },
+    "applyFiltersSender": {
+     "min": 0.07534499999997024,
+     "median": 0.08152799999993476,
+     "max": 0.2331770000000688
+    }
+   },
+   "orders": 164,
+   "directions": 10,
+   "heapRetainedMb": 10.794815063476562,
+   "keep": 1000,
+   "maxRssMb": 150.44921875,
+   "processRepeatsAnalyseMedianMs": [
+    30.928290000000004,
+    33.57436099999998,
+    33.46855899999997
+   ]
+  },
+  {
+   "suite": "limit lifted to 10,000 (information)",
+   "dataset": "mix-2500",
+   "product": "copy, limit lifted",
+   "importMs": 10.300398999999999,
+   "firstMs": 180.415268,
+   "ok": true,
+   "bytes": 528866,
+   "messages": 2500,
+   "valid": 2500,
+   "malformed": 0,
+   "warning": null,
+   "partialOutput": false,
+   "analyse": {
+    "min": 69.70558900000015,
+    "median": 101.37108000000012,
+    "max": 138.686872
+   },
+   "modules": {
+    "checkLimits": {
+     "min": 14.0936200000001,
+     "median": 23.262054000000035,
+     "max": 41.86493599999994
+    },
+    "splitMessages": {
+     "min": 12.198910999999953,
+     "median": 12.62894499999993,
+     "max": 23.264140000000225
+    },
+    "checkMessage": {
+     "min": 36.0715009999999,
+     "median": 56.00024200000007,
+     "max": 64.27686099999983
+    },
+    "decode": {
+     "min": 5.633315000000039,
+     "median": 7.0141349999998965,
+     "max": 14.50550800000019
+    },
+    "timeline": {
+     "min": 1.5038210000002437,
+     "median": 1.6565449999998236,
+     "max": 4.047586000000138
+    },
+    "orderGroups": {
+     "min": 2.1767589999999473,
+     "median": 3.399333999999726,
+     "max": 8.94981000000007
+    },
+    "tradeSummary": {
+     "min": 0.9848419999998441,
+     "median": 1.8796149999998306,
+     "max": 5.719279999999799
+    },
+    "filterOptions": {
+     "min": 1.2218020000000251,
+     "median": 1.3087080000000242,
+     "max": 4.63654600000018
+    },
+    "applyFiltersAccount": {
+     "min": 1.785558999999921,
+     "median": 2.6707360000000335,
+     "max": 3.967736000000059
+    },
+    "applyFiltersSender": {
+     "min": 0.17927099999997154,
+     "median": 0.21650599999975384,
+     "max": 0.46624599999995553
+    }
+   },
+   "orders": 358,
+   "directions": 10,
+   "heapRetainedMb": 19.09062957763672,
+   "keep": 2500,
+   "maxRssMb": 202.0546875,
+   "processRepeatsAnalyseMedianMs": [
+    88.77828499999998,
+    101.37108000000012,
+    86.02286800000002
+   ]
+  },
+  {
+   "suite": "limit lifted to 10,000 (information)",
+   "dataset": "mix-5000",
+   "product": "copy, limit lifted",
+   "importMs": 9.878642,
+   "firstMs": 234.647214,
+   "ok": true,
+   "bytes": 1063192,
+   "messages": 5000,
+   "valid": 5000,
+   "malformed": 0,
+   "warning": null,
+   "partialOutput": false,
+   "analyse": {
+    "min": 160.44048199999997,
+    "median": 193.46637200000004,
+    "max": 234.6201729999998
+   },
+   "modules": {
+    "checkLimits": {
+     "min": 30.988156999999774,
+     "median": 41.73317199999974,
+     "max": 52.60316899999998
+    },
+    "splitMessages": {
+     "min": 23.82721500000025,
+     "median": 28.19924200000014,
+     "max": 44.78916200000003
+    },
+    "checkMessage": {
+     "min": 83.564754,
+     "median": 118.83637499999986,
+     "max": 146.94465599999967
+    },
+    "decode": {
+     "min": 10.588660000000345,
+     "median": 12.511862000000292,
+     "max": 22.613744999999653
+    },
+    "timeline": {
+     "min": 4.433514999999716,
+     "median": 4.794173999999657,
+     "max": 8.109048999999686
+    },
+    "orderGroups": {
+     "min": 3.151907999999821,
+     "median": 4.960925999999745,
+     "max": 19.02647900000011
+    },
+    "tradeSummary": {
+     "min": 1.8376829999997426,
+     "median": 2.610544000000118,
+     "max": 9.438012999999955
+    },
+    "filterOptions": {
+     "min": 2.171707999999853,
+     "median": 2.3901560000003883,
+     "max": 6.837703000000147
+    },
+    "applyFiltersAccount": {
+     "min": 3.797961000000214,
+     "median": 5.8187809999999445,
+     "max": 15.341427999999723
+    },
+    "applyFiltersSender": {
+     "min": 0.6418350000003556,
+     "median": 0.6790110000001732,
+     "max": 2.248413000000255
+    }
+   },
+   "orders": 718,
+   "directions": 10,
+   "heapRetainedMb": 31.902877807617188,
+   "keep": 5000,
+   "maxRssMb": 281.03125,
+   "processRepeatsAnalyseMedianMs": [
+    173.81983500000013,
+    193.46637200000004,
+    211.9258299999999
+   ]
+  },
+  {
+   "suite": "limit lifted to 10,000 (information)",
+   "dataset": "mix-10000",
+   "product": "copy, limit lifted",
+   "importMs": 12.143258000000003,
+   "firstMs": 549.79561,
+   "ok": true,
+   "bytes": 2146439,
+   "messages": 10000,
+   "valid": 10000,
+   "malformed": 0,
+   "warning": null,
+   "partialOutput": false,
+   "analyse": {
+    "min": 316.711268,
+    "median": 362.4447630000004,
+    "max": 476.119831
+   },
+   "modules": {
+    "checkLimits": {
+     "min": 53.6514130000005,
+     "median": 56.06209299999955,
+     "max": 79.50716000000011
+    },
+    "splitMessages": {
+     "min": 53.29025199999978,
+     "median": 64.84907800000019,
+     "max": 80.2216759999992
+    },
+    "checkMessage": {
+     "min": 184.2423429999999,
+     "median": 207.71823799999947,
+     "max": 276.5977009999988
+    },
+    "decode": {
+     "min": 32.29727300000013,
+     "median": 41.2465540000012,
+     "max": 58.014939999999115
+    },
+    "timeline": {
+     "min": 6.520035999999891,
+     "median": 9.255833999999595,
+     "max": 14.157248999999865
+    },
+    "orderGroups": {
+     "min": 6.037431000000652,
+     "median": 6.952836000000389,
+     "max": 26.90054400000008
+    },
+    "tradeSummary": {
+     "min": 2.72212700000091,
+     "median": 4.4017299999995885,
+     "max": 11.091784000000189
+    },
+    "filterOptions": {
+     "min": 3.923914999999397,
+     "median": 4.7211499999993976,
+     "max": 8.02172900000005
+    },
+    "applyFiltersAccount": {
+     "min": 8.483938999999737,
+     "median": 10.208418999998685,
+     "max": 24.562810999999783
+    },
+    "applyFiltersSender": {
+     "min": 1.1408550000014657,
+     "median": 1.1974079999999958,
+     "max": 2.033314000000246
+    }
+   },
+   "orders": 1412,
+   "directions": 10,
+   "heapRetainedMb": 59.38020324707031,
+   "keep": 10000,
+   "maxRssMb": 417.83203125,
+   "processRepeatsAnalyseMedianMs": [
+    394.1955409999998,
+    362.4447630000004,
+    377.02489199999945
+   ]
+  },
+  {
+   "suite": "limit lifted to 10,000 (information)",
+   "dataset": "10,000 messages chained by OrigClOrdID",
+   "product": "copy, limit lifted",
+   "importMs": 12.58346000000001,
+   "firstMs": 338.945792,
+   "ok": true,
+   "bytes": 836678,
+   "messages": 10000,
+   "valid": 10000,
+   "malformed": 0,
+   "warning": null,
+   "partialOutput": false,
+   "analyse": {
+    "min": 191.49506500000007,
+    "median": 264.472226,
+    "max": 301.72757500000006
+   },
+   "modules": {
+    "checkLimits": {
+     "min": 34.199213999999984,
+     "median": 48.452271999999994,
+     "max": 66.64610599999992
+    },
+    "splitMessages": {
+     "min": 29.818492000000333,
+     "median": 46.179353999999876,
+     "max": 48.46704699999964
+    },
+    "checkMessage": {
+     "min": 99.31040799999982,
+     "median": 124.33408399999962,
+     "max": 132.50905000000012
+    },
+    "decode": {
+     "min": 11.778998000000229,
+     "median": 22.113072999999986,
+     "max": 23.948369000000184
+    },
+    "timeline": {
+     "min": 3.799228000000312,
+     "median": 6.157750000000306,
+     "max": 14.488584000000174
+    },
+    "orderGroups": {
+     "min": 4.822842000000037,
+     "median": 6.790369999999712,
+     "max": 20.07392600000003
+    },
+    "tradeSummary": {
+     "min": 0.8153579999998328,
+     "median": 0.9126730000002681,
+     "max": 5.832268999999997
+    },
+    "filterOptions": {
+     "min": 2.309426999999687,
+     "median": 2.929232000000411,
+     "max": 5.380608000000393
+    },
+    "applyFiltersSender": {
+     "min": 0.5381680000000415,
+     "median": 0.9253359999997883,
+     "max": 2.259364000000005
+    }
+   },
+   "orders": 1,
+   "directions": 1,
+   "heapRetainedMb": 37.579986572265625,
+   "keep": 10000,
+   "maxRssMb": 289.33984375,
+   "processRepeatsAnalyseMedianMs": [
+    207.35348599999998,
+    264.472226,
+    244.20994999999994
+   ]
+  }
+ ]
+}

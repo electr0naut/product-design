@@ -1,0 +1,7 @@
+{
+  "id": "D-20261127-16",
+  "action": "refresh_copies",
+  "key": "FXL-19",
+  "commit": "b50786bfd690ffd1117464542583b14ced667258",
+  "reason": "Technical design v1.3 (limits, paging; approved by Ubay Gonzalez on 2026-11-27) and the v1.3 hidden suite: four tests replaced (retired by D-20261127-15) and acc-performance, acc-paging and acc-pager added. The new tests fail on the trusted main until FXL-19 to FXL-21 land"
+}

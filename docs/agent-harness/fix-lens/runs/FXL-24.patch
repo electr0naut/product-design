@@ -1,0 +1,151 @@
+From e1a91b6974ffd0050050ddb5edca35a9cb547049 Mon Sep 17 00:00:00 2001
+From: Hermes Agent <hermes@agent.local>
+Date: Sat, 28 Nov 2026 01:55:26 +0100
+Subject: [PATCH] FXL-24 Restart timeline sequencing on Logon 1
+
+---
+ src/timeline.js       |   2 +-
+ test/timeline.test.js | 117 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 118 insertions(+), 1 deletion(-)
+
+diff --git a/src/timeline.js b/src/timeline.js
+index 30c1b50..06b3682 100644
+--- a/src/timeline.js
++++ b/src/timeline.js
+@@ -36,7 +36,7 @@ export function timeline(messages) {
+ 
+     if (seq !== null && value(43) !== 'Y') {
+       // A valid resetting Logon starts a new sequence before its own check.
+-      if (type === 'A' && value(141) === 'Y' && expectedByDirection.has(direction)) {
++      if (type === 'A' && (value(141) === 'Y' || seq === 1) && expectedByDirection.has(direction)) {
+         expectedByDirection.set(direction, 1);
+       }
+       const expected = expectedByDirection.get(direction);
+diff --git a/test/timeline.test.js b/test/timeline.test.js
+index b4dc4da..2e1a808 100644
+--- a/test/timeline.test.js
++++ b/test/timeline.test.js
+@@ -317,3 +317,120 @@ test("test_timeline_order_reference_ids_respect_event_kind", () => {
+     ["TradeCancel", null, null], ["TradeCorrect", null, null], ["NewOrder", null, null]
+   ]);
+ });
++
++
++const eventDetails = events => events.map(e => [e.number, e.name, e.detail]);
++const gapDetails = specs => eventDetails(gaps(timeline(messages(specs))));
++
++function expectLogonOneRestart(version) {
++  expect(timeline.length).toBe(1);
++  const keys = [
++    "number", "kind", "name", "sendingTime", "sender", "target", "seqNum",
++    "clOrdId", "orderId", "origClOrdId", "execRefId", "detail"
++  ].sort();
++  for (const restartSeq of ["1", "01"]) {
++    const specs = [["A", 1], ["0", 2], ["0", 3], ["A", restartSeq], ["0", 2], ["0", 4]];
++    const events = timeline(messages(specs.map(([type, seq]) => [type, seq, [], version])));
++    expect(eventDetails(events)).toEqual([
++      [1, "Logon", null], [2, "Heartbeat", null], [3, "Heartbeat", null],
++      [4, "Logon", null], [5, "Heartbeat", null],
++      [6, "SequenceGap", "expected 3, received 4"], [6, "Heartbeat", null]
++    ]);
++    expect(events[3].seqNum).toBe(restartSeq);
++    for (const event of events) expect(Object.keys(event).sort()).toEqual(keys);
++  }
++}
++
++test("test_timeline_fix44_logon_one_restart_reports_later_gap", () => {
++  expectLogonOneRestart("FIX.4.4");
++});
++
++test("test_timeline_fix42_logon_one_restart_reports_later_gap", () => {
++  expectLogonOneRestart("FIX.4.2");
++});
++
++test("test_timeline_logon_one_with_contiguous_restart_emits_no_gap", () => {
++  const restart = [["A", 1], ["0", 2], ["0", 3]];
++  expect(eventDetails(timeline(messages([...restart, ...restart])))).toEqual([
++    [1, "Logon", null], [2, "Heartbeat", null], [3, "Heartbeat", null],
++    [4, "Logon", null], [5, "Heartbeat", null], [6, "Heartbeat", null]
++  ]);
++  // A gap after the contiguous run proves that 2 and 3 were tracked, not ignored.
++  expect(gapDetails([["A", 7], ["0", 8], ["0", 9], ...restart, ["0", 5]])).toEqual([
++    [7, "SequenceGap", "expected 4, received 5"]
++  ]);
++});
++
++test("test_timeline_logon_one_restarts_only_its_direction", () => {
++  const ab = (type, seq) => [type, seq, [], "FIX.4.2", "A", "B"];
++  const ba = (type, seq) => [type, seq, [], "FIX.4.2", "B", "A"];
++  const events = timeline(messages([
++    ab("A", 1), ba("A", 1), ab("0", 2), ba("0", 2),
++    ab("A", 1), ba("0", 3), ab("0", 3), ba("0", 5)
++  ]));
++  expect(eventDetails(events)).toEqual([
++    [1, "Logon", null], [2, "Logon", null], [3, "Heartbeat", null], [4, "Heartbeat", null],
++    [5, "Logon", null], [6, "Heartbeat", null],
++    [7, "SequenceGap", "expected 2, received 3"], [7, "Heartbeat", null],
++    [8, "SequenceGap", "expected 4, received 5"], [8, "Heartbeat", null]
++  ]);
++});
++
++test("test_timeline_logon_one_with_possdup_restarts_only_without_y", () => {
++  const prefix = [["A", 1], ["0", 2]];
++  const dup = ["A", 1, [[43, "Y"]]];
++  expect(gapDetails([...prefix, dup, ["0", 2], ["0", 4]])).toEqual([
++    [5, "SequenceGap", "expected 3, received 4"]
++  ]);
++  expect(gapDetails([...prefix, dup, ["0", 3]])).toEqual([]);
++  expect(gapDetails([...prefix, ["A", 1, [[43, "N"]]], ["0", 3]])).toEqual([
++    [4, "SequenceGap", "expected 2, received 3"]
++  ]);
++});
++
++test("test_timeline_sequence_one_restarts_only_on_logon", () => {
++  const prefix = [["A", 1], ["0", 2]];
++  expect(gapDetails([...prefix, ["0", 1], ["0", 2], ["0", 4]])).toEqual([
++    [5, "SequenceGap", "expected 3, received 4"]
++  ]);
++  expect(gapDetails([...prefix, ["0", 1], ["0", 3]])).toEqual([]);
++  expect(gapDetails([...prefix, ["A", 1], ["0", 3]])).toEqual([
++    [4, "SequenceGap", "expected 2, received 3"]
++  ]);
++});
++
++test("test_timeline_unflagged_logon_restarts_only_at_one", () => {
++  const prefix = [["A", 1], ["0", 2], ["0", 3]];
++  expect(gapDetails([...prefix, ["A", 2], ["0", 3], ["0", 5]])).toEqual([
++    [6, "SequenceGap", "expected 4, received 5"]
++  ]);
++  const tail = [["0", 4], ["0", 6]];
++  expect(gapDetails([...prefix, ["A", 2], ...tail])).toEqual([
++    [6, "SequenceGap", "expected 5, received 6"]
++  ]);
++  expect(gapDetails([...prefix, ["A", 1], ...tail])).toEqual([
++    [5, "SequenceGap", "expected 2, received 4"], [6, "SequenceGap", "expected 5, received 6"]
++  ]);
++});
++
++test("test_timeline_two_logon_one_restarts_each_expect_two", () => {
++  const events = timeline(messages([
++    ["A", 1], ["0", 2], ["0", 3], ["A", 1], ["0", 3], ["0", 4], ["A", 1], ["0", 3]
++  ]));
++  expect(eventDetails(events)).toEqual([
++    [1, "Logon", null], [2, "Heartbeat", null], [3, "Heartbeat", null], [4, "Logon", null],
++    [5, "SequenceGap", "expected 2, received 3"], [5, "Heartbeat", null], [6, "Heartbeat", null],
++    [7, "Logon", null], [8, "SequenceGap", "expected 2, received 3"], [8, "Heartbeat", null]
++  ]);
++
++  // A first Logon and a later flagged Logon still follow the existing rules
++  // when the same direction also has an unflagged restart.
++  expect(eventDetails(timeline(messages([
++    ["A", 1], ["0", 3], ["A", 1], ["0", 3], ["0", 4], ["A", 3, [[141, "Y"]]], ["0", 4]
++  ])))).toEqual([
++    [1, "Logon", null], [2, "SequenceGap", "expected 2, received 3"], [2, "Heartbeat", null],
++    [3, "Logon", null], [4, "SequenceGap", "expected 2, received 3"], [4, "Heartbeat", null],
++    [5, "Heartbeat", null], [6, "SequenceGap", "expected 1, received 3"], [6, "Logon", null],
++    [7, "Heartbeat", null]
++  ]);
++});
+-- 
+2.43.0
+

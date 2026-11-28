@@ -1,0 +1,8 @@
+{
+  "id": "D-20261127-14",
+  "action": "load_tickets",
+  "key": "FXL-18",
+  "tickets": ["FXL-18"],
+  "commit": "a8e8edb9bb4ca28a35e33969c37ffadf9db9a51e",
+  "reason": "live check after Ubay's D26 setup (2026-11-27): FXL-18 is already loaded, so this must be refused and load nothing; with setup step 6 done the comment must say 'signature: by a listed key'"
+}

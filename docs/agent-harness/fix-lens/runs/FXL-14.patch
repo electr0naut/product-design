@@ -1,0 +1,891 @@
+From ee91fe240aa3aa693199e4a9946eb4a75c566abd Mon Sep 17 00:00:00 2001
+From: Hermes Agent <hermes@agent.local>
+Date: Fri, 27 Nov 2026 14:53:08 +0100
+Subject: [PATCH] FXL-14 Present decoded FIX logs with timeline and themes
+
+---
+ index.html                 |  34 +++++-
+ src/main.js                |  19 ++++
+ src/render.js              | 142 ++++++++++++++++++-------
+ styles.css                 | 175 ++++++++++++++++++++++++++++++-
+ test/page.test.js          |  75 +++++++++++--
+ test/render.test.js        | 208 ++++++++++++++++++++++++++++---------
+ test/static-checks.test.js | 109 +++++++++++++++++++
+ 7 files changed, 663 insertions(+), 99 deletions(-)
+
+diff --git a/index.html b/index.html
+index 3500b1c..d7eb042 100644
+--- a/index.html
++++ b/index.html
+@@ -1,3 +1,33 @@
+ <!doctype html>
+-<html lang="en"><head><meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'none'; form-action 'none'"><meta charset="utf-8"><title>FIX Lens</title><link rel="stylesheet" href="styles.css"></head>
+-<body><main><h1>FIX Lens</h1><label for="paste">Paste FIX log</label><textarea id="paste" autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" translate="no"></textarea><button id="decode-button" type="button">Decode</button><section id="decode"><h2>Decode</h2></section><section id="timeline"><h2>Timeline</h2></section></main><script type="module" src="src/main.js"></script></body></html>
++<html lang="en">
++<head>
++  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'none'; form-action 'none'">
++  <meta charset="utf-8">
++  <meta name="viewport" content="width=device-width, initial-scale=1">
++  <title>FIX Lens</title>
++  <link rel="stylesheet" href="styles.css">
++</head>
++<body>
++  <header class="masthead">
++    <div>
++      <h1>FIX Lens</h1>
++      <p>Runs entirely in this page. Nothing you paste is sent, stored or logged.</p>
++    </div>
++    <button id="theme-button" type="button" hidden>Dark theme</button>
++  </header>
++  <p id="not-started">FIX Lens did not start. Open it through a web server, not as a file from disk.</p>
++  <main hidden>
++    <div class="input-panel">
++      <label for="paste">Paste FIX log</label>
++      <textarea id="paste" autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" translate="no"></textarea>
++      <button id="decode-button" type="button">Decode</button>
++    </div>
++    <section id="summary" aria-label="Decode summary" aria-live="polite"></section>
++    <div class="results">
++      <section id="timeline"><h2>Timeline</h2></section>
++      <section id="decode"><h2>Decode</h2></section>
++    </div>
++  </main>
++  <script type="module" src="src/main.js"></script>
++</body>
++</html>
+diff --git a/src/main.js b/src/main.js
+index c993dd6..91b6199 100644
+--- a/src/main.js
++++ b/src/main.js
+@@ -1,6 +1,25 @@
+ import { analyse } from './analyse.js';
+ import { render } from './render.js';
+ 
++document.querySelector('#not-started').remove();
++document.querySelector('main').hidden = false;
++
++const themeButton = document.querySelector('#theme-button');
++const systemTheme = window.matchMedia?.('(prefers-color-scheme: dark)');
++let override;
++const isDark = () => override ?? systemTheme?.matches ?? false;
++const updateThemeLabel = () => {
++  themeButton.textContent = isDark() ? 'Light theme' : 'Dark theme';
++};
++updateThemeLabel();
++systemTheme?.addEventListener?.('change', updateThemeLabel);
++themeButton.addEventListener('click', () => {
++  override = !isDark();
++  document.documentElement.className = override ? 'theme-dark' : 'theme-light';
++  updateThemeLabel();
++});
++themeButton.hidden = false;
++
+ const input = document.querySelector('#paste');
+ document.querySelector('#decode-button').addEventListener('click', () => {
+   render(analyse(input.value));
+diff --git a/src/render.js b/src/render.js
+index d1f31e5..7258089 100644
+--- a/src/render.js
++++ b/src/render.js
+@@ -1,42 +1,112 @@
+-/** Render local analysis into the only two output sections. */
+-export function render(result) {
+-  const decodeSection = document.querySelector('#decode');
+-  const timelineSection = document.querySelector('#timeline');
+-  for (const section of [decodeSection, timelineSection]) {
+-    section.replaceChildren(section.querySelector('h2'));
+-  }
+-  const add = (parent, tag, text, className) => {
+-    const node = document.createElement(tag);
+-    if (className) node.className = className;
+-    node.textContent = text;
+-    parent.append(node);
+-    return node;
+-  };
+-  if (!result.ok) {
+-    add(decodeSection, 'p', result.limit.warning);
++import { orderGroups } from './orders.js';
++
++// Text and classes travel separately: call sites supply only fixed class names.
++function add(parent, tag, className, text) {
++  const node = document.createElement(tag);
++  if (className) node.className = className;
++  if (text != null) node.textContent = text;
++  parent.append(node);
++  return node;
++}
++
++const direction = (sender, target) => `${sender ?? ''} → ${target ?? ''}`;
++const sequence = seqNum => seqNum == null ? '' : `seq ${seqNum}`;
++const time = sendingTime => sendingTime?.slice(sendingTime.indexOf('-') + 1) ?? '';
++const count = (n, singular) => `${n} ${singular}${n === 1 ? '' : 's'}`;
++
++function renderStats(section, { decoded, errors, timeline }) {
++  const strip = add(section, 'div', 'stats');
++  const gaps = timeline.filter(event => event.name === 'SequenceGap').length;
++  const orders = orderGroups(decoded).length;
++  add(strip, 'span', 'stat', count(decoded.length + errors.length, 'message'));
++  add(strip, 'span', 'stat', `${decoded.length} valid`);
++  add(strip, 'span', 'stat', `${errors.length} malformed`);
++  add(strip, 'span', 'stat', count(gaps, 'sequence gap'));
++  add(strip, 'span', 'stat', count(orders, 'order'));
++}
++
++function eventClass(event) {
++  if (event.name === 'SequenceGap') return 'event gap';
++  if (['SessionReject', 'BusinessReject', 'CancelReject'].includes(event.name)) return 'event reject';
++  return event.kind === 'order' ? 'event order' : 'event session';
++}
++
++function renderTimeline(section, events) {
++  if (!events.length) {
++    add(section, 'p', 'empty', 'No timeline events found.');
+     return;
+   }
+-  for (const message of result.decoded) {
+-    const card = add(decodeSection, 'article', '');
+-    add(card, 'h3', message.label);
+-    for (const field of message.fields) {
+-      const text = message.supported === false
+-        ? `${field.tag}: ${field.value}`
+-        : `${field.tag} ${field.name}: ${field.value}${field.enumName === null ? '' : ` (${field.enumName})`}`;
+-      add(card, 'div', text, 'field');
+-    }
++  const list = add(section, 'ol', 'events');
++  for (const event of events) {
++    const row = add(list, 'li');
++    row.className = eventClass(event);
++    add(row, 'span', 'num', `#${event.number}`);
++    add(row, 'span', 'time', time(event.sendingTime));
++    add(row, 'span', 'badge', event.name);
++    add(row, 'span', 'dir', direction(event.sender, event.target));
++    add(row, 'span', 'seq', sequence(event.seqNum));
++    add(row, 'span', 'detail', event.detail);
++    if (event.clOrdId != null) add(row, 'span', 'id', `ClOrdID ${event.clOrdId}`);
++    if (event.orderId != null) add(row, 'span', 'id', `OrderID ${event.orderId}`);
++    if (event.origClOrdId != null) add(row, 'span', 'id', `OrigClOrdID ${event.origClOrdId}`);
++    if (event.execRefId != null) add(row, 'span', 'ref', `ExecRefID ${event.execRefId}`);
+   }
+-  for (const error of result.errors) add(decodeSection, 'p', error.text);
+-  for (const event of result.timeline) {
+-    const parts = [`Message ${event.number}: ${event.name}`];
+-    if (event.sendingTime != null) parts.push(event.sendingTime);
+-    if (event.sender != null || event.target != null) parts.push(`${event.sender ?? ''} → ${event.target ?? ''}`);
+-    if (event.seqNum != null) parts.push(`seq ${event.seqNum}`);
+-    if (event.kind === 'order') {
+-      if (event.clOrdId != null) parts.push(`ClOrdID ${event.clOrdId}`);
+-      if (event.orderId != null) parts.push(`OrderID ${event.orderId}`);
++}
++
++function renderCard(section, message) {
++  const card = add(section, 'article', 'card');
++  const head = add(card, 'header', 'card-head');
++  const value = tag => message.fields.find(field => field.tag === tag)?.value;
++  add(head, 'span', 'num', `#${message.number}`);
++  add(head, 'h3', null, message.label.replace(/^Message \d+: /, ''));
++  add(head, 'span', 'dir', direction(value(49), value(56)));
++  add(head, 'span', 'seq', sequence(value(34)));
++  add(head, 'span', 'time', time(value(52)));
++
++  const fields = add(card, 'table', 'fields');
++  const tableHead = add(fields, 'thead');
++  const columns = add(tableHead, 'tr');
++  for (const label of ['Tag', 'Field', 'Value', 'Meaning']) add(columns, 'th', null, label);
++  const body = add(fields, 'tbody');
++  for (const field of message.fields) {
++    const row = add(body, 'tr');
++    add(row, 'td', null, field.tag);
++    add(row, 'td', null, message.supported === false ? '' : field.name);
++    add(row, 'td', null, field.value);
++    add(row, 'td', null, message.supported === false ? '' : field.enumName);
++  }
++}
++
++function renderMessages(section, decoded, errors) {
++  const entries = [...decoded.map(message => ({ number: message.number, message })),
++    ...errors.map(error => ({ number: error.number, error }))];
++  if (!entries.length) add(section, 'p', 'empty', 'No FIX messages found in the pasted text.');
++  for (const { message, error, number } of entries.sort((a, b) => a.number - b.number)) {
++    if (message) {
++      renderCard(section, message);
++    } else {
++      const card = add(section, 'article', 'card malformed');
++      const head = add(card, 'header', 'card-head');
++      add(head, 'span', 'num', `#${number}`);
++      add(head, 'h3', null, 'Malformed message');
++      add(card, 'p', 'error-text', error.text);
+     }
+-    if (event.detail) parts.push(event.detail);
+-    add(timelineSection, 'p', parts.join(' — '));
+   }
+ }
++
++/** Replace generated output without replacing the page's headings. */
++export function render(result) {
++  const summary = document.querySelector('#summary');
++  const timeline = document.querySelector('#timeline');
++  const decode = document.querySelector('#decode');
++  summary.replaceChildren();
++  for (const section of [timeline, decode]) section.replaceChildren(section.firstElementChild);
++
++  if (!result.ok) {
++    add(decode, 'p', 'warning', result.limit.warning);
++    return;
++  }
++  renderStats(summary, result);
++  renderTimeline(timeline, result.timeline);
++  renderMessages(decode, result.decoded, result.errors);
++}
+diff --git a/styles.css b/styles.css
+index 2e25308..d36e9d0 100644
+--- a/styles.css
++++ b/styles.css
+@@ -1,5 +1,170 @@
+-body { font-family: system-ui, sans-serif; max-width: 68rem; margin: 2rem auto; padding: 0 1rem; color: #192438; background: #f8fafc; }
+-textarea { display: block; box-sizing: border-box; width: 100%; min-height: 12rem; margin: 1rem 0; font: inherit; }
+-button { padding: .6rem 1.2rem; cursor: pointer; }
+-section { margin-top: 2rem; } article { background: white; border: 1px solid #d8e0e8; padding: 1rem; margin: .7rem 0; overflow-wrap: anywhere; }
+-.field { border-top: 1px solid #eee; padding: .3rem 0; white-space: pre-wrap; }
++:root {
++  --bg: #f3f6f8;
++  --panel: #ffffff;
++  --ink: #16263c;
++  --muted: #4c5d70;
++  --line: #aab8c6;
++  --soft: #e8eef5;
++  --accent: #164f78;
++  --accent-ink: #ffffff;
++  --ok: #176247;
++  --warn: #704600;
++  --warn-bg: #fff0ca;
++  --bad: #862537;
++  --bad-bg: #fbe8eb;
++  --order: #154d78;
++  --order-bg: #dfedfa;
++  --session-bg: #e4eaf1;
++}
++
++@media (prefers-color-scheme: dark) {
++  :root:not(.theme-light) {
++    --bg: #111a26;
++    --panel: #1a2636;
++    --ink: #eff5fc;
++    --muted: #aebdd0;
++    --line: #53657b;
++    --soft: #27374a;
++    --accent: #a4d5ff;
++    --accent-ink: #122c43;
++    --ok: #92e2bc;
++    --warn: #ffdb87;
++    --warn-bg: #422f15;
++    --bad: #ffbdcb;
++    --bad-bg: #4a2330;
++    --order: #b0d9ff;
++    --order-bg: #203f5c;
++    --session-bg: #314154;
++  }
++}
++
++:root.theme-dark {
++  --bg: #111a26;
++  --panel: #1a2636;
++  --ink: #eff5fc;
++  --muted: #aebdd0;
++  --line: #53657b;
++  --soft: #27374a;
++  --accent: #a4d5ff;
++  --accent-ink: #122c43;
++  --ok: #92e2bc;
++  --warn: #ffdb87;
++  --warn-bg: #422f15;
++  --bad: #ffbdcb;
++  --bad-bg: #4a2330;
++  --order: #b0d9ff;
++  --order-bg: #203f5c;
++  --session-bg: #314154;
++}
++
++body {
++  max-width: 88rem;
++  margin: 0 auto;
++  padding: clamp(1rem, 3vw, 2.5rem);
++  background: var(--bg);
++  color: var(--ink);
++  font: 1rem/1.5 system-ui, sans-serif;
++}
++
++h1, h2, h3, p { margin: 0; }
++h1 { font-size: clamp(1.9rem, 4vw, 2.75rem); line-height: 1.12; }
++h2 { margin-bottom: .85rem; font-size: 1.2rem; }
++h3 { font-size: 1rem; }
++
++.masthead {
++  display: flex;
++  flex-wrap: wrap;
++  justify-content: space-between;
++  align-items: center;
++  gap: 1rem;
++  margin-bottom: 1.5rem;
++}
++.masthead p { margin-top: .45rem; color: var(--muted); }
++
++.input-panel, .card, .event, .empty, .stats {
++  background: var(--panel);
++  border: 1px solid var(--line);
++  border-radius: .65rem;
++}
++.input-panel { padding: clamp(1rem, 2vw, 1.5rem); }
++label { display: block; font-weight: 650; }
++textarea {
++  display: block;
++  box-sizing: border-box;
++  width: 100%;
++  min-height: 12rem;
++  resize: vertical;
++  margin: .65rem 0 .85rem;
++  padding: .75rem;
++  border: 1px solid var(--line);
++  border-radius: .35rem;
++  background: var(--bg);
++  color: var(--ink);
++  font: .9rem/1.5 ui-monospace, monospace;
++}
++button {
++  padding: .6rem 1rem;
++  border: 1px solid var(--accent);
++  border-radius: .35rem;
++  background: var(--accent);
++  color: var(--accent-ink);
++  font: inherit;
++  font-weight: 650;
++  cursor: pointer;
++}
++#theme-button { background: var(--panel); color: var(--ink); }
++:focus-visible { outline: .15rem solid var(--accent); outline-offset: .2rem; }
++
++.stats {
++  display: flex;
++  flex-wrap: wrap;
++  gap: .5rem 1.3rem;
++  margin-top: 1rem;
++  padding: .75rem 1rem;
++  font-size: .9rem;
++  font-variant-numeric: tabular-nums;
++}
++.stat { font-weight: 600; }
++.stat:nth-child(2) { color: var(--ok); }
++
++.results {
++  display: grid;
++  grid-template-columns: minmax(0, 1fr);
++  align-items: start;
++  gap: 1.25rem;
++  margin-top: 1.5rem;
++}
++@media (min-width: 900px) {
++  .results { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); }
++  #timeline {
++    position: sticky;
++    top: 1rem;
++    max-height: calc(100vh - 2rem);
++    overflow-y: auto;
++  }
++}
++
++.events { list-style: none; margin: 0; padding: 0; }
++.event, .card-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: .3rem .75rem; }
++.event, .card, .empty, .warning { overflow-wrap: anywhere; }
++.event { padding: .65rem .75rem; margin-bottom: .5rem; font-size: .875rem; }
++.event span:empty, .card-head span:empty { display: none; }
++.num, .time, .dir, .seq, .id, .ref { color: var(--muted); }
++.num, .time, .seq { font-variant-numeric: tabular-nums; }
++.badge { padding: .125rem .45rem; border-radius: .25rem; font-weight: 650; }
++.session .badge { background: var(--session-bg); color: var(--ink); }
++.order .badge { background: var(--order-bg); color: var(--order); }
++.gap .badge, .warning { background: var(--warn-bg); color: var(--warn); }
++.reject .badge, .error-text, #not-started { background: var(--bad-bg); color: var(--bad); }
++.detail { font-weight: 600; }
++
++.card { padding: .85rem; margin-bottom: .75rem; }
++.fields { width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: .7rem; font-size: .875rem; }
++.fields th, .fields td { padding: .4rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
++.fields th { background: var(--soft); }
++.fields th:first-child { width: 12%; }
++.fields th:nth-child(3) { width: 35%; }
++.fields td:nth-child(3) { white-space: pre-wrap; font-family: ui-monospace, monospace; }
++.empty { color: var(--muted); }
++.error-text, .empty, .warning, #not-started { padding: .7rem .85rem; border-radius: .35rem; }
++.error-text { margin-top: .65rem; }
+diff --git a/test/page.test.js b/test/page.test.js
+index 040e1f2..fdc3fbc 100644
+--- a/test/page.test.js
++++ b/test/page.test.js
+@@ -1,5 +1,5 @@
+ // @vitest-environment jsdom
+-import { test, expect } from 'vitest';
++import { test, expect, vi, afterEach } from 'vitest';
+ import { readFileSync } from 'node:fs';
+ import { JSDOM } from 'jsdom';
+ import { buildMessage } from './helpers/fix.js';
+@@ -14,24 +14,35 @@ test('test_page_markup_has_csp_input_sections_and_external_assets', () => {
+   expect(csp[0].getAttribute('content')).toBe("default-src 'self'; connect-src 'none'; form-action 'none'");
+   const input = doc.querySelector('textarea');
+   for (const [key, value] of Object.entries({ autocomplete: 'off', spellcheck: 'false', autocapitalize: 'off', autocorrect: 'off', translate: 'no' })) expect(input.getAttribute(key)).toBe(value);
+-  expect(doc.querySelector('button').textContent).toMatch(/Decode/);
+-  expect([...doc.querySelectorAll('section > h2')].map(h => h.textContent)).toEqual(['Decode', 'Timeline']);
++  const header = doc.querySelector('body > header');
++  expect(header.querySelector('h1').textContent).toBe('FIX Lens');
++  expect(header.textContent).toContain('Runs entirely in this page. Nothing you paste is sent, stored or logged.');
++  expect(header.querySelector('#theme-button[type=button]')).not.toBeNull();
++  const main = doc.querySelector('main[hidden]');
++  expect(main.contains(input)).toBe(true);
++  expect(main.querySelector('#decode-button[type=button]').textContent).toBe('Decode');
++  expect(main.querySelector('section#summary')).not.toBeNull();
++  expect(main.contains(doc.querySelector('#not-started'))).toBe(false);
++  for (const [id, title] of [['timeline', 'Timeline'], ['decode', 'Decode']]) {
++    const heading = main.querySelector(`.results #${id}`).firstElementChild;
++    expect(heading.localName).toBe('h2');
++    expect(heading.textContent).toBe(title);
++  }
+   expect(head.querySelector('link[rel="stylesheet"]').getAttribute('href')).toBe('styles.css');
+   expect(doc.querySelector('script[type="module"]').getAttribute('src')).toBe('src/main.js');
+   expect(doc.querySelectorAll('script:not([src]), style, [style]')).toHaveLength(0);
+ });
+ 
+ test('test_page_second_decode_replaces_output_without_retaining_paste', async () => {
+-  document.documentElement.innerHTML = new JSDOM(html).window.document.documentElement.innerHTML;
+-  await import('../src/main.js');
++  await start();
+   const input = document.querySelector('textarea');
+-  const button = document.querySelector('button');
++  const button = document.querySelector('#decode-button');
+   const first = buildMessage([[8, 'FIX.4.4'], [35, 'A'], [34, '1'], [58, 'FIRSTSECRET']]);
+   const second = buildMessage([[8, 'FIX.4.4'], [35, '0'], [34, '2'], [58, 'SECONDSECRET']]);
+   input.value = first; button.click();
+-  expect(document.querySelector('#decode').textContent).toContain('FIRSTSECRET');
++  expect(document.querySelector('#decode article.card').textContent).toContain('FIRSTSECRET');
+   input.value = second; button.click();
+-  expect(document.querySelector('#decode').textContent).toContain('SECONDSECRET');
++  expect(document.querySelector('#decode article.card').textContent).toContain('SECONDSECRET');
+   expect(document.querySelector('#decode').textContent).not.toContain('FIRSTSECRET');
+   expect(document.querySelector('#timeline').textContent).not.toContain('FIRSTSECRET');
+   expect(document.body.textContent).not.toContain('FIRSTSECRET');
+@@ -39,3 +50,51 @@ test('test_page_second_decode_replaces_output_without_retaining_paste', async ()
+   expect(localStorage.length).toBe(0);
+   expect(sessionStorage.length).toBe(0);
+ });
++
++async function start(dark = false, beforeStartup = () => {}) {
++  vi.resetModules();
++  document.documentElement.className = '';
++  document.documentElement.innerHTML = new JSDOM(html).window.document.documentElement.innerHTML;
++  const match = vi.fn(() => ({ matches: dark }));
++  vi.stubGlobal('matchMedia', match);
++  beforeStartup();
++  await import('../src/main.js');
++  return match;
++}
++
++afterEach(() => vi.unstubAllGlobals());
++
++test('test_page_without_module_shows_startup_notice', () => {
++  const window = new JSDOM(html).window;
++  const notice = window.document.querySelector('p#not-started');
++  expect(notice.textContent).toBe('FIX Lens did not start. Open it through a web server, not as a file from disk.');
++  expect(notice.closest('[hidden]')).toBeNull();
++  expect(window.getComputedStyle(notice).display).not.toBe('none');
++  expect(window.document.querySelector('main').hidden).toBe(true);
++});
++
++test('test_page_module_startup_reveals_tool', async () => {
++  await start(false, () => {
++    expect(document.querySelector('#not-started')).not.toBeNull();
++    expect(document.querySelector('main').hidden).toBe(true);
++  });
++  expect(document.querySelector('#not-started')).toBeNull();
++  expect(document.querySelector('main').hidden).toBe(false);
++});
++
++test('test_page_theme_follows_system_and_toggles_without_storage', async () => {
++  for (const dark of [false, true, false]) {
++    const match = await start(dark);
++    expect(match).toHaveBeenCalledExactlyOnceWith('(prefers-color-scheme: dark)');
++    const button = document.querySelector('#theme-button');
++    expect(document.documentElement.className).toBe('');
++    expect(button.textContent).toBe(dark ? 'Light theme' : 'Dark theme');
++    for (const current of [!dark, dark]) {
++      button.click();
++      expect(document.documentElement.className).toBe(current ? 'theme-dark' : 'theme-light');
++      expect(button.textContent).toBe(current ? 'Light theme' : 'Dark theme');
++      expect(localStorage.length).toBe(0);
++      expect(sessionStorage.length).toBe(0);
++    }
++  }
++});
+diff --git a/test/render.test.js b/test/render.test.js
+index 0c67910..77d58f1 100644
+--- a/test/render.test.js
++++ b/test/render.test.js
+@@ -1,76 +1,188 @@
+ // @vitest-environment jsdom
+-import { test, expect } from 'vitest';
++import { test, expect, beforeEach } from 'vitest';
++import { readFileSync } from 'node:fs';
+ import { render } from '../src/render.js';
+ import { analyse } from '../src/analyse.js';
+ import { lookup, enumName } from '../src/dictionary.js';
+ import { buildMessage } from './helpers/fix.js';
+ 
+-function setup() { document.body.innerHTML = '<section id="decode"><h2>Decode</h2></section><section id="timeline"><h2>Timeline</h2></section>'; }
+-const result = { ok: true, limit: { ok: true }, decoded: [{ number: 1, label: 'Message 1: Logon', fields: [{ tag: 35, name: 'MsgType', value: 'A', enumName: 'Logon', known: true }] }], errors: [{ number: 2, text: 'Message 2: bad checksum' }], timeline: [{ number: 1, name: 'Logon', kind: 'session', detail: null }] };
+-
+-test('test_render_valid_result_shows_cards_fields_errors_and_timeline', () => {
+-  setup(); render(result);
+-  expect(document.querySelectorAll('#decode article')).toHaveLength(1);
+-  expect(document.querySelector('#decode article').textContent).toContain('Message 1: Logon');
+-  expect(document.querySelectorAll('#decode article .field')).toHaveLength(1);
+-  expect(document.querySelector('#decode').textContent).toContain('MsgType');
+-  expect(document.querySelector('#decode').textContent).toContain('bad checksum');
+-  expect(document.querySelector('#timeline').textContent).toContain('Logon');
+-  expect(document.querySelector('#timeline').textContent).not.toContain('bad checksum');
+-});
+-
+-test('test_render_limit_refusal_shows_only_warning', () => {
+-  setup(); render(result);
+-  render({ ok: false, limit: { warning: 'Log too large; split the log' }, decoded: [], errors: [], timeline: [] });
+-  expect(document.querySelector('#decode').textContent).toContain('Log too large; split the log');
+-  expect(document.querySelector('#decode').textContent).not.toContain('Message 1');
+-  expect(document.querySelector('#timeline').textContent).toBe('Timeline');
+-  expect(document.querySelectorAll('article, .field')).toHaveLength(0);
+-});
+-
+-test('test_render_html_field_value_stays_literal_without_element', () => {
+-  setup(); render({ ...result, errors: [], timeline: [], decoded: [{ ...result.decoded[0], fields: [{ tag: 58, name: 'Text', value: '<img src=x onerror=alert(1)>', enumName: null }] }] });
+-  expect(document.querySelector('#decode').textContent).toContain('<img src=x onerror=alert(1)>');
+-  expect(document.querySelectorAll('img')).toHaveLength(0);
++const html = readFileSync('index.html', 'utf8');
++beforeEach(() => {
++  document.body.replaceChildren(...new DOMParser().parseFromString(html, 'text/html').body.children);
+ });
+ 
++const stamp = '20261126-10:00:01.000';
++const fix = (type, ...fields) => buildMessage([[8, 'FIX.4.4'], [35, type], [49, 'A'], [56, 'B'], ...fields]);
++const order = (type, clOrdId, ...fields) => fix(type, [11, clOrdId], ...fields);
++const malformed = fix('0').replace(/10=(\d{3})/, (_, checksum) => `10=${checksum === '000' ? '001' : '000'}`);
++const select = selector => document.querySelector(selector);
++const all = selector => [...document.querySelectorAll(selector)];
++const texts = nodes => Array.from(nodes, node => node.textContent);
++const stats = () => texts(all('#summary > div.stats > span.stat'));
++const rows = () => all('#timeline > ol.events > li.event');
++const cards = () => all('#decode > article.card');
++const cells = row => Array.from(row.cells, cell => cell.textContent);
++const fieldRow = tag => all('#decode table.fields tbody tr').find(row => row.cells[0].textContent === String(tag));
++const show = (...log) => render(analyse(log.join('\n')));
+ 
+-function show(fields) { setup(); render(analyse(buildMessage(fields))); }
+-const orderFields = [[8, 'FIX.4.4'], [35, '8'], [49, 'BROKER'], [56, 'CLIENT'], [34, 7], [52, '20261126-10:00:01.000'], [150, '0'], [11, 'CL-1'], [37, 'ORD-9']];
++function expectRow(row, fields, extras = []) {
++  const classes = ['num', 'time', 'badge', 'dir', 'seq', 'detail', ...extras];
++  expect(Array.from(row.children, child => `${child.localName}.${child.className}`)).toEqual(classes.map(name => `span.${name}`));
++  expect(texts(row.children)).toEqual(fields);
++}
+ 
+ test('test_render_public_imports_analyse_and_render_dom', () => {
+   expect(lookup('FIX.4.4', 35).name).toBe('MsgType');
+   expect(enumName('FIX.4.4', 35, 'A')).toBe('Logon');
+-  show([[8, 'FIX.4.4'], [35, 'A'], [49, 'A'], [56, 'B'], [34, 1]]);
+-  expect(document.querySelector('#decode article h3').textContent).toBe('Message 1: Logon');
+-  expect(document.querySelector('#timeline p').textContent).toBe('Message 1: Logon — A → B — seq 1');
++  render(analyse(fix('A', [34, 1])));
++  expect(select('#summary .stat').textContent).toBe('1 message');
++  expect(select('#decode article h3').textContent).toBe('Logon');
++  expectRow(rows()[0], ['#1', '', 'Logon', 'A → B', 'seq 1', '']);
++});
++
++test('test_render_mixed_log_counts_messages_and_order_groups', () => {
++  const log = [order('D', 'ONE', [34, 1]), order('D', 'ONE', [34, 3]), malformed, order('D', 'TWO', [34, 5])].join('\n');
++  render(analyse(log));
++  expect(stats()).toEqual(['4 messages', '3 valid', '1 malformed', '2 sequence gaps', '2 orders']);
++  expect(rows()).toHaveLength(5);
++  expect(cards()).toHaveLength(4);
++});
++
++test('test_render_unit_counts_use_singular_nouns', () => {
++  show(order('D', 'ONE'));
++  expect(stats()).toEqual(['1 message', '1 valid', '0 malformed', '0 sequence gaps', '1 order']);
++  show(fix('0', [34, 1]), fix('0', [34, 3]));
++  expect(stats()).toEqual(['2 messages', '2 valid', '0 malformed', '1 sequence gap', '0 orders']);
+ });
+ 
+ test('test_render_order_timeline_full_row_text', () => {
+-  show(orderFields);
+-  expect(document.querySelector('#timeline p').textContent).toBe('Message 1: Acknowledgement — 20261126-10:00:01.000 — BROKER → CLIENT — seq 7 — ClOrdID CL-1 — OrderID ORD-9');
++  show(order('8', 'CL-1', [34, 7], [52, stamp], [150, '0'], [37, 'ORD-9']),
++    order('8', 'CL-2', [34, 8], [52, stamp], [150, 'G'], [37, 'ORD-9'], [41, 'CL-1'], [19, 'EX-2']));
++  expect(rows()).toHaveLength(2);
++  expectRow(rows()[0], ['#1', '10:00:01.000', 'Acknowledgement', 'A → B', 'seq 7', '', 'ClOrdID CL-1', 'OrderID ORD-9'], ['id', 'id']);
++  expectRow(rows()[1], ['#2', '10:00:01.000', 'TradeCorrect', 'A → B', 'seq 8', '', 'ClOrdID CL-2', 'OrderID ORD-9', 'OrigClOrdID CL-1', 'ExecRefID EX-2'], ['id', 'id', 'id', 'ref']);
+ });
+ 
+ test('test_render_session_timeline_metadata_text', () => {
+-  show([[8, 'FIX.4.4'], [35, 'A'], [49, 'A'], [56, 'B'], [34, 1], [52, '20261126-10:00:00.000']]);
+-  expect(document.querySelector('#timeline p').textContent).toBe('Message 1: Logon — 20261126-10:00:00.000 — A → B — seq 1');
++  show(fix('A', [52, stamp]));
++  expect(rows()).toHaveLength(1);
++  expectRow(rows()[0], ['#1', '10:00:01.000', 'Logon', 'A → B', '', '']);
+ });
+ 
+ test('test_render_sequence_gap_timeline_detail_text', () => {
+-  setup(); render(analyse([1, 3].map(n => buildMessage([[8, 'FIX.4.4'], [35, '0'], [49, 'A'], [56, 'B'], [34, n], [52, '20261126-10:00:01.000']])).join('')));
+-  expect([...document.querySelectorAll('#timeline p')].map(p => p.textContent)).toContain('Message 2: SequenceGap — 20261126-10:00:01.000 — A → B — seq 3 — expected 2, received 3');
++  show(fix('0', [34, 1]), fix('0', [34, 3], [52, stamp]));
++  expect(rows()).toHaveLength(3);
++  expectRow(rows()[1], ['#2', '10:00:01.000', 'SequenceGap', 'A → B', 'seq 3', 'expected 2, received 3']);
++  expectRow(rows()[2], ['#2', '10:00:01.000', 'Heartbeat', 'A → B', 'seq 3', '']);
+ });
+ 
+-test('test_render_unsupported_version_raw_fields', () => {
+-  show([[8, 'FIX.4.1'], [35, '0'], [34, 1], [49, 'A'], [56, 'B']]);
+-  expect(document.querySelector('#decode article h3').textContent).toBe('Message 1: unsupported version FIX.4.1');
+-  expect([...document.querySelectorAll('#decode .field')].map(e => e.textContent)).toContain('49: A');
+-  expect(document.querySelector('#decode').textContent).not.toContain('Unknown tag');
++test('test_render_timeline_event_classes_match_named_badges', () => {
++  show(fix('0', [34, 1]), fix('3', [34, 3]), fix('j', [34, 4]), order('9', 'ONE', [34, 5]), order('D', 'TWO', [34, 6]));
++  expect(rows().map(row => [row.querySelector('.badge').textContent, [...row.classList].filter(name => name !== 'event')])).toEqual([
++    ['Heartbeat', ['session']], ['SequenceGap', ['gap']], ['SessionReject', ['reject']],
++    ['BusinessReject', ['reject']], ['CancelReject', ['reject']], ['NewOrder', ['order']],
++  ]);
++});
++
++test('test_render_valid_result_shows_cards_fields_errors_and_timeline', () => {
++  const log = [fix('A', [34, 1], [52, stamp]), malformed, fix('0', [34, 2])].join('\n');
++  const result = analyse(log);
++  expect(result.errors).toHaveLength(1);
++  render(result);
++  const [first, error, last] = cards();
++  expect(cards()).toHaveLength(3);
++  expect(cards().map(card => card.matches('.malformed'))).toEqual([false, true, false]);
++  expect(cards().map(card => card.querySelector('span.num').textContent)).toEqual(['#1', '#2', '#3']);
++  expect(error.querySelector('h3').textContent).toBe('Malformed message');
++  expect(error.querySelector('p.error-text').textContent).toBe(result.errors[0].text);
++  expect(error.querySelector('table')).toBeNull();
++  expect(first.firstElementChild.matches('header.card-head')).toBe(true);
++  expect(first.firstElementChild.nextElementSibling.matches('table.fields')).toBe(true);
++  expect(Array.from(first.firstElementChild.children, node => node.tagName === 'H3' ? 'h3' : `${node.localName}.${node.className}`))
++    .toEqual(['span.num', 'h3', 'span.dir', 'span.seq', 'span.time']);
++  expect(texts(first.firstElementChild.children)).toEqual(['#1', 'Logon', 'A → B', 'seq 1', '10:00:01.000']);
++  expect(last.querySelector('h3').textContent).toBe('Heartbeat');
++  expect(rows().map(row => row.querySelector('.badge').textContent)).toEqual(['Logon', 'Heartbeat']);
+ });
+ 
+ test('test_render_decoded_field_exact_visible_text', () => {
+-  show([[8, 'FIX.4.4'], [35, 'A'], [49, 'A'], [56, 'B']]);
+-  expect([...document.querySelectorAll('#decode .field')].find(e => e.textContent.startsWith('35')).textContent).toBe('35 MsgType: A (Logon)');
+-  show([[8, 'FIX.4.1'], [35, 'A']]);
+-  expect([...document.querySelectorAll('#decode .field')].find(e => e.textContent.startsWith('35')).textContent).toBe('35: A');
++  const result = analyse(fix('A', [58, '  spaced  ']));
++  render(result);
++  expect(texts(all('table.fields thead th'))).toEqual(['Tag', 'Field', 'Value', 'Meaning']);
++  expect(all('table.fields tbody tr').map(cells)).toEqual(result.decoded[0].fields.map(field => [String(field.tag), field.name, field.value, field.enumName ?? '']));
++  expect(cells(fieldRow(35))).toEqual(['35', 'MsgType', 'A', 'Logon']);
++  expect(cells(fieldRow(58))).toEqual(['58', 'Text', '  spaced  ', '']);
++});
++
++test('test_render_unsupported_version_raw_fields', () => {
++  const result = analyse(buildMessage([[8, 'FIX.4.1'], [35, '0'], [34, 1], [49, 'A'], [56, 'B']]));
++  render(result);
++  expect(select('#decode article h3').textContent).toBe('unsupported version FIX.4.1');
++  expect(all('table.fields tbody tr').map(cells)).toEqual(result.decoded[0].fields.map(field => [String(field.tag), '', field.value, '']));
++  expect(cells(fieldRow(49))).toEqual(['49', '', 'A', '']);
++});
++
++test('test_render_sending_time_shows_suffix_in_headers_and_rows', () => {
++  for (const [value, visible] of [[stamp, '10:00:01.000'], [stamp + '-tail', '10:00:01.000-tail'], ['10:00', '10:00']]) {
++    show(fix('0', [34, 7], [52, value]));
++    const card = cards()[0];
++    const header = card.querySelector('header.card-head');
++    expect(texts(header.children)).toEqual(['#1', 'Heartbeat', 'A → B', 'seq 7', visible]);
++    expect(header.nextElementSibling.matches('table.fields')).toBe(true);
++    expectRow(rows()[0], ['#1', visible, 'Heartbeat', 'A → B', 'seq 7', '']);
++    expect(fieldRow(52).cells[2].textContent).toBe(value);
++  }
++});
++
++test('test_render_empty_log_shows_empty_states', () => {
++  show('nothing to decode');
++  expect(select('#decode > p.empty').textContent).toBe('No FIX messages found in the pasted text.');
++  expect(select('#timeline > p.empty').textContent).not.toBe('');
++  expect(stats()).toEqual(['0 messages', '0 valid', '0 malformed', '0 sequence gaps', '0 orders']);
++  show(fix('Z'));
++  expect(cards()).toHaveLength(1);
++  expect(select('#decode > p.empty')).toBeNull();
++  expect(select('#timeline > p.empty').textContent).not.toBe('');
++  expect(rows()).toHaveLength(0);
++});
++
++test('test_render_limit_refusal_shows_only_warning', () => {
++  const [timeline, decode] = ['#timeline > h2', '#decode > h2'].map(select);
++  show(fix('A'), malformed);
++  const refusal = analyse('x'.repeat(1048577));
++  expect(refusal.ok).toBe(false);
++  render(refusal);
++  expect(select('#summary').children).toHaveLength(0);
++  expect(select('#summary').textContent).toBe('');
++  expect([...select('#timeline').children]).toEqual([timeline]);
++  const warning = select('#decode > p.warning');
++  expect([...select('#decode').children]).toEqual([decode, warning]);
++  expect(warning.textContent).toBe(refusal.limit.warning);
++});
++
++test('test_render_second_result_replaces_generated_content', () => {
++  const headings = ['#timeline', '#decode'].map(select).map(section => section.firstElementChild);
++  const checkHeadings = () => headings.forEach((heading, index) => {
++    const section = select(index === 0 ? '#timeline' : '#decode');
++    expect(section.firstElementChild).toBe(heading);
++    expect(heading.textContent).toBe(index === 0 ? 'Timeline' : 'Decode');
++  });
++  show(order('D', 'OLD'), malformed);
++  checkHeadings();
++  const generated = ['#summary > .stats', '#timeline > ol', '#decode > article'].map(select);
++  show(fix('A', [58, 'NEW']));
++  checkHeadings();
++  expect(generated.every(node => !node.isConnected)).toBe(true);
++  expect(stats()).toEqual(['1 message', '1 valid', '0 malformed', '0 sequence gaps', '0 orders']);
++  expect(texts(all('#timeline .badge'))).toEqual(['Logon']);
++  expect(texts(all('#decode article h3'))).toEqual(['Logon']);
++  expect(cells(fieldRow(58))).toEqual(['58', 'Text', 'NEW', '']);
++  expect(select('main').textContent).not.toContain('OLD');
++});
++
++test('test_render_html_field_value_stays_literal_without_element', () => {
++  const markup = '<img src=x onerror=alert(1)>';
++  show(fix('A', [58, markup]));
++  expect(cells(fieldRow(58))).toEqual(['58', 'Text', markup, '']);
++  expect(all('img')).toHaveLength(0);
+ });
+diff --git a/test/static-checks.test.js b/test/static-checks.test.js
+index 4282b28..0152c61 100644
+--- a/test/static-checks.test.js
++++ b/test/static-checks.test.js
+@@ -1,5 +1,6 @@
+ import { test, expect } from 'vitest';
+ import { readFileSync, readdirSync } from 'node:fs';
++import { JSDOM } from 'jsdom';
+ import { auditSource, auditPage, auditDataModule, cspValue } from '../tools/audit-source.mjs';
+ 
+ function sources(dir) {
+@@ -72,3 +73,111 @@ test('test_static_checks_dictionary_modules_require_one_json_value', () => {
+     expect(auditDataModule(readFileSync(`src/dictionary/${name}.js`, 'utf8')), name).toBe(true);
+   }
+ });
++
++
++test('test_static_checks_main_removes_notice_before_revealing_tool', () => {
++  const source = readFileSync('src/main.js', 'utf8').replace(/^(?:\s*import [^\n]+\n)+/, '').trimStart();
++  expect(source).toMatch(/^document\.querySelector\(['"]#not-started['"]\)\.remove\(\);\s*document\.querySelector\(['"]main['"]\)\.hidden = false;/);
++});
++
++test('test_static_checks_render_uses_only_safe_element_writes', () => {
++  const source = readFileSync('src/render.js', 'utf8');
++  // Also run the unchanged FXL-9 audit on the presentation entry point and renderer.
++  expect(auditSource(source)).toEqual([]);
++  expect(auditSource(readFileSync('src/main.js', 'utf8'))).toEqual([]);
++  expect(auditPage(readFileSync('index.html', 'utf8'))).toBe(true);
++  expect(source).not.toMatch(/\bsetAttribute\b/);
++  const writes = [...source.matchAll(/\.\s*(\w+)\s*=(?!=|>)/g)].map(match => match[1]);
++  expect(writes).toContain('textContent');
++  expect(writes).toContain('className');
++  expect(writes.filter(prop => !['textContent', 'className', 'type', 'disabled', 'selectedIndex'].includes(prop))).toEqual([]);
++  const classWrites = [...source.matchAll(/\.className\s*=\s*([^;]+);/g)].map(match => match[1]);
++  expect(classWrites).toEqual(['className', 'eventClass(event)']);
++  // Each add call either omits the class or supplies null or a literal after its tag.
++  const calls = source.match(/\badd\(/g);
++  const fixedClassCalls = source.match(/\badd\(\w+, '\w+'(?:\)|, (?:null|'[a-z -]+')(?=[,) ]))/g);
++  expect(fixedClassCalls.length).toBe(calls.length - 1); // Exclude the helper declaration.
++  const classifier = source.match(/function eventClass\(event\) \{([\s\S]*?)\n\}/)[1];
++  expect([...classifier.matchAll(/return (.*);/g)].map(match => match[1])).toEqual([
++    "'event gap'", "'event reject'", "event.kind === 'order' ? 'event order' : 'event session'",
++  ]);
++});
++
++function stylesheet() {
++  const source = readFileSync('styles.css', 'utf8');
++  const { window } = new JSDOM();
++  const style = window.document.createElement('style');
++  style.textContent = source;
++  window.document.head.append(style);
++  const rules = [...style.sheet.cssRules];
++  window.close();
++  return { source, rules };
++}
++
++function mediaRules(rules, query) {
++  const rule = rules.find(rule => rule.conditionText === query);
++  expect(rule, query).toBeDefined();
++  return [...rule.cssRules];
++}
++
++function selectorRule(rules, selector) {
++  const rule = rules.find(rule => rule.selectorText === selector);
++  expect(rule, selector).toBeDefined();
++  return rule;
++}
++
++function themeRules(rules) {
++  return [selectorRule(rules, ':root'),
++    selectorRule(mediaRules(rules, '(prefers-color-scheme: dark)'), ':root:not(.theme-light)'),
++    selectorRule(rules, ':root.theme-dark')];
++}
++
++function palette(rule) {
++  return Object.fromEntries(Array.from(rule.style, key => [key, rule.style.getPropertyValue(key).trim()]));
++}
++
++test('test_static_checks_theme_blocks_define_only_named_hex_colours', () => {
++  const { source, rules } = stylesheet();
++  const themes = themeRules(rules).map(palette);
++  const keys = 'bg panel ink muted line soft accent accent-ink ok warn warn-bg bad bad-bg order order-bg session-bg'.split(' ').map(key => `--${key}`).sort();
++  for (const theme of themes) {
++    expect(Object.keys(theme).sort()).toEqual(keys);
++    for (const hex of Object.values(theme)) expect(hex).toMatch(/^#[\da-f]{6}$/i);
++  }
++  expect(themes[1]).toEqual(themes[2]);
++  const outside = source.replace(/^\s*:root(?:\.theme-dark|:not\(\.theme-light\))?\s*\{[^{}]*\}/gm, '');
++  expect(outside).not.toMatch(/#[\da-f]{3,8}\b|\b(?:rgba?|hsla?)\(/i);
++});
++
++function luminance(hex) {
++  const [r, g, b] = hex.slice(1).match(/../g).map(pair => {
++    const component = Number.parseInt(pair, 16) / 255;
++    return component <= 0.04045 ? component / 12.92 : ((component + 0.055) / 1.055) ** 2.4;
++  });
++  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
++}
++
++test('test_static_checks_theme_pairs_meet_wcag_contrast', () => {
++  const pairs = [['ink', 'bg'], ['ink', 'panel'], ['muted', 'panel'], ['muted', 'bg'], ['accent-ink', 'accent'],
++    ['ok', 'panel'], ['warn', 'warn-bg'], ['bad', 'bad-bg'], ['order', 'order-bg'], ['ink', 'session-bg']];
++  for (const rule of themeRules(stylesheet().rules)) {
++    const theme = palette(rule);
++    for (const [ink, surface] of pairs) {
++      const values = [ink, surface].map(key => luminance(theme[`--${key}`]));
++      const contrast = (Math.max(...values) + 0.05) / (Math.min(...values) + 0.05);
++      expect(contrast, `${rule.selectorText}: ${ink} on ${surface}`).toBeGreaterThanOrEqual(4.5);
++    }
++  }
++});
++
++test('test_static_checks_results_grid_changes_at_900px', () => {
++  const { rules } = stylesheet();
++  const base = selectorRule(rules, '.results').style;
++  expect(base.getPropertyValue('display')).toBe('grid');
++  expect(base.getPropertyValue('grid-template-columns')).toMatch(/^minmax\(0(?:px)?, 1fr\)$/);
++  const wide = mediaRules(rules, '(min-width: 900px)');
++  expect(selectorRule(wide, '.results').style.getPropertyValue('grid-template-columns')).toMatch(/^minmax\(0(?:px)?, [\d.]+fr\) minmax\(0(?:px)?, [\d.]+fr\)$/);
++  const timeline = selectorRule(wide, '#timeline').style;
++  expect(timeline.getPropertyValue('position')).toBe('sticky');
++  expect(timeline.getPropertyValue('top')).not.toBe('');
++});
+-- 
+2.43.0
+

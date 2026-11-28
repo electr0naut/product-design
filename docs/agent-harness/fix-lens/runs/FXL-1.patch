@@ -1,0 +1,879 @@
+From 8df6b788617567c92481e23e19e0b3f675dd8e04 Mon Sep 17 00:00:00 2001
+From: Hermes Agent <hermes@agent.local>
+Date: Thu, 26 Nov 2026 02:41:46 +0100
+Subject: [PATCH 1/2] FXL-1: split pasted log into messages and parse fields
+
+- src/framing.js: splitMessages(text) detects SOH/pipe delimiters per message,
+  finds 8=FIX starts (not inside field values), terminates on tag 10 with 3 digits,
+  and returns candidates with number, start, and fields (tag/value/offset).
+- test/helpers/fix.js: buildMessage(fields, {delim}) computes BodyLength (tag 9)
+  and CheckSum (tag 10) per FIX spec.
+- test/framing.test.js: 14 tests covering all 8 acceptance criteria.
+- test/helpers.test.js: 7 tests for the helper.
+---
+ src/framing.js       | 226 +++++++++++++++++++++++++
+ test/framing.test.js | 385 +++++++++++++++++++++++++++++++++++++++++++
+ test/helpers.test.js |  97 +++++++++++
+ test/helpers/fix.js  |  56 +++++++
+ 4 files changed, 764 insertions(+)
+ create mode 100644 src/framing.js
+ create mode 100644 test/framing.test.js
+ create mode 100644 test/helpers.test.js
+ create mode 100644 test/helpers/fix.js
+
+diff --git a/src/framing.js b/src/framing.js
+new file mode 100644
+index 0000000..6ff0db1
+--- /dev/null
++++ b/src/framing.js
+@@ -0,0 +1,226 @@
++// Split a pasted FIX log into parsed message candidates.
++
++/**
++ * splitMessages(text) -> [{number, start, fields}]
++ *
++ * - number: 1-based index in discovery order
++ * - start: offset of "8=FIX" in the original text
++ * - fields: [{tag (number), value (string), offset (number)}]
++ *   offset is the index of the tag's first character in the original text.
++ *
++ * Rules:
++ *  - Delimiter is detected per message: if the region from "8=FIX" to the
++ *    next line end contains SOH (0x01), use SOH; otherwise use "|".
++ *  - A message starts at "8=FIX" that is:
++ *    * at position 0, OR
++ *    * preceded by a line end (\n, \r\n, or \r), OR
++ *    * preceded by a delimiter (| or \x01), OR
++ *    * preceded by text that doesn't contain a delimiter AND the character
++ *      immediately before "8" is not a digit (so "448=FIXCLIENT" doesn't match).
++ *  - A candidate ends after a field whose tag is exactly 10 and whose value
++ *    is exactly 3 digits, followed by the delimiter, a line end, or end of text.
++ *  - The empty piece after the final delimiter is not a field.
++ *  - Text after the end on the same line is excluded.
++ *  - Text with no "8=FIX" returns [].
++ *  - Repeated tags appear once per occurrence in order.
++ */
++export function splitMessages(text) {
++  if (typeof text !== "string" || text.length === 0) return [];
++
++  const results = [];
++  let pos = 0;
++
++  while (pos < text.length) {
++    // Find next candidate start: "8=FIX" at a valid position.
++    const start = findMessageStart(text, pos);
++    if (start === -1) break;
++
++    // Detect delimiter for this message: look from start to the next line end.
++    const delim = detectDelimiter(text, start);
++
++    // Walk fields from start.
++    const fields = [];
++    let cursor = start;
++    let end = -1; // end offset (exclusive) of the whole candidate
++
++    while (cursor < text.length) {
++      // Find the end of this field: next delimiter or line end.
++      const fieldEnd = findFieldEnd(text, cursor, delim);
++      const fieldText = text.substring(cursor, fieldEnd);
++
++      // Parse tag=value
++      const eqIdx = fieldText.indexOf("=");
++      if (eqIdx === -1) {
++        // Malformed field (no '='); skip past it.
++        if (fieldEnd >= text.length) { cursor = text.length; break; }
++        const sep = text[fieldEnd];
++        if (sep === "\n" || sep === "\r") {
++          cursor = advancePastLineEnd(text, fieldEnd);
++          // A line end without a checksum means this candidate is incomplete.
++          end = -1;
++          break;
++        }
++        cursor = fieldEnd + 1; // skip delimiter
++        continue;
++      }
++
++      const tagStr = fieldText.substring(0, eqIdx);
++      const value = fieldText.substring(eqIdx + 1);
++
++      // Tag must be purely digits to be valid.
++      if (!/^\d+$/.test(tagStr)) {
++        // Not a valid field; skip past it.
++        if (fieldEnd >= text.length) { cursor = text.length; break; }
++        const sep = text[fieldEnd];
++        if (sep === "\n" || sep === "\r") {
++          cursor = advancePastLineEnd(text, fieldEnd);
++          end = -1;
++          break;
++        }
++        cursor = fieldEnd + 1;
++        continue;
++      }
++
++      const tag = Number(tagStr);
++      fields.push({ tag, value, offset: cursor });
++
++      // Check if this is the checksum terminator: tag===10 and value is exactly 3 digits.
++      if (tag === 10 && /^\d{3}$/.test(value)) {
++        // Candidate ends here. The end includes the delimiter/line-end/text-end
++        // right after this field.
++        if (fieldEnd >= text.length) {
++          end = text.length;
++        } else {
++          const sep = text[fieldEnd];
++          if (sep === delim) {
++            end = fieldEnd + 1; // include the delimiter
++          } else if (sep === "\n" || sep === "\r") {
++            end = advancePastLineEnd(text, fieldEnd);
++          } else {
++            // Something else follows immediately (shouldn't happen in well-formed
++            // FIX, but treat the field itself as the end).
++            end = fieldEnd;
++          }
++        }
++        cursor = end;
++        break;
++      }
++
++      // Not the checksum; advance past this field.
++      if (fieldEnd >= text.length) {
++        // Reached end of text without checksum -> candidate incomplete.
++        cursor = text.length;
++        end = -1;
++        break;
++      }
++      const sep = text[fieldEnd];
++      if (sep === "\n" || sep === "\r") {
++        // Line end without checksum -> candidate incomplete.
++        cursor = advancePastLineEnd(text, fieldEnd);
++        end = -1;
++        break;
++      }
++      // sep === delim
++      cursor = fieldEnd + 1;
++    }
++
++    if (end !== -1 && fields.length > 0) {
++      results.push({
++        number: results.length + 1,
++        start,
++        fields,
++      });
++      pos = end;
++    } else {
++      // No valid candidate found starting here; advance past this "8=FIX".
++      pos = start + 1;
++    }
++  }
++
++  return results;
++}
++
++// Find the next position >= `from` where "8=FIX" occurs and is a valid message start.
++// Valid positions:
++//  - position 0
++//  - after a line end (\n or \r)
++//  - after a delimiter (| or \x01)
++//  - the text from the last line end (or position 0) to this "8=FIX" doesn't contain
++//    a delimiter AND the character immediately before "8" is not a digit
++function findMessageStart(text, from) {
++  let idx = from;
++  while (idx < text.length) {
++    const hit = text.indexOf("8=FIX", idx);
++    if (hit === -1) return -1;
++    
++    // Check if this is a valid start position.
++    if (hit === 0) return hit;
++    
++    const prev = text[hit - 1];
++    
++    // After a line end.
++    if (prev === "\n" || prev === "\r") return hit;
++    
++    // After a delimiter.
++    if (prev === "|" || prev === "\x01") return hit;
++    
++    // Check if we're inside a field value by looking back to the last line end or position 0.
++    // If there's a delimiter between the last line end and this "8=FIX", we're inside a field.
++    let lineStart = hit - 1;
++    while (lineStart >= 0 && text[lineStart] !== "\n" && text[lineStart] !== "\r") {
++      lineStart--;
++    }
++    lineStart++; // Move past the line end character.
++    
++    const textBefore = text.substring(lineStart, hit);
++    
++    // If there's no delimiter in the text before, check if the character before "8" is a digit.
++    // If it's a digit, then "8" is part of a larger tag number (like "448"), so it's not valid.
++    if (!textBefore.includes("|") && !textBefore.includes("\x01")) {
++      // No delimiter before, so we're not inside a field.
++      // But check if the character before "8" is a digit.
++      if (hit > 0 && /\d/.test(text[hit - 1])) {
++        // "8" is part of a larger tag number, not valid.
++        idx = hit + 1;
++        continue;
++      }
++      return hit;
++    }
++    
++    idx = hit + 1;
++  }
++  return -1;
++}
++
++// Detect the delimiter for the message starting at `start`.
++// Look from start to the next line end; if SOH (0x01) is present, use SOH.
++function detectDelimiter(text, start) {
++  let i = start;
++  while (i < text.length) {
++    const ch = text[i];
++    if (ch === "\x01") return "\x01";
++    if (ch === "\n" || ch === "\r") break;
++    i++;
++  }
++  return "|";
++}
++
++// Find the end of the current field starting at `cursor`.
++// The field ends at the next delimiter or line end (whichever comes first).
++function findFieldEnd(text, cursor, delim) {
++  let i = cursor;
++  while (i < text.length) {
++    const ch = text[i];
++    if (ch === delim || ch === "\n" || ch === "\r") return i;
++    i++;
++  }
++  return text.length;
++}
++
++// Advance past a line end at position `i` (\n, \r\n, or \r).
++function advancePastLineEnd(text, i) {
++  if (text[i] === "\r" && i + 1 < text.length && text[i + 1] === "\n") {
++    return i + 2;
++  }
++  return i + 1;
++}
+diff --git a/test/framing.test.js b/test/framing.test.js
+new file mode 100644
+index 0000000..fad3e89
+--- /dev/null
++++ b/test/framing.test.js
+@@ -0,0 +1,385 @@
++import { describe, it, expect } from "vitest";
++import { splitMessages } from "../src/framing.js";
++import { buildMessage } from "./helpers/fix.js";
++
++// ── AC1 ──────────────────────────────────────────────────────────────────────
++
++describe("AC1: delimiter equivalence", () => {
++  it("parses the same fields whether delimiter is SOH or pipe", () => {
++    const fields = [
++      [8, "FIX.4.2"],
++      [35, "0"],
++      [49, "SENDER"],
++      [56, "TARGET"],
++    ];
++    const pipeMsg = buildMessage(fields, { delim: "|" });
++    const sohMsg = buildMessage(fields, { delim: "\x01" });
++
++    const pipeResult = splitMessages(pipeMsg);
++    const sohResult = splitMessages(sohMsg);
++
++    expect(pipeResult).toHaveLength(1);
++    expect(sohResult).toHaveLength(1);
++
++    // Both should yield identical field arrays (tags, values) excluding checksum.
++    // Offsets will differ because the messages are different strings, but
++    // relative offsets (offset - start) should match.
++    const pFields = pipeResult[0].fields.filter(f => f.tag !== 10);
++    const sFields = sohResult[0].fields.filter(f => f.tag !== 10);
++    expect(pFields.length).toBe(sFields.length);
++    for (let i = 0; i < pFields.length; i++) {
++      expect(pFields[i].tag).toBe(sFields[i].tag);
++      expect(pFields[i].value).toBe(sFields[i].value);
++      expect(pFields[i].offset - pipeResult[0].start).toBe(
++        sFields[i].offset - sohResult[0].start
++      );
++    }
++  });
++
++  it("keeps pipe inside a value as literal text when delimiter is SOH", () => {
++    const sohMsg = buildMessage(
++      [
++        [8, "FIX.4.2"],
++        [35, "0"],
++        [58, "a|b"],
++      ],
++      { delim: "\x01" }
++    );
++    const result = splitMessages(sohMsg);
++    expect(result).toHaveLength(1);
++    const f58 = result[0].fields.find((f) => f.tag === 58);
++    expect(f58).toBeDefined();
++    expect(f58.value).toBe("a|b");
++  });
++});
++
++// ── AC2 ──────────────────────────────────────────────────────────────────────
++
++describe("AC2: prefix before 8=FIX", () => {
++  it("ignores timestamp prefix and sets start at 8=FIX", () => {
++    const msg = buildMessage(
++      [
++        [8, "FIX.4.2"],
++        [35, "0"],
++        [49, "SENDER"],
++      ],
++      { delim: "|" }
++    );
++    const prefix = "2026-11-25 10:00:01 IN ";
++    const text = prefix + msg + "\n";
++    const result = splitMessages(text);
++    expect(result).toHaveLength(1);
++    expect(result[0].start).toBe(text.indexOf("8=FIX"));
++    // The prefix is not a field.
++    const tags = result[0].fields.map((f) => f.tag);
++    expect(tags).not.toContain(NaN);
++    // First field should be tag 8.
++    expect(result[0].fields[0].tag).toBe(8);
++  });
++});
++
++// ── AC3 ──────────────────────────────────────────────────────────────────────
++
++describe("AC3: 8=FIX inside a field value", () => {
++  it("does not start a message when 8=FIX appears inside a field value", () => {
++    // Case 1: "448=FIXCLIENT" — the "FIX" in "FIXCLIENT" is not preceded by "8="
++    // so there's no "8=FIX" at all.
++    const text1 = "448=FIXCLIENT|35=0|10=042|";
++    expect(splitMessages(text1)).toHaveLength(0);
++
++    // Case 2: "58=resend 8=FIX.4.2" — the "8=FIX" is inside a field value,
++    // preceded by a space (not a line end), so it does not start a message.
++    const text2 = "35=0|58=resend 8=FIX.4.2|10=042|";
++    expect(splitMessages(text2)).toHaveLength(0);
++
++    // Case 3: embedded inside a valid message, it's just the field's value.
++    const msg = buildMessage(
++      [
++        [8, "FIX.4.2"],
++        [35, "0"],
++        [58, "resend 8=FIX.4.2"],
++      ],
++      { delim: "|" }
++    );
++    const result = splitMessages(msg);
++    expect(result).toHaveLength(1);
++    const f58 = result[0].fields.find((f) => f.tag === 58);
++    expect(f58.value).toBe("resend 8=FIX.4.2");
++  });
++});
++
++// ── AC4 ──────────────────────────────────────────────────────────────────────
++
++describe("AC4: multiple messages", () => {
++  it("returns two candidates numbered 1 and 2 for two messages on one line", () => {
++    const msg1 = buildMessage(
++      [
++        [8, "FIX.4.2"],
++        [35, "0"],
++      ],
++      { delim: "|" }
++    );
++    const msg2 = buildMessage(
++      [
++        [8, "FIX.4.2"],
++        [35, "1"],
++      ],
++      { delim: "|" }
++    );
++    // Concatenate on one line (no newline between).
++    const text = msg1 + msg2;
++    const result = splitMessages(text);
++    expect(result).toHaveLength(2);
++    expect(result[0].number).toBe(1);
++    expect(result[1].number).toBe(2);
++    expect(result[0].fields.find((f) => f.tag === 35).value).toBe("0");
++    expect(result[1].fields.find((f) => f.tag === 35).value).toBe("1");
++  });
++
++  it("returns two candidates numbered 1 and 2 for two messages on two lines", () => {
++    const msg1 = buildMessage(
++      [
++        [8, "FIX.4.2"],
++        [35, "0"],
++      ],
++      { delim: "|" }
++    );
++    const msg2 = buildMessage(
++      [
++        [8, "FIX.4.2"],
++        [35, "1"],
++      ],
++      { delim: "|" }
++    );
++    const text = msg1 + "\n" + msg2 + "\n";
++    const result = splitMessages(text);
++    expect(result).toHaveLength(2);
++    expect(result[0].number).toBe(1);
++    expect(result[1].number).toBe(2);
++  });
++});
++
++// ── AC5 ──────────────────────────────────────────────────────────────────────
++
++describe("AC5: checksum termination", () => {
++  it("ends message after checksum field followed by newline", () => {
++    const msg = buildMessage(
++      [
++        [8, "FIX.4.2"],
++        [35, "0"],
++      ],
++      { delim: "|" }
++    );
++    const text = msg + "\n";
++    const result = splitMessages(text);
++    expect(result).toHaveLength(1);
++    // The message should not include the newline.
++    const lastField = result[0].fields[result[0].fields.length - 1];
++    expect(lastField.tag).toBe(10);
++    // The end should be right after the delimiter following the checksum,
++    // which is the newline position.
++    expect(text[result[0].fields[result[0].fields.length - 1].offset + "10=".length + 3]).toBe("|");
++  });
++
++  it("does not end on 110=100 or on 10= inside a value", () => {
++    // 110=100 should NOT terminate.
++    const msg1 = buildMessage(
++      [
++        [8, "FIX.4.2"],
++        [35, "0"],
++        [110, "100"],
++      ],
++      { delim: "|" }
++    );
++    const r1 = splitMessages(msg1);
++    expect(r1).toHaveLength(1);
++    const f110 = r1[0].fields.find((f) => f.tag === 110);
++    expect(f110).toBeDefined();
++    expect(f110.value).toBe("100");
++    // The message should have ended at the real checksum (tag 10), not at 110.
++    const lastField1 = r1[0].fields[r1[0].fields.length - 1];
++    expect(lastField1.tag).toBe(10);
++
++    // 58=x10=123 should NOT terminate (the "10=123" is inside the value of tag 58).
++    const msg2 = buildMessage(
++      [
++        [8, "FIX.4.2"],
++        [35, "0"],
++        [58, "x10=123"],
++      ],
++      { delim: "|" }
++    );
++    const r2 = splitMessages(msg2);
++    expect(r2).toHaveLength(1);
++    const f58 = r2[0].fields.find((f) => f.tag === 58);
++    expect(f58.value).toBe("x10=123");
++    const lastField2 = r2[0].fields[r2[0].fields.length - 1];
++    expect(lastField2.tag).toBe(10);
++  });
++
++  it("excludes trailing text after the checksum delimiter", () => {
++    const msg = buildMessage(
++      [
++        [8, "FIX.4.2"],
++        [35, "0"],
++      ],
++      { delim: "|" }
++    );
++    const trailing = "GARBAGE 2026-11-25 10:00:02 IN ";
++    const text = msg + trailing;
++    const result = splitMessages(text);
++    expect(result).toHaveLength(1);
++    // The trailing text should not appear in any field.
++    const allValues = result[0].fields.map((f) => f.value).join("|");
++    expect(allValues).not.toContain("GARBAGE");
++    expect(allValues).not.toContain("2026-11-25");
++  });
++});
++
++// ── AC6 ──────────────────────────────────────────────────────────────────────
++
++describe("AC6: field structure", () => {
++  it("does not include an empty field after the final delimiter", () => {
++    const msg = buildMessage(
++      [
++        [8, "FIX.4.2"],
++        [35, "0"],
++      ],
++      { delim: "|" }
++    );
++    // buildMessage terminates with a delimiter after the checksum.
++    expect(msg.endsWith("|")).toBe(true);
++    const result = splitMessages(msg);
++    expect(result).toHaveLength(1);
++    const lastField = result[0].fields[result[0].fields.length - 1];
++    expect(lastField.tag).toBe(10);
++    // There should be no empty-tag field after the checksum.
++    const emptyFields = result[0].fields.filter(
++      (f) => f.value === "" && f.tag !== 10
++    );
++    // Actually, check that there's no field with NaN tag or empty tag.
++    for (const f of result[0].fields) {
++      expect(typeof f.tag).toBe("number");
++      expect(Number.isNaN(f.tag)).toBe(false);
++    }
++  });
++
++  it("records tag as number, value as string, and offset of tag start", () => {
++    const msg = buildMessage(
++      [
++        [8, "FIX.4.2"],
++        [35, "0"],
++        [49, ""],
++      ],
++      { delim: "|" }
++    );
++    const result = splitMessages(msg);
++    expect(result).toHaveLength(1);
++    for (const f of result[0].fields) {
++      expect(typeof f.tag).toBe("number");
++      expect(typeof f.value).toBe("string");
++      expect(typeof f.offset).toBe("number");
++    }
++    // Empty value stays "".
++    const f49 = result[0].fields.find((f) => f.tag === 49);
++    expect(f49.value).toBe("");
++    // Offset of tag 8 should be the start.
++    const f8 = result[0].fields.find((f) => f.tag === 8);
++    expect(f8.offset).toBe(result[0].start);
++  });
++
++  it("preserves repeated tags in order", () => {
++    const msg = buildMessage(
++      [
++        [8, "FIX.4.2"],
++        [35, "0"],
++        [453, "2"],
++        [452, "1"],
++        [452, "2"],
++      ],
++      { delim: "|" }
++    );
++    const result = splitMessages(msg);
++    expect(result).toHaveLength(1);
++    const tag452 = result[0].fields.filter((f) => f.tag === 452);
++    expect(tag452).toHaveLength(2);
++    expect(tag452[0].value).toBe("1");
++    expect(tag452[1].value).toBe("2");
++    // Offsets should be in increasing order.
++    expect(tag452[0].offset).toBeLessThan(tag452[1].offset);
++  });
++});
++
++// ── AC7 ──────────────────────────────────────────────────────────────────────
++
++describe("AC7: no 8=FIX", () => {
++  it("returns an empty list when no 8=FIX is present", () => {
++    expect(splitMessages("hello world\nno fix here")).toEqual([]);
++    expect(splitMessages("")).toEqual([]);
++    expect(splitMessages("8=FIXCLIENT\n35=0")).toEqual([]);
++  });
++});
++
++// ── AC8 ──────────────────────────────────────────────────────────────────────
++
++describe("AC8: helper correctness", () => {
++  it("helper produces BodyLength and CheckSum matching a hand-computed example", () => {
++    // Hand-computed example:
++    //   8=FIX.4.2|9=27|35=A|49=SENDER|56=TARGET|10=NNN|
++    // Body = "35=A|49=SENDER|56=TARGET|"
++    // BodyLength = byte length of body = 4+1+9+1+9+1 = 25? Let's compute:
++    //   "35=A|" = 5
++    //   "49=SENDER|" = 10
++    //   "56=TARGET|" = 10
++    //   Total = 25
++    // CheckSum = sum of bytes in "8=FIX.4.2|9=25|35=A|49=SENDER|56=TARGET|" mod 256
++
++    const msg = buildMessage(
++      [
++        [8, "FIX.4.2"],
++        [35, "A"],
++        [49, "SENDER"],
++        [56, "TARGET"],
++      ],
++      { delim: "|" }
++    );
++
++    // Verify structure: 8=FIX.4.2|9=<len>|35=A|49=SENDER|56=TARGET|10=<chk>|
++    expect(msg.startsWith("8=FIX.4.2|9=")).toBe(true);
++
++    // Extract BodyLength.
++    const after9eq = msg.indexOf("9=") + 2;
++    const after9delim = msg.indexOf("|", after9eq);
++    const bodyLengthStr = msg.substring(after9eq, after9delim);
++    const bodyLength = Number(bodyLengthStr);
++
++    // Extract body (between 9=...| and |10=).
++    const bodyStart = after9delim + 1;
++    const tenIdx = msg.indexOf("10=");
++    const body = msg.substring(bodyStart, tenIdx);
++    const actualBodyLength = new TextEncoder().encode(body).length;
++
++    expect(bodyLength).toBe(actualBodyLength);
++    expect(bodyLength).toBe(25);
++
++    // Verify CheckSum.
++    const msgBeforeChecksum = msg.substring(0, tenIdx);
++    const bytes = new TextEncoder().encode(msgBeforeChecksum);
++    let sum = 0;
++    for (const b of bytes) sum += b;
++    const expectedChecksum = (sum % 256).toString().padStart(3, "0");
++
++    const after10eq = tenIdx + 3;
++    const after10delim = msg.indexOf("|", after10eq);
++    const checksumStr = msg.substring(after10eq, after10delim);
++    expect(checksumStr).toBe(expectedChecksum);
++
++    // Also verify splitMessages can parse it.
++    const result = splitMessages(msg);
++    expect(result).toHaveLength(1);
++    const f9 = result[0].fields.find((f) => f.tag === 9);
++    expect(f9.value).toBe("25");
++    const f10 = result[0].fields.find((f) => f.tag === 10);
++    expect(f10.value).toBe(expectedChecksum);
++  });
++});
+diff --git a/test/helpers.test.js b/test/helpers.test.js
+new file mode 100644
+index 0000000..35960b9
+--- /dev/null
++++ b/test/helpers.test.js
+@@ -0,0 +1,97 @@
++import { describe, it, expect } from "vitest";
++import { buildMessage } from "./helpers/fix.js";
++import { splitMessages } from "../src/framing.js";
++
++describe("buildMessage helper", () => {
++  it("builds a message with pipe delimiter by default", () => {
++    const msg = buildMessage([
++      [8, "FIX.4.2"],
++      [35, "0"],
++    ]);
++    expect(msg).toContain("|");
++    expect(msg).not.toContain("\x01");
++    expect(msg.startsWith("8=FIX.4.2|")).toBe(true);
++    expect(msg.endsWith("|")).toBe(true);
++  });
++
++  it("builds a message with SOH delimiter when specified", () => {
++    const msg = buildMessage(
++      [
++        [8, "FIX.4.2"],
++        [35, "0"],
++      ],
++      { delim: "\x01" }
++    );
++    expect(msg).toContain("\x01");
++    expect(msg.startsWith("8=FIX.4.2\x01")).toBe(true);
++    expect(msg.endsWith("\x01")).toBe(true);
++  });
++
++  it("computes BodyLength correctly", () => {
++    const msg = buildMessage(
++      [
++        [8, "FIX.4.2"],
++        [35, "A"],
++        [49, "SENDER"],
++        [56, "TARGET"],
++      ],
++      { delim: "|" }
++    );
++    // Extract body between 9=...| and |10=
++    const after9delim = msg.indexOf("|", msg.indexOf("9=") + 2) + 1;
++    const tenIdx = msg.indexOf("10=");
++    const body = msg.substring(after9delim, tenIdx);
++    const bodyLength = Number(msg.substring(msg.indexOf("9=") + 2, msg.indexOf("|", msg.indexOf("9=") + 2)));
++    expect(bodyLength).toBe(new TextEncoder().encode(body).length);
++  });
++
++  it("computes CheckSum correctly", () => {
++    const msg = buildMessage(
++      [
++        [8, "FIX.4.2"],
++        [35, "0"],
++      ],
++      { delim: "|" }
++    );
++    const tenIdx = msg.indexOf("10=");
++    const msgBefore = msg.substring(0, tenIdx);
++    const bytes = new TextEncoder().encode(msgBefore);
++    let sum = 0;
++    for (const b of bytes) sum += b;
++    const expected = (sum % 256).toString().padStart(3, "0");
++    const checksumStr = msg.substring(tenIdx + 3, msg.indexOf("|", tenIdx + 3));
++    expect(checksumStr).toBe(expected);
++  });
++
++  it("throws when tag 8 is missing", () => {
++    expect(() => buildMessage([[35, "0"]])).toThrow();
++  });
++
++  it("ignores caller-supplied tag 9 and tag 10", () => {
++    const msg = buildMessage([
++      [8, "FIX.4.2"],
++      [9, "999"],
++      [35, "0"],
++      [10, "000"],
++    ]);
++    // Should not contain the caller's values.
++    expect(msg).not.toContain("9=999");
++    expect(msg).not.toContain("10=000");
++  });
++
++  it("produces a message that splitMessages can parse", () => {
++    const msg = buildMessage(
++      [
++        [8, "FIX.4.2"],
++        [35, "0"],
++        [49, "SENDER"],
++      ],
++      { delim: "|" }
++    );
++    const result = splitMessages(msg);
++    expect(result).toHaveLength(1);
++    expect(result[0].fields.find((f) => f.tag === 8).value).toBe("FIX.4.2");
++    expect(result[0].fields.find((f) => f.tag === 35).value).toBe("0");
++    expect(result[0].fields.find((f) => f.tag === 49).value).toBe("SENDER");
++  });
++});
+diff --git a/test/helpers/fix.js b/test/helpers/fix.js
+new file mode 100644
+index 0000000..8d35246
+--- /dev/null
++++ b/test/helpers/fix.js
+@@ -0,0 +1,56 @@
++// Test helper: build a well-formed FIX message string.
++//
++// buildMessage(fields, opts?)
++//   fields: array of [tag, value] pairs (numbers or strings for tag).
++//   opts.delim: delimiter character (default "|").
++//
++// The helper:
++//   - Always emits tag 8 (BeginString) first. The caller must include it.
++//   - Computes tag 9 (BodyLength) as the byte length of everything between
++//     the end of "9=<len><delim>" and the start of "10=...".
++//   - Computes tag 10 (CheckSum) as the sum of all bytes in the message
++//     up to (not including) "10=", modulo 256, zero-padded to 3 digits.
++//   - Returns the full string including 8=, 9=, and 10= fields, terminated
++//     by the delimiter after the checksum.
++
++export function buildMessage(fields, opts = {}) {
++  const delim = opts.delim ?? "|";
++
++  // Separate the BeginString (tag 8) from the rest.
++  let beginString = null;
++  const bodyFields = [];
++  for (const [tag, value] of fields) {
++    const t = Number(tag);
++    if (t === 8) {
++      beginString = String(value);
++    } else if (t === 9 || t === 10) {
++      // Caller should not supply these; we compute them.
++      continue;
++    } else {
++      bodyFields.push([t, String(value)]);
++    }
++  }
++  if (beginString === null) {
++    throw new Error("buildMessage: fields must include tag 8 (BeginString)");
++  }
++
++  // Build the body (everything between 9=...<delim> and 10=...).
++  let body = "";
++  for (const [t, v] of bodyFields) {
++    body += `${t}=${v}${delim}`;
++  }
++
++  const bodyLength = new TextEncoder().encode(body).length;
++
++  // Build message up to (not including) the checksum field.
++  let msg = `8=${beginString}${delim}9=${bodyLength}${delim}${body}`;
++
++  // Compute checksum: sum of all bytes so far, mod 256, zero-padded to 3 digits.
++  const bytes = new TextEncoder().encode(msg);
++  let sum = 0;
++  for (const b of bytes) sum += b;
++  const checksum = (sum % 256).toString().padStart(3, "0");
++
++  msg += `10=${checksum}${delim}`;
++  return msg;
++}
+-- 
+2.43.0
+
+
+From 8057bbf1360e5a6ae15216cdbdbc90e3b33bab2b Mon Sep 17 00:00:00 2001
+From: Hermes Agent <hermes@agent.local>
+Date: Thu, 26 Nov 2026 02:53:34 +0100
+Subject: [PATCH 2/2] FXL-1: reject 8=FIX inside a field value when no
+ delimiter precedes it
+
+findMessageStart now also rejects a candidate when the text from the
+line start to the candidate contains '=' (meaning we are inside a
+tag=value pair). Fixes the case where inputs like
+'58=resend 8=FIX.4.2|10=042|' were incorrectly parsed as a message.
+
+Adds 3 tests covering 8=FIX inside the first field on a line
+(tags 58, 448, and 8).
+---
+ src/framing.js          |  9 +++++++--
+ test/framing-f1.test.js | 16 ++++++++++++++++
+ 2 files changed, 23 insertions(+), 2 deletions(-)
+ create mode 100644 test/framing-f1.test.js
+
+diff --git a/src/framing.js b/src/framing.js
+index 6ff0db1..5d4147a 100644
+--- a/src/framing.js
++++ b/src/framing.js
+@@ -177,8 +177,13 @@ function findMessageStart(text, from) {
+     // If there's no delimiter in the text before, check if the character before "8" is a digit.
+     // If it's a digit, then "8" is part of a larger tag number (like "448"), so it's not valid.
+     if (!textBefore.includes("|") && !textBefore.includes("\x01")) {
+-      // No delimiter before, so we're not inside a field.
+-      // But check if the character before "8" is a digit.
++      // No delimiter before. Check if we're inside a field value.
++      // If textBefore contains '=', we're after a tag= prefix, so inside a value.
++      if (textBefore.includes("=")) {
++        idx = hit + 1;
++        continue;
++      }
++      // Check if the character before "8" is a digit.
+       if (hit > 0 && /\d/.test(text[hit - 1])) {
+         // "8" is part of a larger tag number, not valid.
+         idx = hit + 1;
+diff --git a/test/framing-f1.test.js b/test/framing-f1.test.js
+new file mode 100644
+index 0000000..588e9a5
+--- /dev/null
++++ b/test/framing-f1.test.js
+@@ -0,0 +1,16 @@
++import { describe, it, expect } from "vitest";
++import { splitMessages } from "../src/framing.js";
++
++describe("AC3: 8=FIX inside another field", () => {
++  it("does not start a message at 8=FIX inside the first field on a line", () => {
++    expect(splitMessages("58=resend 8=FIX.4.2|10=042|")).toEqual([]);
++  });
++
++  it("does not start a message at 8=FIX inside tag 448 value on a line", () => {
++    expect(splitMessages("448=8=FIX.4.2|10=042|")).toEqual([]);
++  });
++
++  it("does not start a message at 8=FIX inside tag 8 value on a line", () => {
++    expect(splitMessages("8=8=FIX.4.2|10=042|")).toEqual([]);
++  });
++});
+-- 
+2.43.0
+

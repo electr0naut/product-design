@@ -1,0 +1,7 @@
+{
+  "id": "D-20261127-18",
+  "action": "refresh_copies",
+  "key": "FXL-22",
+  "commit": "2a7550244286d5401ca43a484b3bced8efc61a36",
+  "reason": "Technical design v1.4 (parties, executions by sender, restart at 1, single-byte text, pick by message, rounding; approved by Ubay Gonzalez on 2026-11-27: 'v1.4 approved') and the v1.4 hidden suite: acc-parties, acc-executions, acc-restart, acc-single-byte and acc-pick added, fixtures of acc-orders and acc-performance moved to real directions with the same expected values. No test is retired. The new tests fail on the trusted main until FXL-22 to FXL-26 land"
+}

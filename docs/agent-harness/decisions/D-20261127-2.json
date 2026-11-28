@@ -1,0 +1,10 @@
+{
+  "id": "D-20261127-2",
+  "action": "retire_hidden",
+  "key": "FXL-9",
+  "tests": [
+    "test/acc-check.test.js > bad tags",
+    "test/acc-timeline.test.js > event keys"
+  ],
+  "reason": "acceptance/README.md: v1.2 changes these on purpose (a pipe before a non-number is not a field boundary; events gain origClOrdId and execRefId). Replaced by a renamed test in acc-check and by acc-events"
+}

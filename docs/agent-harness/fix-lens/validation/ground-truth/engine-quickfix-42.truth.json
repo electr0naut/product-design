@@ -1,0 +1,491 @@
+{
+ "engine": "quickfix 1.16.0 (PyPI), SocketInitiator + SocketAcceptor over 127.0.0.1",
+ "begin": "FIX.4.2",
+ "seed": 20261127,
+ "messagesInLog": 79,
+ "appMessagesFromClient": 20,
+ "appMessagesFromBroker": 40,
+ "adminMessagesAtBroker": 19,
+ "skippedSequenceNumbers": {
+  "direction": "CLI42>BRK42",
+  "expected": 24,
+  "received": 27
+ },
+ "orders": [
+  {
+   "clOrdIds": [
+    "C2-1",
+    "C2-1c"
+   ],
+   "orderId": "ORD00001",
+   "symbol": "OMNI",
+   "side": "1",
+   "finalOrdStatus": "4",
+   "cum": "500"
+  },
+  {
+   "clOrdIds": [
+    "C2-2"
+   ],
+   "orderId": "ORD00005",
+   "symbol": "OMNI",
+   "side": "1",
+   "finalOrdStatus": "1",
+   "cum": "700"
+  },
+  {
+   "clOrdIds": [
+    "C2-3",
+    "C2-3c"
+   ],
+   "orderId": "ORD00010",
+   "symbol": "ACME",
+   "side": "1",
+   "finalOrdStatus": "4",
+   "cum": "150"
+  },
+  {
+   "clOrdIds": [
+    "C2-4"
+   ],
+   "orderId": "ORD00014",
+   "symbol": "OMNI",
+   "side": "2",
+   "finalOrdStatus": "2",
+   "cum": "1900"
+  },
+  {
+   "clOrdIds": [
+    "C2-5"
+   ],
+   "orderId": "ORD00018",
+   "symbol": "ZETA",
+   "side": "1",
+   "finalOrdStatus": "2",
+   "cum": "300"
+  },
+  {
+   "clOrdIds": [
+    "C2-6"
+   ],
+   "orderId": "ORD00022",
+   "symbol": "OMNI",
+   "side": "2",
+   "finalOrdStatus": "2",
+   "cum": "2000"
+  },
+  {
+   "clOrdIds": [
+    "C2-7"
+   ],
+   "orderId": "ORD00026",
+   "symbol": "ZETA",
+   "side": "2",
+   "finalOrdStatus": "2",
+   "cum": "1500"
+  },
+  {
+   "clOrdIds": [
+    "C2-8",
+    "C2-8c"
+   ],
+   "orderId": "ORD00030",
+   "symbol": "ACME",
+   "side": "2",
+   "finalOrdStatus": "4",
+   "cum": "375"
+  },
+  {
+   "clOrdIds": [
+    "C2-9"
+   ],
+   "orderId": "ORD00034",
+   "symbol": "ACME",
+   "side": "1",
+   "finalOrdStatus": "1",
+   "cum": "500"
+  },
+  {
+   "clOrdIds": [
+    "C2-10",
+    "C2-10r",
+    "C2-10c"
+   ],
+   "orderId": "ORD00037",
+   "symbol": "ACME",
+   "side": "2",
+   "finalOrdStatus": "4",
+   "cum": "0"
+  },
+  {
+   "clOrdIds": [
+    "C2-11"
+   ],
+   "orderId": "ORD00041",
+   "symbol": "ZETA",
+   "side": "1",
+   "finalOrdStatus": "2",
+   "cum": "1200"
+  },
+  {
+   "clOrdIds": [
+    "C2-12"
+   ],
+   "orderId": "ORD00045",
+   "symbol": "OMNI",
+   "side": "1",
+   "finalOrdStatus": "1",
+   "cum": "50"
+  },
+  {
+   "clOrdIds": [
+    "C2-13"
+   ],
+   "orderId": "ORD00048",
+   "symbol": "ACME",
+   "side": "1",
+   "finalOrdStatus": "2",
+   "cum": "300"
+  }
+ ],
+ "executions": [
+  {
+   "execId": "X00003",
+   "orderId": "ORD00001",
+   "symbol": "OMNI",
+   "side": "1",
+   "qty": "500",
+   "px": "73.06",
+   "survives": true
+  },
+  {
+   "execId": "X00007",
+   "orderId": "ORD00005",
+   "symbol": "OMNI",
+   "side": "1",
+   "qty": "700",
+   "px": "87.38",
+   "survives": true
+  },
+  {
+   "execId": "X00008",
+   "orderId": "ORD00005",
+   "symbol": "OMNI",
+   "side": "1",
+   "qty": "700",
+   "px": "87.43",
+   "survives": false
+  },
+  {
+   "execId": "X00012",
+   "orderId": "ORD00010",
+   "symbol": "ACME",
+   "side": "1",
+   "qty": "150",
+   "px": "74.16",
+   "survives": true
+  },
+  {
+   "execId": "X00016",
+   "orderId": "ORD00014",
+   "symbol": "OMNI",
+   "side": "2",
+   "qty": "950",
+   "px": "34.94",
+   "survives": true
+  },
+  {
+   "execId": "X00017",
+   "orderId": "ORD00014",
+   "symbol": "OMNI",
+   "side": "2",
+   "qty": "950",
+   "px": "34.99",
+   "survives": true
+  },
+  {
+   "execId": "X00020",
+   "orderId": "ORD00018",
+   "symbol": "ZETA",
+   "side": "1",
+   "qty": "150",
+   "px": "46.95",
+   "survives": true
+  },
+  {
+   "execId": "X00021",
+   "orderId": "ORD00018",
+   "symbol": "ZETA",
+   "side": "1",
+   "qty": "150",
+   "px": "47.00",
+   "survives": true
+  },
+  {
+   "execId": "X00024",
+   "orderId": "ORD00022",
+   "symbol": "OMNI",
+   "side": "2",
+   "qty": "1000",
+   "px": "67.23",
+   "survives": true
+  },
+  {
+   "execId": "X00025",
+   "orderId": "ORD00022",
+   "symbol": "OMNI",
+   "side": "2",
+   "qty": "1000",
+   "px": "67.28",
+   "survives": true
+  },
+  {
+   "execId": "X00028",
+   "orderId": "ORD00026",
+   "symbol": "ZETA",
+   "side": "2",
+   "qty": "750",
+   "px": "15.99",
+   "survives": true
+  },
+  {
+   "execId": "X00029",
+   "orderId": "ORD00026",
+   "symbol": "ZETA",
+   "side": "2",
+   "qty": "750",
+   "px": "16.04",
+   "survives": true
+  },
+  {
+   "execId": "X00032",
+   "orderId": "ORD00030",
+   "symbol": "ACME",
+   "side": "2",
+   "qty": "375",
+   "px": "18.51",
+   "survives": true
+  },
+  {
+   "execId": "X00036",
+   "orderId": "ORD00034",
+   "symbol": "ACME",
+   "side": "1",
+   "qty": "500",
+   "px": "36.1",
+   "survives": true
+  },
+  {
+   "execId": "X00043",
+   "orderId": "ORD00041",
+   "symbol": "ZETA",
+   "side": "1",
+   "qty": "600",
+   "px": "45.9",
+   "survives": true
+  },
+  {
+   "execId": "X00044",
+   "orderId": "ORD00041",
+   "symbol": "ZETA",
+   "side": "1",
+   "qty": "600",
+   "px": "45.95",
+   "survives": true
+  },
+  {
+   "execId": "X00047",
+   "orderId": "ORD00045",
+   "symbol": "OMNI",
+   "side": "1",
+   "qty": "50",
+   "px": "79.76",
+   "survives": true
+  },
+  {
+   "execId": "X00050",
+   "orderId": "ORD00048",
+   "symbol": "ACME",
+   "side": "1",
+   "qty": "150",
+   "px": "12.34",
+   "survives": true
+  },
+  {
+   "execId": "X00051",
+   "orderId": "ORD00048",
+   "symbol": "ACME",
+   "side": "1",
+   "qty": "150",
+   "px": "12.39",
+   "survives": true
+  }
+ ],
+ "newOrdersSent": [
+  {
+   "cl": "C2-1",
+   "sym": "OMNI",
+   "side": "1",
+   "qty": 2000,
+   "px": "73.06",
+   "plan": "PART"
+  },
+  {
+   "cl": "C2-2",
+   "sym": "OMNI",
+   "side": "1",
+   "qty": 1400,
+   "px": "87.38",
+   "plan": "FILL BUST"
+  },
+  {
+   "cl": "C2-3",
+   "sym": "ACME",
+   "side": "1",
+   "qty": 600,
+   "px": "74.16",
+   "plan": "PART"
+  },
+  {
+   "cl": "C2-4",
+   "sym": "OMNI",
+   "side": "2",
+   "qty": 1900,
+   "px": "34.94",
+   "plan": "FILL"
+  },
+  {
+   "cl": "C2-5",
+   "sym": "ZETA",
+   "side": "1",
+   "qty": 300,
+   "px": "46.95",
+   "plan": "FILL"
+  },
+  {
+   "cl": "C2-6",
+   "sym": "OMNI",
+   "side": "2",
+   "qty": 2000,
+   "px": "67.23",
+   "plan": "FILL"
+  },
+  {
+   "cl": "C2-7",
+   "sym": "ZETA",
+   "side": "2",
+   "qty": 1500,
+   "px": "15.99",
+   "plan": "FILL"
+  },
+  {
+   "cl": "C2-8",
+   "sym": "ACME",
+   "side": "2",
+   "qty": 1500,
+   "px": "18.51",
+   "plan": "PART"
+  },
+  {
+   "cl": "C2-9",
+   "sym": "ACME",
+   "side": "1",
+   "qty": 2000,
+   "px": "36.1",
+   "plan": "PART"
+  },
+  {
+   "cl": "C2-10",
+   "sym": "ACME",
+   "side": "2",
+   "qty": 500,
+   "px": "81.48",
+   "plan": "REST"
+  },
+  {
+   "cl": "C2-11",
+   "sym": "ZETA",
+   "side": "1",
+   "qty": 1200,
+   "px": "45.9",
+   "plan": "FILL"
+  },
+  {
+   "cl": "C2-12",
+   "sym": "OMNI",
+   "side": "1",
+   "qty": 200,
+   "px": "79.76",
+   "plan": "PART"
+  },
+  {
+   "cl": "C2-13",
+   "sym": "ACME",
+   "side": "1",
+   "qty": 300,
+   "px": "12.34",
+   "plan": "FILL"
+  }
+ ],
+ "trades": {
+  "ACME": {
+   "buyOrders": "3",
+   "bought": [
+    "950"
+   ],
+   "avgBuy": [
+    "34.6142"
+   ],
+   "sellOrders": "2",
+   "sold": [
+    "375"
+   ],
+   "avgSell": [
+    "18.51"
+   ],
+   "net": [
+    "+575"
+   ]
+  },
+  "OMNI": {
+   "buyOrders": "3",
+   "bought": [
+    "1250"
+   ],
+   "avgBuy": [
+    "81.3472"
+   ],
+   "sellOrders": "2",
+   "sold": [
+    "3900"
+   ],
+   "avgSell": [
+    "51.524"
+   ],
+   "net": [
+    "-2650"
+   ]
+  },
+  "ZETA": {
+   "buyOrders": "2",
+   "bought": [
+    "1500"
+   ],
+   "avgBuy": [
+    "46.135"
+   ],
+   "sellOrders": "1",
+   "sold": [
+    "1500"
+   ],
+   "avgSell": [
+    "16.015"
+   ],
+   "net": [
+    "0"
+   ]
+  }
+ },
+ "dataset": "datasets/FIX42/engine-quickfix-42.log",
+ "sha256": "747c3749fb19cec4058fe9f7ef604bcb3c615084853662d0d9421ebf2ab4fbf7"
+}

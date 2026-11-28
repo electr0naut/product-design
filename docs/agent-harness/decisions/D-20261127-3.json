@@ -1,0 +1,7 @@
+{
+  "id": "D-20261127-3",
+  "action": "refresh_copies",
+  "key": "FXL-9",
+  "commit": "ae216b0f82e0c2498756a24b993ba504a19e3187",
+  "reason": "Technical design v1.2.1: the eleven clarifications approved by Ubay Gonzalez on 2026-11-27. The hidden suite is unchanged"
+}

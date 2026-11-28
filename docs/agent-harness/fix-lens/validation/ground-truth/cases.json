@@ -1,0 +1,3169 @@
+[
+ {
+  "id": "S04-01",
+  "feature": "Unsupported BeginString is reported per message",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "PRD Scope; design 5",
+  "expect": {
+   "labels": {
+    "1": "unsupported version FIX.4.3",
+    "2": "unsupported version FIXT.1.1",
+    "3": "unsupported version FIX.4.1",
+    "4": "Heartbeat"
+   },
+   "stats": {
+    "messages": 4,
+    "valid": 4,
+    "malformed": 0
+   }
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S04-01.log",
+  "sha256": "dbb519dd7b4ec254e50a752cd326ba3acd6ece7760b7bb88d07cf1670d9bfb2b",
+  "bytes": 285,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S04-02-4.2",
+  "feature": "Unknown tag and unknown enum value are shown raw and labelled",
+  "version": "FIX.4.2",
+  "kind": "prd",
+  "basis": "AC-004",
+  "expect": {
+   "rows": [
+    {
+     "number": 1,
+     "tag": "5001",
+     "field": "Unknown tag 5001",
+     "value": "venue-flag"
+    },
+    {
+     "number": 1,
+     "tag": "20001",
+     "field": "Unknown tag 20001",
+     "value": "x=y"
+    },
+    {
+     "number": 1,
+     "tag": "54",
+     "field": "Side",
+     "value": "Z",
+     "meaning": "unknown value"
+    },
+    {
+     "number": 1,
+     "tag": "40",
+     "field": "OrdType",
+     "value": "2",
+     "meaning": "Limit"
+    }
+   ]
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX42/S04-02-4.2.log",
+  "sha256": "2d225fc94787e8c1b873c3a3c8ad3a490e3dad6c69d0e381ad36ee8e57434594",
+  "bytes": 139,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S04-02-4.4",
+  "feature": "Unknown tag and unknown enum value are shown raw and labelled",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "AC-004",
+  "expect": {
+   "rows": [
+    {
+     "number": 1,
+     "tag": "5001",
+     "field": "Unknown tag 5001",
+     "value": "venue-flag"
+    },
+    {
+     "number": 1,
+     "tag": "20001",
+     "field": "Unknown tag 20001",
+     "value": "x=y"
+    },
+    {
+     "number": 1,
+     "tag": "54",
+     "field": "Side",
+     "value": "Z",
+     "meaning": "unknown value"
+    },
+    {
+     "number": 1,
+     "tag": "40",
+     "field": "OrdType",
+     "value": "2",
+     "meaning": "Limit"
+    }
+   ]
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S04-02-4.4.log",
+  "sha256": "44c5952ff1d2d9262f2d7f14229436b19a8908ca90a9466f55e9cf9d5e2b2497",
+  "bytes": 139,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S04-03-4.2",
+  "feature": "FIX 4.2 execution reports: ExecTransType before ExecType",
+  "version": "FIX.4.2",
+  "kind": "prd",
+  "basis": "TR-003; design 7.5",
+  "expect": {
+   "events": [
+    "1:Acknowledgement",
+    "2:Fill",
+    "3:Fill",
+    "4:OrderStatus",
+    "5:TradeCancel",
+    "6:TradeCorrect",
+    "7:ExecutionReport (ExecType F)",
+    "8:Cancelled",
+    "9:ExecutionReport (ExecType 8)",
+    "10:ExecutionReport (ExecType C)"
+   ],
+   "trades": {
+    "ACME": {
+     "buyOrders": "0",
+     "bought": "40",
+     "avgBuy": "9",
+     "sellOrders": "0",
+     "sold": "0",
+     "avgSell": "–",
+     "net": "+40"
+    }
+   },
+   "unmatched": 0
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX42/S04-03-4.2.log",
+  "sha256": "1a9e5b656d6d809b6b803951dc1f3ce18407ece6d6d9a857cb6ba468f892a89d",
+  "bytes": 1518,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S04-03-4.4",
+  "feature": "FIX 4.4 execution reports: ExecType F, G, H, I",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-003; design 7.5",
+  "expect": {
+   "events": [
+    "1:Acknowledgement",
+    "2:Fill",
+    "3:Fill",
+    "4:OrderStatus",
+    "5:TradeCancel",
+    "6:TradeCorrect",
+    "7:Cancelled",
+    "8:ExecutionReport (ExecType 8)",
+    "9:ExecutionReport (ExecType A)",
+    "10:ExecutionReport (ExecType 6)",
+    "11:ExecutionReport (ExecType E)",
+    "12:Replaced",
+    "13:ExecutionReport (ExecType C)"
+   ],
+   "trades": {
+    "ACME": {
+     "buyOrders": "0",
+     "bought": "40",
+     "avgBuy": "9",
+     "sellOrders": "0",
+     "sold": "0",
+     "avgSell": "–",
+     "net": "+40"
+    }
+   },
+   "unmatched": 0
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S04-03-4.4.log",
+  "sha256": "1314e3475e7ff9a4526bc5aaa4f1f6b4be6ed5617b22d59110cd887289f64e0f",
+  "bytes": 1902,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S04-04",
+  "feature": "FIX 4.4 reports with the FIX 4.2 values ExecType 1 or 2 are not fills and are labelled",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-003 ('1 or 2 (FIX 4.2)'); AC-004, AC-009; Orchestra FIX 4.4 and QuickFIX FIX44.xml ExecType code sets",
+  "expect": {
+   "trades": {
+    "ACME": {
+     "buyOrders": "1",
+     "bought": "0",
+     "avgBuy": "–",
+     "sellOrders": "0",
+     "sold": "0",
+     "avgSell": "–",
+     "net": "0"
+    }
+   },
+   "events": [
+    "1:NewOrder",
+    "2:ExecutionReport (ExecType 1)",
+    "3:ExecutionReport (ExecType 2)"
+   ],
+   "rows": [
+    {
+     "number": 2,
+     "tag": "150",
+     "value": "1",
+     "meaning": "unknown value"
+    }
+   ]
+  },
+  "view": null,
+  "note": "Risk, not verified with real logs: counterparties that still send 150=1/2 on FIX 4.4 get no fills counted.",
+  "dataset": "datasets/FIX44/S04-04.log",
+  "sha256": "2bf1bbbbc29d5e3f40954269b23f7eef3a17713e8db4147d80283c4d7158ae81",
+  "bytes": 405,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S04-05-4.2",
+  "feature": "A multiple-value field (ExecInst 18=1 6) is not called an unknown value",
+  "version": "FIX.4.2",
+  "kind": "fix",
+  "basis": "FIX 4.2/4.4 ExecInst (18) is a MultipleValueString; AC-004 'an enum value missing from the dictionary'",
+  "expect": {
+   "rows": [
+    {
+     "number": 1,
+     "tag": "18",
+     "value": "1 6",
+     "meaning_not": "unknown value"
+    }
+   ]
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX42/S04-05-4.2.log",
+  "sha256": "d7499d615a8aee2e5be162ab92a54431dd067adaa31885259c98c8a04a1318ca",
+  "bytes": 117,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S04-05-4.4",
+  "feature": "A multiple-value field (ExecInst 18=1 6) is not called an unknown value",
+  "version": "FIX.4.4",
+  "kind": "fix",
+  "basis": "FIX 4.2/4.4 ExecInst (18) is a MultipleValueString; AC-004 'an enum value missing from the dictionary'",
+  "expect": {
+   "rows": [
+    {
+     "number": 1,
+     "tag": "18",
+     "value": "1 6",
+     "meaning_not": "unknown value"
+    }
+   ]
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S04-05-4.4.log",
+  "sha256": "0b00cfb4876248285c839245b8a239f656304800ec6fc51f6b4852264251ed4b",
+  "bytes": 117,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S06-01-4.2",
+  "feature": "Every session message type gets its event, in log order",
+  "version": "FIX.4.2",
+  "kind": "prd",
+  "basis": "AC-007, AC-008",
+  "expect": {
+   "events": [
+    "1:Logon",
+    "2:Logon",
+    "3:Heartbeat",
+    "4:TestRequest",
+    "5:Heartbeat",
+    "6:ResendRequest",
+    "7:GapFill",
+    "8:SessionReject",
+    "9:BusinessReject",
+    "10:Reset",
+    "11:Heartbeat",
+    "12:Logout",
+    "13:Logout"
+   ],
+   "gaps": [],
+   "stats": {
+    "messages": 13,
+    "valid": 13,
+    "malformed": 0,
+    "gaps": 0,
+    "orders": 0
+   },
+   "classes": {
+    "8": "reject",
+    "9": "reject",
+    "1": "session"
+   }
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX42/S06-01-4.2.log",
+  "sha256": "6915aef210db584ed1f221c90500a7d401382f22e25c176fb2c35815e0ec597c",
+  "bytes": 984,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S06-01-4.4",
+  "feature": "Every session message type gets its event, in log order",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "AC-007, AC-008",
+  "expect": {
+   "events": [
+    "1:Logon",
+    "2:Logon",
+    "3:Heartbeat",
+    "4:TestRequest",
+    "5:Heartbeat",
+    "6:ResendRequest",
+    "7:GapFill",
+    "8:SessionReject",
+    "9:BusinessReject",
+    "10:Reset",
+    "11:Heartbeat",
+    "12:Logout",
+    "13:Logout"
+   ],
+   "gaps": [],
+   "stats": {
+    "messages": 13,
+    "valid": 13,
+    "malformed": 0,
+    "gaps": 0,
+    "orders": 0
+   },
+   "classes": {
+    "8": "reject",
+    "9": "reject",
+    "1": "session"
+   }
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S06-01-4.4.log",
+  "sha256": "0d234be2f22f16e9b537eef0bd7effe423fcd21763eb6df9461d20603a28fa9f",
+  "bytes": 984,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S06-02",
+  "feature": "Sequence gaps are found per direction",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-003",
+  "expect": {
+   "gaps": [
+    [
+     4,
+     3,
+     6
+    ],
+    [
+     7,
+     3,
+     9
+    ]
+   ],
+   "stats": {
+    "gaps": 2
+   }
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S06-02.log",
+  "sha256": "0efadb483f3b91045920b44a97a74f8c91ee1d4c45d9ebf55cc6142df15534e6",
+  "bytes": 569,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S06-03",
+  "feature": "PossDupFlag=Y neither advances nor resets the expected number",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-003",
+  "expect": {
+   "gaps": [
+    [
+     3,
+     3,
+     5
+    ]
+   ]
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S06-03.log",
+  "sha256": "c414b094d21a3e69db1cb6db28bee31de6ee58d150de5232bf868e2c4ef03ff3",
+  "bytes": 503,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S06-04",
+  "feature": "A GapFill sets the expected number to NewSeqNo",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-003",
+  "expect": {
+   "gaps": [
+    [
+     5,
+     11,
+     12
+    ]
+   ],
+   "events": [
+    "1:Logon",
+    "2:Heartbeat",
+    "3:GapFill",
+    "4:Heartbeat",
+    "5:SequenceGap",
+    "5:Heartbeat"
+   ]
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S06-04.log",
+  "sha256": "10f12c3c011f4cbb85803f1f7918b9cc1353a3e1dfaff81d2a880a74c87f7e32",
+  "bytes": 366,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S06-05",
+  "feature": "SequenceReset in reset mode: MsgSeqNum ignored, expected number becomes NewSeqNo",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-003; design 7",
+  "expect": {
+   "gaps": [],
+   "events": [
+    "1:Logon",
+    "2:Heartbeat",
+    "3:Reset",
+    "4:Heartbeat",
+    "5:Heartbeat"
+   ]
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S06-05.log",
+  "sha256": "28fd50e16f51cdd973e2e7bbb4ef6d9bdfbdd239e6f2fd9d551e6416585a0d7c",
+  "bytes": 358,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S06-06",
+  "feature": "Logon with ResetSeqNumFlag=Y restarts both directions at 1",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-003",
+  "expect": {
+   "gaps": [
+    [
+     10,
+     3,
+     4
+    ]
+   ]
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S06-06.log",
+  "sha256": "1549b63b99fdcb9eba6cfd03367f839890a196b3979bf1bd74b9e527f7bb2445",
+  "bytes": 740,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S06-07",
+  "feature": "Sessions with overlapping sequence numbers are tracked apart",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-003",
+  "expect": {
+   "gaps": [
+    [
+     8,
+     3,
+     5
+    ]
+   ]
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/multi-session/S06-07.log",
+  "sha256": "3c38135a2026aefdf6fc2179ea3f4c4d34f770a06e41eaacc54d4eb531dcc101",
+  "bytes": 728,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S06-08",
+  "feature": "A duplicate MsgSeqNum without PossDupFlag is pointed out",
+  "version": "FIX.4.4",
+  "kind": "fix",
+  "basis": "FIX session protocol, MsgSeqNum lower than expected without PossDupFlag; design 11 says 'Ignored'",
+  "expect": {
+   "flagged": [
+    4
+   ]
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S06-08.log",
+  "sha256": "c42afa84e5f934dca3d7cca46da4fb68e8d04ca85f10be1aad7f7fd1de2672d8",
+  "bytes": 388,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S06-09",
+  "feature": "Out-of-order messages: the gap is reported once, the late message adds none",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-003; design 11",
+  "expect": {
+   "gaps": [
+    [
+     3,
+     3,
+     4
+    ]
+   ]
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S06-09.log",
+  "sha256": "1d114e1e9bf1517d0ceea6d0f449f1aefaed35f57fe63a84ac7ffbc8d25d405a",
+  "bytes": 352,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S06-10",
+  "feature": "Reconnection that continues the sequence numbers",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-003",
+  "expect": {
+   "gaps": [
+    [
+     9,
+     6,
+     8
+    ]
+   ]
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S06-10.log",
+  "sha256": "2edbac8af5effde729c8245cb26818ff04c41763580b50f055b1a079f869585b",
+  "bytes": 660,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S06-11",
+  "feature": "A gap after the session restarts at 1 without ResetSeqNumFlag is still found",
+  "version": "FIX.4.4",
+  "kind": "fix",
+  "basis": "FIX session protocol: sequence numbers restart at 1 on a new session; TR-003 resets only on 141=Y",
+  "expect": {
+   "gaps_include": [
+    [
+     11,
+     3,
+     5
+    ]
+   ]
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S06-11.log",
+  "sha256": "8952f072cfc4f7162eaf44dce8ab77b435cd97abfa84256969bf7f55955f0969",
+  "bytes": 772,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S06-12-4.2",
+  "feature": "A resent execution report (PossDupFlag=Y) is not a second execution",
+  "version": "FIX.4.2",
+  "kind": "prd",
+  "basis": "AC-041",
+  "expect": {
+   "trades_fields": {
+    "ACME": {
+     "bought": "100",
+     "avgBuy": "10",
+     "net": "+100"
+    }
+   }
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX42/S06-12-4.2.log",
+  "sha256": "829d1a282de18e4be3afd2d062cfae63a91b37cba3655995f724a8c38cc62da0",
+  "bytes": 538,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S06-13-4.2",
+  "feature": "A resent NewOrderSingle (PossDupFlag=Y) is not a second order",
+  "version": "FIX.4.2",
+  "kind": "fix",
+  "basis": "Brief 6: a retransmission is not a new business event; AC-040 counts NewOrderSingle messages",
+  "expect": {
+   "trades_fields": {
+    "ACME": {
+     "buyOrders": "1"
+    }
+   },
+   "stats": {
+    "orders": 1
+   }
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX42/S06-13-4.2.log",
+  "sha256": "829d1a282de18e4be3afd2d062cfae63a91b37cba3655995f724a8c38cc62da0",
+  "bytes": 538,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S06-12-4.4",
+  "feature": "A resent execution report (PossDupFlag=Y) is not a second execution",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "AC-041",
+  "expect": {
+   "trades_fields": {
+    "ACME": {
+     "bought": "100",
+     "avgBuy": "10",
+     "net": "+100"
+    }
+   }
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S06-12-4.4.log",
+  "sha256": "ac335b1e2373a465f28b663f13fc1e93e392a7b1f2cab64207c634180f08c01f",
+  "bytes": 528,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S06-13-4.4",
+  "feature": "A resent NewOrderSingle (PossDupFlag=Y) is not a second order",
+  "version": "FIX.4.4",
+  "kind": "fix",
+  "basis": "Brief 6: a retransmission is not a new business event; AC-040 counts NewOrderSingle messages",
+  "expect": {
+   "trades_fields": {
+    "ACME": {
+     "buyOrders": "1"
+    }
+   },
+   "stats": {
+    "orders": 1
+   }
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S06-13-4.4.log",
+  "sha256": "ac335b1e2373a465f28b663f13fc1e93e392a7b1f2cab64207c634180f08c01f",
+  "bytes": 528,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S06-14",
+  "feature": "A PossDup report whose original is not in the log is still counted once",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "AC-041",
+  "expect": {
+   "gaps": [
+    [
+     2,
+     2,
+     3
+    ]
+   ],
+   "trades_fields": {
+    "ACME": {
+     "bought": "100"
+    }
+   }
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S06-14.log",
+  "sha256": "5611227334d74790c0b0acfd832c681bfa652e54055210857b25fd17d15f227d",
+  "bytes": 302,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S06-15",
+  "feature": "Sessions that differ only by SenderSubID keep separate sequence numbers",
+  "version": "FIX.4.4",
+  "kind": "fix",
+  "basis": "Brief 11; FIX session identity; TR-003 keys a direction on 49/56 only",
+  "expect": {
+   "gaps": [
+    [
+     6,
+     3,
+     4
+    ]
+   ]
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/multi-session/S06-15.log",
+  "sha256": "2652f0b1bdc12a5f39017112e0b84ef1bd7b7c7549fa2abdc56f94df258b2e49",
+  "bytes": 468,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S06-16",
+  "feature": "No false gap when a second SubID session of the same CompIDs runs at higher numbers",
+  "version": "FIX.4.4",
+  "kind": "fix",
+  "basis": "Brief 11; FIX session identity; TR-003 keys a direction on 49/56 only",
+  "expect": {
+   "gaps": []
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/multi-session/S06-16.log",
+  "sha256": "8e0605e6fa71d6ed494bf99b716fe3359657e7a4e72ef64be532b7aeea68c926",
+  "bytes": 458,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S06-17",
+  "feature": "A PossDup message with the expected number fills that number: no gap after it",
+  "version": "FIX.4.4",
+  "kind": "fix",
+  "basis": "FIX session protocol (PossDupFlag: process if MsgSeqNum not yet received); QuickFIX 2e_PossDupNotReceived.def; TR-003 'Messages with PossDupFlag=Y don't advance'",
+  "expect": {
+   "gaps": []
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S06-17.log",
+  "sha256": "ceaaaeddd21b18baddd3cd4b73de94a4decb01692de4767e86599739166319fa",
+  "bytes": 289,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S06-18",
+  "feature": "A SequenceReset to a lower number is not followed by a false gap",
+  "version": "FIX.4.4",
+  "kind": "fix",
+  "basis": "FIX SequenceReset: NewSeqNo may only increase the expected number; QuickFIX 11c_NewSeqNoLess.def; TR-003",
+  "expect": {
+   "gaps": []
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S06-18.log",
+  "sha256": "d87a28d992256ba9a24a422f9eb7ff1f789f8fcf179563c397232834d87058fb",
+  "bytes": 289,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S07-01-4.2",
+  "feature": "A cancel/replace chain with fills is one order; figures are exact",
+  "version": "FIX.4.2",
+  "kind": "prd",
+  "basis": "AC-009, AC-035, AC-036, AC-039..AC-047; design 12 (OrderID NONE)",
+  "expect": {
+   "events": [
+    "1:NewOrder",
+    "2:Acknowledgement",
+    "3:Fill",
+    "4:ReplaceRequest",
+    "5:ExecutionReport (ExecType E)",
+    "6:Replaced",
+    "7:ReplaceRequest",
+    "8:CancelReject",
+    "9:Fill",
+    "10:CancelRequest",
+    "11:ExecutionReport (ExecType 6)",
+    "12:Fill",
+    "13:Cancelled",
+    "14:NewOrder",
+    "15:ExecutionReport (ExecType 8)",
+    "16:CancelRequest",
+    "17:CancelReject"
+   ],
+   "groups": [
+    [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13
+    ],
+    [
+     14,
+     15
+    ],
+    [
+     16,
+     17
+    ]
+   ],
+   "trades": {
+    "ACME": {
+     "buyOrders": "1",
+     "bought": "110",
+     "avgBuy": "10.3636",
+     "sellOrders": "0",
+     "sold": "0",
+     "avgSell": "–",
+     "net": "+110"
+    },
+    "ZETA": {
+     "buyOrders": "0",
+     "bought": "0",
+     "avgBuy": "–",
+     "sellOrders": "1",
+     "sold": "0",
+     "avgSell": "–",
+     "net": "0"
+    }
+   },
+   "stats": {
+    "orders": 3
+   }
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX42/S07-01-4.2.log",
+  "sha256": "d30fbee05d6a5dec402f8ee752dbc1b0f5323c91c1128658128657cfb3a92409",
+  "bytes": 2345,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S07-02-4.2",
+  "feature": "Selecting an order shows its messages, terms and last state",
+  "version": "FIX.4.2",
+  "kind": "prd",
+  "basis": "AC-036, AC-038, AC-049; design 8.2",
+  "expect": {
+   "shown": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "banner": [
+    "C1 · C2 · C3 · C4 · O1",
+    "100 ACME @ 10",
+    "110 filled @ 10.3636"
+   ],
+   "trades": {
+    "ACME": {
+     "buyOrders": "1",
+     "bought": "110",
+     "avgBuy": "10.3636",
+     "sellOrders": "0",
+     "sold": "0",
+     "avgSell": "–",
+     "net": "+110"
+    }
+   },
+   "stats_text": [
+    "13 of 17 messages",
+    "0 sequence gaps",
+    "1 order"
+   ]
+  },
+  "view": {
+   "orderId": "C3",
+   "filters": {}
+  },
+  "note": null,
+  "dataset": "datasets/FIX42/S07-02-4.2.log",
+  "sha256": "d30fbee05d6a5dec402f8ee752dbc1b0f5323c91c1128658128657cfb3a92409",
+  "bytes": 2345,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S07-03-4.2",
+  "feature": "The Account filter keeps every message of the account's orders",
+  "version": "FIX.4.2",
+  "kind": "prd",
+  "basis": "AC-050, AC-051, AC-053",
+  "expect": {
+   "shown": [
+    14,
+    15
+   ],
+   "trades": {
+    "ZETA": {
+     "buyOrders": "0",
+     "bought": "0",
+     "avgBuy": "–",
+     "sellOrders": "1",
+     "sold": "0",
+     "avgSell": "–",
+     "net": "0"
+    }
+   },
+   "filter_options": {
+    "Account": [
+     "All",
+     "ACC1",
+     "ACC2"
+    ],
+    "SenderCompID": [
+     "All",
+     "BRK",
+     "CLI"
+    ],
+    "SenderSubID": [
+     "All"
+    ],
+    "TargetCompID": [
+     "All",
+     "BRK",
+     "CLI"
+    ],
+    "TargetSubID": [
+     "All"
+    ]
+   }
+  },
+  "view": {
+   "orderId": null,
+   "filters": {
+    "account": "ACC2"
+   }
+  },
+  "note": null,
+  "dataset": "datasets/FIX42/S07-03-4.2.log",
+  "sha256": "d30fbee05d6a5dec402f8ee752dbc1b0f5323c91c1128658128657cfb3a92409",
+  "bytes": 2345,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S07-01-4.4",
+  "feature": "A cancel/replace chain with fills is one order; figures are exact",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "AC-009, AC-035, AC-036, AC-039..AC-047; design 12 (OrderID NONE)",
+  "expect": {
+   "events": [
+    "1:NewOrder",
+    "2:Acknowledgement",
+    "3:Fill",
+    "4:ReplaceRequest",
+    "5:ExecutionReport (ExecType E)",
+    "6:Replaced",
+    "7:ReplaceRequest",
+    "8:CancelReject",
+    "9:Fill",
+    "10:CancelRequest",
+    "11:ExecutionReport (ExecType 6)",
+    "12:Fill",
+    "13:Cancelled",
+    "14:NewOrder",
+    "15:ExecutionReport (ExecType 8)",
+    "16:CancelRequest",
+    "17:CancelReject"
+   ],
+   "groups": [
+    [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13
+    ],
+    [
+     14,
+     15
+    ],
+    [
+     16,
+     17
+    ]
+   ],
+   "trades": {
+    "ACME": {
+     "buyOrders": "1",
+     "bought": "110",
+     "avgBuy": "10.3636",
+     "sellOrders": "0",
+     "sold": "0",
+     "avgSell": "–",
+     "net": "+110"
+    },
+    "ZETA": {
+     "buyOrders": "0",
+     "bought": "0",
+     "avgBuy": "–",
+     "sellOrders": "1",
+     "sold": "0",
+     "avgSell": "–",
+     "net": "0"
+    }
+   },
+   "stats": {
+    "orders": 3
+   }
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S07-01-4.4.log",
+  "sha256": "fd36e28fe54adf331f20a21b31328021083421851976e642dd1d2b7848c57775",
+  "bytes": 2300,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S07-02-4.4",
+  "feature": "Selecting an order shows its messages, terms and last state",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "AC-036, AC-038, AC-049; design 8.2",
+  "expect": {
+   "shown": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13
+   ],
+   "banner": [
+    "C1 · C2 · C3 · C4 · O1",
+    "100 ACME @ 10",
+    "110 filled @ 10.3636"
+   ],
+   "trades": {
+    "ACME": {
+     "buyOrders": "1",
+     "bought": "110",
+     "avgBuy": "10.3636",
+     "sellOrders": "0",
+     "sold": "0",
+     "avgSell": "–",
+     "net": "+110"
+    }
+   },
+   "stats_text": [
+    "13 of 17 messages",
+    "0 sequence gaps",
+    "1 order"
+   ]
+  },
+  "view": {
+   "orderId": "C3",
+   "filters": {}
+  },
+  "note": null,
+  "dataset": "datasets/FIX44/S07-02-4.4.log",
+  "sha256": "fd36e28fe54adf331f20a21b31328021083421851976e642dd1d2b7848c57775",
+  "bytes": 2300,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S07-03-4.4",
+  "feature": "The Account filter keeps every message of the account's orders",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "AC-050, AC-051, AC-053",
+  "expect": {
+   "shown": [
+    14,
+    15
+   ],
+   "trades": {
+    "ZETA": {
+     "buyOrders": "0",
+     "bought": "0",
+     "avgBuy": "–",
+     "sellOrders": "1",
+     "sold": "0",
+     "avgSell": "–",
+     "net": "0"
+    }
+   },
+   "filter_options": {
+    "Account": [
+     "All",
+     "ACC1",
+     "ACC2"
+    ],
+    "SenderCompID": [
+     "All",
+     "BRK",
+     "CLI"
+    ],
+    "SenderSubID": [
+     "All"
+    ],
+    "TargetCompID": [
+     "All",
+     "BRK",
+     "CLI"
+    ],
+    "TargetSubID": [
+     "All"
+    ]
+   }
+  },
+  "view": {
+   "orderId": null,
+   "filters": {
+    "account": "ACC2"
+   }
+  },
+  "note": null,
+  "dataset": "datasets/FIX44/S07-03-4.4.log",
+  "sha256": "fd36e28fe54adf331f20a21b31328021083421851976e642dd1d2b7848c57775",
+  "bytes": 2300,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S07-04-4.2",
+  "feature": "Trade cancels and corrections, by original or corrected ExecID, and unmatched ones",
+  "version": "FIX.4.2",
+  "kind": "prd",
+  "basis": "AC-042, AC-043, AC-044; design 13",
+  "expect": {
+   "events": [
+    "1:NewOrder",
+    "2:Fill",
+    "3:Fill",
+    "4:Fill",
+    "5:TradeCorrect",
+    "6:TradeCorrect",
+    "7:TradeCancel",
+    "8:TradeCancel",
+    "9:TradeCancel",
+    "10:TradeCorrect",
+    "11:TradeCancel"
+   ],
+   "trades": {
+    "ACME": {
+     "buyOrders": "1",
+     "bought": "125",
+     "avgBuy": "13.6",
+     "sellOrders": "0",
+     "sold": "0",
+     "avgSell": "–",
+     "net": "+125"
+    }
+   },
+   "unmatched": 2
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX42/S07-04-4.2.log",
+  "sha256": "535d7e834ca9fd297a288fdf496ed1be51dc01492c653ce1b5a7e2c20de9b15f",
+  "bytes": 1707,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S07-04-4.4",
+  "feature": "Trade cancels and corrections, by original or corrected ExecID, and unmatched ones",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "AC-042, AC-043, AC-044; design 13",
+  "expect": {
+   "events": [
+    "1:NewOrder",
+    "2:Fill",
+    "3:Fill",
+    "4:Fill",
+    "5:TradeCorrect",
+    "6:TradeCorrect",
+    "7:TradeCancel",
+    "8:TradeCancel",
+    "9:TradeCancel",
+    "10:TradeCorrect",
+    "11:TradeCancel"
+   ],
+   "trades": {
+    "ACME": {
+     "buyOrders": "1",
+     "bought": "125",
+     "avgBuy": "13.6",
+     "sellOrders": "0",
+     "sold": "0",
+     "avgSell": "–",
+     "net": "+125"
+    }
+   },
+   "unmatched": 2
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S07-04-4.4.log",
+  "sha256": "919cf7b019f177d2af3f5f5cc0d4dcd45618c66642e7fc0cf96e75f7787bd588",
+  "bytes": 1657,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S07-05",
+  "feature": "A trade cancel listed before the fill it names still removes that fill",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "AC-041 'as they stand at the end of the log', AC-042, AC-044 'not in the log'; brief 7 (reports before earlier events)",
+  "expect": {
+   "trades": {
+    "ACME": {
+     "buyOrders": "1",
+     "bought": "0",
+     "avgBuy": "–",
+     "sellOrders": "0",
+     "sold": "0",
+     "avgSell": "–",
+     "net": "0"
+    }
+   },
+   "unmatched": 0
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S07-05.log",
+  "sha256": "20cbe6853cf801728c48d7f8da54d6b73d68b9d8ec2cd7f1b53ede9e8e25d6d8",
+  "bytes": 411,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S07-06",
+  "feature": "The same ClOrdID used by two clients is two orders",
+  "version": "multi",
+  "kind": "fix",
+  "basis": "Brief 6, 7, 11; FIX: ClOrdID is unique per order sender; AC-035 joins on the value alone",
+  "expect": {
+   "groups": [
+    [
+     1,
+     3
+    ],
+    [
+     2,
+     4
+    ]
+   ],
+   "stats": {
+    "orders": 2
+   }
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/multi-session/S07-06.log",
+  "sha256": "b2a1d1012065ffb571264c53ae6b7ac8237bc47083a600af9c590c61f8911e71",
+  "bytes": 526,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S07-07",
+  "feature": "The Account filter does not show another client's order that reuses a ClOrdID",
+  "version": "multi",
+  "kind": "fix",
+  "basis": "Brief 11; US-009 'one client's flow in a shared log'; AC-051 follows AC-035",
+  "expect": {
+   "shown": [
+    1,
+    3
+   ],
+   "trades": {
+    "AAA": {
+     "buyOrders": "1",
+     "bought": "100",
+     "avgBuy": "5",
+     "sellOrders": "0",
+     "sold": "0",
+     "avgSell": "–",
+     "net": "+100"
+    }
+   }
+  },
+  "view": {
+   "orderId": null,
+   "filters": {
+    "account": "ACC1"
+   }
+  },
+  "note": null,
+  "dataset": "datasets/multi-session/S07-07.log",
+  "sha256": "b2a1d1012065ffb571264c53ae6b7ac8237bc47083a600af9c590c61f8911e71",
+  "bytes": 526,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S07-08",
+  "feature": "Two venues that both use OrderID 1 / ExecID 1: both fills count, and the orders stay apart",
+  "version": "multi",
+  "kind": "fix",
+  "basis": "Brief 6, 11; FIX: OrderID and ExecID are unique per executing party; AC-041 keys on 37+17 alone",
+  "expect": {
+   "trades": {
+    "ACME": {
+     "buyOrders": "2",
+     "bought": "300",
+     "avgBuy": "10.6667",
+     "sellOrders": "0",
+     "sold": "0",
+     "avgSell": "–",
+     "net": "+300"
+    }
+   },
+   "groups": [
+    [
+     1,
+     3
+    ],
+    [
+     2,
+     4
+    ]
+   ]
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/multi-session/S07-08.log",
+  "sha256": "a572c4c559d7863f2ceac0e868ab18c885948226eaf9e862a7ebb2aee2ebfd3b",
+  "bytes": 530,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S07-09",
+  "feature": "The same ExecID on two different orders is two executions",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "AC-041 (OrderID and ExecID)",
+  "expect": {
+   "trades": {
+    "ACME": {
+     "buyOrders": "2",
+     "bought": "300",
+     "avgBuy": "10.6667",
+     "sellOrders": "0",
+     "sold": "0",
+     "avgSell": "–",
+     "net": "+300"
+    }
+   }
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S07-09.log",
+  "sha256": "312949ecb07bc7d94505169e67e2a950bc4ff1cda03d5dff8cc3b4032fccccab",
+  "bytes": 522,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S07-10",
+  "feature": "An execution seen again on a drop copy is counted once",
+  "version": "multi",
+  "kind": "prd",
+  "basis": "AC-041",
+  "expect": {
+   "trades": {
+    "ACME": {
+     "buyOrders": "1",
+     "bought": "100",
+     "avgBuy": "10",
+     "sellOrders": "0",
+     "sold": "0",
+     "avgSell": "–",
+     "net": "+100"
+    }
+   }
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/multi-session/S07-10.log",
+  "sha256": "cbad78742ef0fa45abbfb5150235178bd8ce6781f41fb02bfaee3ffa6ddb2e95",
+  "bytes": 415,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S07-11",
+  "feature": "Clicking OrderID 1001 opens the order that has that OrderID",
+  "version": "multi",
+  "kind": "prd",
+  "basis": "AC-034, AC-036 'shows only that order's messages'; design 12 findOrder takes the id alone",
+  "expect": {
+   "click": {
+    "card": 4,
+    "tag": "37",
+    "shown": [
+     2,
+     4
+    ],
+    "banner": [
+     "ZZ9"
+    ]
+   }
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/multi-session/S07-11.log",
+  "sha256": "4e08d2da78d0e1d8c382ff03c0c05588546e4b7c6697e1abad4e745894a58285",
+  "bytes": 517,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S07-12",
+  "feature": "The order's latest state is not taken from a resent older report",
+  "version": "FIX.4.4",
+  "kind": "fix",
+  "basis": "Brief 6, 7 (duplicate and late reports); AC-036 takes the last ExecutionReport in the log",
+  "expect": {
+   "banner": [
+    "100 filled @ 10"
+   ],
+   "trades": {
+    "ACME": {
+     "buyOrders": "1",
+     "bought": "100",
+     "avgBuy": "10",
+     "sellOrders": "0",
+     "sold": "0",
+     "avgSell": "–",
+     "net": "+100"
+    }
+   }
+  },
+  "view": {
+   "orderId": "C1",
+   "filters": {}
+  },
+  "note": null,
+  "dataset": "datasets/FIX44/S07-12.log",
+  "sha256": "be438272fbc9018f958890ab957317d4c19a48eb0368a583ebc7af4d891d919e",
+  "bytes": 557,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S07-13",
+  "feature": "A fill listed before its NewOrderSingle is grouped with it and counted",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "AC-035, AC-041",
+  "expect": {
+   "groups": [
+    [
+     1,
+     2
+    ]
+   ],
+   "trades": {
+    "ACME": {
+     "buyOrders": "1",
+     "bought": "100",
+     "avgBuy": "10",
+     "sellOrders": "0",
+     "sold": "0",
+     "avgSell": "–",
+     "net": "+100"
+    }
+   }
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S07-13.log",
+  "sha256": "ea027285c8d67ce2af0e8846ac115c0d61aaca22066cee2ec6e0659663e7a838",
+  "bytes": 259,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S07-14",
+  "feature": "Buy and sell sides, fills without LastQty, messages without Symbol",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "AC-041, AC-047",
+  "expect": {
+   "trades": {
+    "ACME": {
+     "buyOrders": "1",
+     "bought": "0",
+     "avgBuy": "–",
+     "sellOrders": "3",
+     "sold": "150",
+     "avgSell": "10.4667",
+     "net": "-150"
+    }
+   }
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S07-14.log",
+  "sha256": "084d1fbf11d7f31bb9f8bdbca8f1370add929f707bf8f764b9978ebf5811b327",
+  "bytes": 1400,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S07-15",
+  "feature": "Fractional quantities and prices: sums and weighted averages are exact to 4 places",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "AC-045, AC-046; design 13 'Figures'",
+  "expect": {
+   "trades": {
+    "FXA": {
+     "buyOrders": "1",
+     "bought": "1",
+     "avgBuy": "1.26",
+     "sellOrders": "0",
+     "sold": "0",
+     "avgSell": "–",
+     "net": "+1"
+    },
+    "FXB": {
+     "buyOrders": "1",
+     "bought": "4",
+     "avgBuy": "10.0003",
+     "sellOrders": "0",
+     "sold": "0",
+     "avgSell": "–",
+     "net": "+4"
+    },
+    "FXC": {
+     "buyOrders": "0",
+     "bought": "0",
+     "avgBuy": "–",
+     "sellOrders": "1",
+     "sold": "3.0003",
+     "avgSell": "0.3433",
+     "net": "-3.0003"
+    }
+   }
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S07-15.log",
+  "sha256": "cc1f6d8944ea2f960c7b984b043c6c324891a6ea26e645ceef3dafafd490a91e",
+  "bytes": 1648,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S07-16",
+  "feature": "Average price (1 x 1.005 + 1 x 1.0001) / 2 = 1.00255 exactly is shown as 1.0026",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "AC-045; the PRD names no rounding mode, but half-up and half-even both give 1.0026",
+  "expect": {
+   "trades_fields": {
+    "TIE": {
+     "avgBuy": [
+      "1.0026"
+     ]
+    }
+   }
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S07-16.log",
+  "sha256": "fc13d063752759916b73b9c1d2568d6b3ba510ee8ab052f0402460681c30f6f8",
+  "bytes": 394,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S08-01",
+  "feature": "Repeated tags are listed in order, none dropped, none an error",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "PRD Scope; design 6",
+  "expect": {
+   "tag_sequence": {
+    "2": [
+     8,
+     9,
+     35,
+     49,
+     56,
+     34,
+     52,
+     37,
+     11,
+     453,
+     448,
+     447,
+     452,
+     448,
+     447,
+     452,
+     17,
+     150,
+     39,
+     55,
+     54,
+     32,
+     31,
+     151,
+     14,
+     6,
+     136,
+     137,
+     138,
+     139,
+     137,
+     138,
+     139,
+     10
+    ]
+   },
+   "rows": [
+    {
+     "number": 2,
+     "tag": "448",
+     "value": "TRD9"
+    },
+    {
+     "number": 2,
+     "tag": "139",
+     "value": "7"
+    }
+   ],
+   "stats": {
+    "malformed": 0,
+    "valid": 2
+   }
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S08-01.log",
+  "sha256": "0847e8a86cbbf3fc8ff1c1073d27c46fac3f1af89f19c29a91406dd179a60b4d",
+  "bytes": 386,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S08-02",
+  "feature": "A FIX 4.2 NewOrderList keeps both orders' fields, in order",
+  "version": "FIX.4.2",
+  "kind": "prd",
+  "basis": "PRD Scope; design 6",
+  "expect": {
+   "tag_sequence": {
+    "1": [
+     8,
+     9,
+     35,
+     49,
+     56,
+     34,
+     52,
+     66,
+     394,
+     68,
+     73,
+     11,
+     67,
+     55,
+     54,
+     38,
+     40,
+     11,
+     67,
+     55,
+     54,
+     38,
+     40,
+     10
+    ]
+   },
+   "stats": {
+    "malformed": 0
+   }
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX42/S08-02.log",
+  "sha256": "8656ca10c38da4b4ab12f821645d2bc3d1a524499b2019252d87f73f5787e88f",
+  "bytes": 162,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S09-01",
+  "feature": "Empty input",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "design 8.2",
+  "expect": {
+   "stats": {
+    "messages": 0,
+    "valid": 0,
+    "malformed": 0
+   },
+   "empty_text": "No FIX messages found in the pasted text."
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S09-01.log",
+  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "bytes": 0,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S09-02",
+  "feature": "Only empty lines and non-FIX lines",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-002",
+  "expect": {
+   "stats": {
+    "messages": 0
+   }
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S09-02.log",
+  "sha256": "c1ecb73a650ab7073b3f2b5ddd3831baf9b1584e81f92a4c4b70313682cea088",
+  "bytes": 42,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S09-03",
+  "feature": "Timeline order follows the log, not SendingTime",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "AC-007",
+  "expect": {
+   "events": [
+    "1:Heartbeat",
+    "2:Heartbeat",
+    "3:Logout"
+   ],
+   "gaps": []
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S09-03.log",
+  "sha256": "09afc0da98827d3c4d3465c24fe89b6ee510d839f9504df2092be37ab01922bd",
+  "bytes": 204,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S09-04",
+  "feature": "Truncated input: the cut message is an error, the one before it is kept",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "AC-012, AC-014; TR-002",
+  "expect": {
+   "stats": {
+    "messages": 2,
+    "valid": 1,
+    "malformed": 1
+   },
+   "errors": [
+    {
+     "number": 2,
+     "rule": "missing_checksum",
+     "position": [
+      123,
+      124
+     ]
+    }
+   ]
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S09-04.log",
+  "sha256": "b903e31f8f17c8d888b00804b85eae56842cfd2cd13ad153368c2c83d47bddfd",
+  "bytes": 123,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S09-05",
+  "feature": "A message wrapped over two lines is reported, not silently dropped; its neighbours are kept",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "design 3 'a message never crosses a line end'; AC-012, AC-014",
+  "expect": {
+   "stats": {
+    "messages": 3,
+    "valid": 2,
+    "malformed": 1
+   },
+   "error_numbers": [
+    2
+   ]
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/FIX44/S09-05.log",
+  "sha256": "43d4ada9c071531ea9edccdedcbd810f0600ab90bdd1af8dfb6381985010d34c",
+  "bytes": 217,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S10-01",
+  "feature": "Wrong BodyLength",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-002; AC-012, AC-015",
+  "expect": {
+   "errors": [
+    {
+     "number": 2,
+     "rule": "body_length",
+     "position": 91,
+     "text": "Message 2: BodyLength (9) says 85, actual 81 at position 91"
+    }
+   ],
+   "valid_numbers": [
+    1,
+    3
+   ],
+   "events_include": [
+    "1:Logon",
+    "3:Heartbeat"
+   ],
+   "stats": {
+    "messages": 3,
+    "valid": 2,
+    "malformed": 1
+   },
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-01.log",
+  "sha256": "64fad4f31b52c45d9469a952f30855efd826b3a8a14f1457d798ab8e5ba58f52",
+  "bytes": 252,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-02",
+  "feature": "Wrong CheckSum",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-002; AC-012",
+  "expect": {
+   "errors": [
+    {
+     "number": 2,
+     "rule": "checksum",
+     "position": 177
+    }
+   ],
+   "valid_numbers": [
+    1,
+    3
+   ],
+   "events_include": [
+    "1:Logon",
+    "3:Heartbeat"
+   ],
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-02.log",
+  "sha256": "8301362762c289d3be923fed1c91b013273e53d1f71cf876b994e9ea5011f36a",
+  "bytes": 252,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-03",
+  "feature": "Missing BeginString: the message is reported as malformed",
+  "version": "FIX.4.4",
+  "kind": "fix",
+  "basis": "Brief 10; TR-002 'first three fields are not 8, 9 and 35' but 'a message starts at 8=FIX'",
+  "expect": {
+   "stats": {
+    "messages": 3,
+    "malformed": 1
+   },
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-03.log",
+  "sha256": "fdcdaaee76fc0ab4205e983311919173aba2a19c74c9bf663688ae5cac0653e1",
+  "bytes": 242,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-04",
+  "feature": "BodyLength and MsgType swapped",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-002; design 3.8",
+  "expect": {
+   "errors": [
+    {
+     "number": 2,
+     "rule": "header_order",
+     "position": 91
+    }
+   ],
+   "valid_numbers": [
+    1,
+    3
+   ],
+   "events_include": [
+    "1:Logon",
+    "3:Heartbeat"
+   ],
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-04.log",
+  "sha256": "18e5219687c331c18d4a351d2ad91d5cf3e3838d79ff2ed71c46a284ab3674a8",
+  "bytes": 252,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-05",
+  "feature": "MsgType missing",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-002",
+  "expect": {
+   "errors": [
+    {
+     "number": 2,
+     "rule": "header_order"
+    }
+   ],
+   "valid_numbers": [
+    1,
+    3
+   ],
+   "events_include": [
+    "1:Logon",
+    "3:Heartbeat"
+   ],
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-05.log",
+  "sha256": "774e46d32227171f77d7e9549346475911ecf17e2ba07b3595340baf26420bf9",
+  "bytes": 247,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-06",
+  "feature": "BodyLength missing",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-002",
+  "expect": {
+   "errors": [
+    {
+     "number": 2,
+     "rule": "header_order"
+    }
+   ],
+   "valid_numbers": [
+    1,
+    3
+   ],
+   "events_include": [
+    "1:Logon",
+    "3:Heartbeat"
+   ],
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-06.log",
+  "sha256": "9fd8e2737e58dcf943e6620121fbbddcf3b766ee40e6110efe13ce37c69cf847",
+  "bytes": 247,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-07",
+  "feature": "Missing trailer",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-002; AC-015",
+  "expect": {
+   "errors": [
+    {
+     "number": 2,
+     "rule": "missing_checksum",
+     "position": [
+      176,
+      177
+     ]
+    }
+   ],
+   "valid_numbers": [
+    1,
+    3
+   ],
+   "events_include": [
+    "1:Logon",
+    "3:Heartbeat"
+   ],
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-07.log",
+  "sha256": "88688eb19bf9e5bab4d17c6453b4ba5126d734229ea9a14c3ab9e56f54934ea5",
+  "bytes": 245,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-08",
+  "feature": "A field without '='",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-002",
+  "expect": {
+   "errors": [
+    {
+     "number": 2,
+     "rule": "field_without_equals",
+     "position": 152
+    }
+   ],
+   "valid_numbers": [
+    1,
+    3
+   ],
+   "events_include": [
+    "1:Logon",
+    "3:Heartbeat"
+   ],
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-08.log",
+  "sha256": "bb958c012818eecc245031ec7d050cb7e880b2f647d1c7da5ff72b410bdcf2a4",
+  "bytes": 251,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-09-1",
+  "feature": "A tag that is not a positive integer: 'abc'",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-002; design 3.8.2",
+  "expect": {
+   "errors": [
+    {
+     "number": 2,
+     "rule": "bad_tag",
+     "position": 152
+    }
+   ],
+   "valid_numbers": [
+    1,
+    3
+   ],
+   "events_include": [
+    "1:Logon",
+    "3:Heartbeat"
+   ],
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-09-1.log",
+  "sha256": "13e13029ee638fc6883904c14438515dca723b02bcc00b46b9fefc906faf0073",
+  "bytes": 253,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-09-2",
+  "feature": "A tag that is not a positive integer: '0'",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-002; design 3.8.2",
+  "expect": {
+   "errors": [
+    {
+     "number": 2,
+     "rule": "bad_tag",
+     "position": 152
+    }
+   ],
+   "valid_numbers": [
+    1,
+    3
+   ],
+   "events_include": [
+    "1:Logon",
+    "3:Heartbeat"
+   ],
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-09-2.log",
+  "sha256": "db757300ee71ebda4ebf0872dec7eba792713198aa934b18f114c9a2b603cdf6",
+  "bytes": 251,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-09-3",
+  "feature": "A tag that is not a positive integer: '-5'",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-002; design 3.8.2",
+  "expect": {
+   "errors": [
+    {
+     "number": 2,
+     "rule": "bad_tag",
+     "position": 152
+    }
+   ],
+   "valid_numbers": [
+    1,
+    3
+   ],
+   "events_include": [
+    "1:Logon",
+    "3:Heartbeat"
+   ],
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-09-3.log",
+  "sha256": "b600c040a5643220ac009fe19e5d592d5a45d88dfcc6297c27bf16db86f6902c",
+  "bytes": 252,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-09-4",
+  "feature": "A tag that is not a positive integer: '007'",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-002; design 3.8.2",
+  "expect": {
+   "errors": [
+    {
+     "number": 2,
+     "rule": "bad_tag",
+     "position": 152
+    }
+   ],
+   "valid_numbers": [
+    1,
+    3
+   ],
+   "events_include": [
+    "1:Logon",
+    "3:Heartbeat"
+   ],
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-09-4.log",
+  "sha256": "ba1642fe911e453d6f7836c78789420c47bc79e2b90b2bd5569fa35a3e7a204c",
+  "bytes": 253,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-09-5",
+  "feature": "A tag that is not a positive integer: '1.5'",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-002; design 3.8.2",
+  "expect": {
+   "errors": [
+    {
+     "number": 2,
+     "rule": "bad_tag",
+     "position": 152
+    }
+   ],
+   "valid_numbers": [
+    1,
+    3
+   ],
+   "events_include": [
+    "1:Logon",
+    "3:Heartbeat"
+   ],
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-09-5.log",
+  "sha256": "2660a039dea9d6e9a8ee7de04713c3a3414bf64694904f78fff93a417c81b7ca",
+  "bytes": 253,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-09-6",
+  "feature": "A tag that is not a positive integer: ''",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-002; design 3.8.2",
+  "expect": {
+   "errors": [
+    {
+     "number": 2,
+     "rule": "bad_tag",
+     "position": 152
+    }
+   ],
+   "valid_numbers": [
+    1,
+    3
+   ],
+   "events_include": [
+    "1:Logon",
+    "3:Heartbeat"
+   ],
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-09-6.log",
+  "sha256": "25208cf8b9111d9e30166bd5f22281db5492c200b02026a85782ff46754eb4fd",
+  "bytes": 250,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-09-7",
+  "feature": "A tag that is not a positive integer: '1234567890'",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-002; design 3.8.2",
+  "expect": {
+   "errors": [
+    {
+     "number": 2,
+     "rule": "bad_tag",
+     "position": 152
+    }
+   ],
+   "valid_numbers": [
+    1,
+    3
+   ],
+   "events_include": [
+    "1:Logon",
+    "3:Heartbeat"
+   ],
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-09-7.log",
+  "sha256": "a02bdd34d15f65634888a4e7ade4346d814c269f2b6fc4009fa89f425645bfb0",
+  "bytes": 260,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-10",
+  "feature": "An unsupported delimiter (;) is reported, not misread",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-002; design 11",
+  "expect": {
+   "errors": [
+    {
+     "number": 2,
+     "rule": "header_order"
+    }
+   ],
+   "valid_numbers": [
+    1,
+    3
+   ],
+   "events_include": [
+    "1:Logon",
+    "3:Heartbeat"
+   ],
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-10.log",
+  "sha256": "70969669dda2f81b8a50916801a6a8b7eb03b5871c87c68d8f6d122bc55226a5",
+  "bytes": 252,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-11",
+  "feature": "Equals signs and other delimiter forms inside a value of an SOH message are kept",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-002",
+  "expect": {
+   "stats": {
+    "messages": 3,
+    "valid": 3,
+    "malformed": 0
+   },
+   "rows": [
+    {
+     "number": 2,
+     "tag": "58",
+     "value": "a=b=c|d^A<SOH>e"
+    },
+    {
+     "number": 2,
+     "tag": "5001",
+     "value": "="
+    }
+   ]
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-11.log",
+  "sha256": "87e1a499b8b90d3bb35cc9b9bd68885bedf6364f518b72ece1ada45440ff1833",
+  "bytes": 279,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-12-pipe",
+  "feature": "The delimiter inside a value, pipe form",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-002 'A delimiter inside a value'",
+  "expect": {
+   "stats": {
+    "messages": 3,
+    "valid": 3,
+    "malformed": 0
+   },
+   "rows": [
+    {
+     "number": 2,
+     "tag": "58",
+     "value": "left|right || end|"
+    },
+    {
+     "number": 2,
+     "tag": "5001",
+     "value": "a|b"
+    }
+   ]
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-12-pipe.log",
+  "sha256": "579e53be2a54cc3e2f803ebcf3c9812046944be9f8327e3e73940ccf3280fbdf",
+  "bytes": 284,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-12-caret",
+  "feature": "The delimiter inside a value, caret form",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-002 'A delimiter inside a value'",
+  "expect": {
+   "stats": {
+    "messages": 3,
+    "valid": 3,
+    "malformed": 0
+   },
+   "rows": [
+    {
+     "number": 2,
+     "tag": "58",
+     "value": "left^Aright ^A^A end^A"
+    },
+    {
+     "number": 2,
+     "tag": "5001",
+     "value": "a^Ab"
+    }
+   ]
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-12-caret.log",
+  "sha256": "14698a64c94e8f8a379d5cd26485d4516d1f5da799ac7196e8f5e1c7c016b8e1",
+  "bytes": 305,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-12-angle",
+  "feature": "The delimiter inside a value, angle form",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-002 'A delimiter inside a value'",
+  "expect": {
+   "stats": {
+    "messages": 3,
+    "valid": 3,
+    "malformed": 0
+   },
+   "rows": [
+    {
+     "number": 2,
+     "tag": "58",
+     "value": "left<SOH>right <SOH><SOH> end<SOH>"
+    },
+    {
+     "number": 2,
+     "tag": "5001",
+     "value": "a<SOH>b"
+    }
+   ]
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-12-angle.log",
+  "sha256": "b5dbac4bf5559c6235f8decbb0dff901a056aa17ed7541bc3337272fbe04a938",
+  "bytes": 368,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-13",
+  "feature": "The one case text cannot settle (value holds delimiter + digits + '='): a CheckSum error",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-002 'The one case that text cannot settle'",
+  "expect": {
+   "errors": [
+    {
+     "number": 2,
+     "rule": "checksum"
+    }
+   ],
+   "valid_numbers": [
+    1,
+    3
+   ],
+   "events_include": [
+    "1:Logon",
+    "3:Heartbeat"
+   ],
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-13.log",
+  "sha256": "4a473f030f75df673aa8d52025ca9f301d74e81e2ebff13f29543a0223af5fd3",
+  "bytes": 275,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-14",
+  "feature": "Invalid MsgType, unknown tag, invalid enum, duplicate fields: decoded, no event, first value counts",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "AC-004; design 6, 11",
+  "expect": {
+   "stats": {
+    "messages": 3,
+    "valid": 3,
+    "malformed": 0
+   },
+   "events": [
+    "1:Logon",
+    "3:Heartbeat"
+   ],
+   "labels_any": {
+    "2": [
+     "ZZ",
+     "unknown"
+    ]
+   },
+   "rows": [
+    {
+     "number": 2,
+     "tag": "55",
+     "value": "DUP2"
+    }
+   ],
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-14.log",
+  "sha256": "c1ea71defd604f5dd390e1449d13c84dd26170bf239cbd790eff7ed4e2d52464",
+  "bytes": 274,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-15-01",
+  "feature": "LastQty '0x10' (hexadecimal) is not a FIX quantity and is not counted as traded",
+  "version": "FIX.4.4",
+  "kind": "fix",
+  "basis": "FIX Qty/float datatype: digits with an optional decimal point; design 13 'a finite number above zero'",
+  "expect": {
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-15-01.log",
+  "sha256": "57b20892e50cc4c19b47c85bfb35576d878216c3784b1aae1f308b366831d203",
+  "bytes": 150,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-15-02",
+  "feature": "LastQty '1e3' (exponent) is not a FIX quantity and is not counted as traded",
+  "version": "FIX.4.4",
+  "kind": "fix",
+  "basis": "FIX Qty/float datatype: digits with an optional decimal point; design 13 'a finite number above zero'",
+  "expect": {
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-15-02.log",
+  "sha256": "b03e6198a48a58facc78237e4cd915a1d4bba45c830c7e4bbd55b2b7b642279e",
+  "bytes": 149,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-15-03",
+  "feature": "LastQty ' 100 ' (spaces) is not a FIX quantity and is not counted as traded",
+  "version": "FIX.4.4",
+  "kind": "fix",
+  "basis": "FIX Qty/float datatype: digits with an optional decimal point; design 13 'a finite number above zero'",
+  "expect": {
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-15-03.log",
+  "sha256": "bcf0df4adb46fffde116383fe11db8258140837ebbabfbb20099339323548a5c",
+  "bytes": 151,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-15-04",
+  "feature": "LastQty '0b11' (binary) is not a FIX quantity and is not counted as traded",
+  "version": "FIX.4.4",
+  "kind": "fix",
+  "basis": "FIX Qty/float datatype: digits with an optional decimal point; design 13 'a finite number above zero'",
+  "expect": {
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-15-04.log",
+  "sha256": "b2801e7cd6ec001b4141c31d0cb6afa5845ff2d0635e63b05dc15cfd023517b8",
+  "bytes": 150,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-15-05",
+  "feature": "LastQty '+100' (plus sign) is not a FIX quantity and is not counted as traded",
+  "version": "FIX.4.4",
+  "kind": "fix",
+  "basis": "FIX Qty/float datatype: digits with an optional decimal point; design 13 'a finite number above zero'",
+  "expect": {
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-15-05.log",
+  "sha256": "8aa681956a7b86fa496a98ec9faf0e564f7e206f749b8bd1b5f2a1fde037cd42",
+  "bytes": 150,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-15-06",
+  "feature": "LastQty 'abc' (text) is not a FIX quantity and is not counted as traded",
+  "version": "FIX.4.4",
+  "kind": "fix",
+  "basis": "FIX Qty/float datatype: digits with an optional decimal point; design 13 'a finite number above zero'",
+  "expect": {
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-15-06.log",
+  "sha256": "c1e28a924b0ed715459cd7fb7a645b9a58ecfdcbb7e4b3cfb3f62e9752f2eebf",
+  "bytes": 149,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-15-07",
+  "feature": "LastQty '' (empty) is not a FIX quantity and is not counted as traded",
+  "version": "FIX.4.4",
+  "kind": "fix",
+  "basis": "FIX Qty/float datatype: digits with an optional decimal point; design 13 'a finite number above zero'",
+  "expect": {
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-15-07.log",
+  "sha256": "79d794cff5aaab28b499220b180510d6d8bfb5bc55f51154110c3d040520ad75",
+  "bytes": 146,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-15-08",
+  "feature": "LastQty '-100' (negative) is not a FIX quantity and is not counted as traded",
+  "version": "FIX.4.4",
+  "kind": "fix",
+  "basis": "FIX Qty/float datatype: digits with an optional decimal point; design 13 'a finite number above zero'",
+  "expect": {
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-15-08.log",
+  "sha256": "4bbec49eb7a1a9acd3319d8afc5f241b494cf2f33b24799d1f54591f25a2c6ac",
+  "bytes": 150,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-15-09",
+  "feature": "LastQty 'NaN' (NaN) is not a FIX quantity and is not counted as traded",
+  "version": "FIX.4.4",
+  "kind": "fix",
+  "basis": "FIX Qty/float datatype: digits with an optional decimal point; design 13 'a finite number above zero'",
+  "expect": {
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-15-09.log",
+  "sha256": "9318f94a9fc08a2bc969f344f39ea7440e904e5fa40483959dc0f95a498436ff",
+  "bytes": 149,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-15-10",
+  "feature": "LastQty 'Infinity' (Infinity) is not a FIX quantity and is not counted as traded",
+  "version": "FIX.4.4",
+  "kind": "fix",
+  "basis": "FIX Qty/float datatype: digits with an optional decimal point; design 13 'a finite number above zero'",
+  "expect": {
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-15-10.log",
+  "sha256": "b89261642bfd0424ebaeccb2961b68e230ca51eee7ec22b48d050d45dce52c22",
+  "bytes": 154,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-15-11",
+  "feature": "LastQty '1,000' (thousands separator) is not a FIX quantity and is not counted as traded",
+  "version": "FIX.4.4",
+  "kind": "fix",
+  "basis": "FIX Qty/float datatype: digits with an optional decimal point; design 13 'a finite number above zero'",
+  "expect": {
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-15-11.log",
+  "sha256": "b51b5b2615c82089d9b7ca4f68a4083db0fd9d4ea295514f7ddcf093ebf6175e",
+  "bytes": 151,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-15-12",
+  "feature": "LastPx '0x10' is not a FIX price and gives no average",
+  "version": "FIX.4.4",
+  "kind": "fix",
+  "basis": "FIX Price/float datatype",
+  "expect": {
+   "trades_fields": {
+    "ACME": {
+     "bought": "100",
+     "avgBuy": "–"
+    }
+   }
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-15-12.log",
+  "sha256": "3081bb07e15aeeb03ac43d967397c756ba3be8344f4a2e5028d7021456999751",
+  "bytes": 151,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-16",
+  "feature": "Very large quantities are summed exactly",
+  "version": "FIX.4.4",
+  "kind": "fix",
+  "basis": "Brief 7, 10 (decimal arithmetic, extremely large values)",
+  "expect": {
+   "trades_fields": {
+    "ACME": {
+     "bought": "9007199254740995",
+     "net": "+9007199254740995"
+    }
+   }
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-16.log",
+  "sha256": "fdb5305a489072af86891fe79cb011e75c7cae6dbefc073316c60429ee588f04",
+  "bytes": 432,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-17",
+  "feature": "Quantities and prices finer than 4 decimal places are not shown as other values",
+  "version": "FIX.4.4",
+  "kind": "fix",
+  "basis": "Brief 7 (decimal arithmetic); design 13 'Figures' rounds every figure to 4 places",
+  "expect": {
+   "trades_fields": {
+    "BTC": {
+     "bought": "0.00008"
+    },
+    "EURUSD": {
+     "avgBuy": "1.08345"
+    }
+   }
+  },
+  "view": null,
+  "note": "By design 13 the tool shows 0.0001 and 1.0835 (or 1.0834).",
+  "dataset": "datasets/malformed/S10-17.log",
+  "sha256": "e9a491ce888e51fc4eb7b18522405bc115039b99ea11884da28c6945315b0064",
+  "bytes": 461,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-18",
+  "feature": "Binary garbage before, between and after valid messages on the same lines",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "AC-014; TR-002",
+  "expect": {
+   "stats": {
+    "messages": 3,
+    "valid": 3,
+    "malformed": 0
+   },
+   "events": [
+    "1:Logon",
+    "2:NewOrder",
+    "3:Heartbeat"
+   ]
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-18.log",
+  "sha256": "8b5cf5d13157cf3b61d4d19d0abf07a65932cef70ed60df11d8d84712423d7f4",
+  "bytes": 430,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-19",
+  "feature": "A cut message, a corrupt message and a valid message on one line: the valid ones survive",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "AC-014; design 3.2",
+  "expect": {
+   "stats": {
+    "messages": 5,
+    "valid": 3,
+    "malformed": 2
+   },
+   "valid_numbers": [
+    1,
+    4,
+    5
+   ],
+   "events": [
+    "1:Logon",
+    "4:NewOrder",
+    "5:Heartbeat"
+   ]
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-19.log",
+  "sha256": "58c598d7cb40ac9075c4b8197cf86edf399e1f0fe72a169c3d9aa49bdf712e2b",
+  "bytes": 385,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-20-1",
+  "feature": "CheckSum that is not three digits: '7'",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "design 3.8.4",
+  "expect": {
+   "errors": [
+    {
+     "number": 2,
+     "rule": "checksum_format"
+    }
+   ],
+   "valid_numbers": [
+    1,
+    3
+   ],
+   "events_include": [
+    "1:Logon",
+    "3:Heartbeat"
+   ],
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-20-1.log",
+  "sha256": "dbbbdff949cd148e35371909c6b0773fd2d00f67d60e58ad9aa0b30897c503cc",
+  "bytes": 250,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-20-2",
+  "feature": "CheckSum that is not three digits: '1234'",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "design 3.8.4",
+  "expect": {
+   "errors": [
+    {
+     "number": 2,
+     "rule": "checksum_format"
+    }
+   ],
+   "valid_numbers": [
+    1,
+    3
+   ],
+   "events_include": [
+    "1:Logon",
+    "3:Heartbeat"
+   ],
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-20-2.log",
+  "sha256": "5ac5a8c1abbb222454ca2a6bafe4e3fcae2655f81561518d114c4d0c31caa3fa",
+  "bytes": 253,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-20-3",
+  "feature": "CheckSum that is not three digits: 'ab1'",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "design 3.8.4",
+  "expect": {
+   "errors": [
+    {
+     "number": 2,
+     "rule": "checksum_format"
+    }
+   ],
+   "valid_numbers": [
+    1,
+    3
+   ],
+   "events_include": [
+    "1:Logon",
+    "3:Heartbeat"
+   ],
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-20-3.log",
+  "sha256": "71180ee3c271bd0b4b3dfbc0988adfde3b5bc3e622433320f8dadc042ef35a43",
+  "bytes": 252,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-20-4",
+  "feature": "CheckSum that is not three digits: ''",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "design 3.8.4",
+  "expect": {
+   "errors": [
+    {
+     "number": 2,
+     "rule": "checksum_format"
+    }
+   ],
+   "valid_numbers": [
+    1,
+    3
+   ],
+   "events_include": [
+    "1:Logon",
+    "3:Heartbeat"
+   ],
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-20-4.log",
+  "sha256": "8db6898f3dcc9a5ce7af128e3e108b0f2c529d85db0d3d7ad986ba7e4d94e33f",
+  "bytes": 249,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-21",
+  "feature": "BodyLength that is not a number",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "design 3.8.5",
+  "expect": {
+   "errors": [
+    {
+     "number": 2,
+     "rule": "body_length",
+     "position": 91
+    }
+   ],
+   "valid_numbers": [
+    1,
+    3
+   ],
+   "events_include": [
+    "1:Logon",
+    "3:Heartbeat"
+   ],
+   "trades": {}
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-21.log",
+  "sha256": "0b141df590a44724816cd8f48339390c6c47ffc68ca7678f942b2f28cb62ee9d",
+  "bytes": 253,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-22",
+  "feature": "A 150,000-character value",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-005; AC-014",
+  "expect": {
+   "stats": {
+    "messages": 3,
+    "valid": 3,
+    "malformed": 0
+   },
+   "events": [
+    "1:Logon",
+    "2:NewOrder",
+    "3:Heartbeat"
+   ]
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-22.log",
+  "sha256": "8da7041d9739a6c50fe4c3056dc059844853cbde6436361f6fe9bad29123250e",
+  "bytes": 150260,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-23",
+  "feature": "Unusual but valid: BodyLength with leading zeros and an empty value are accepted",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-002; design 6 ('58=' is shown as empty)",
+  "expect": {
+   "stats": {
+    "messages": 1,
+    "valid": 1,
+    "malformed": 0
+   }
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-23.log",
+  "sha256": "0d273381a9128c5261d997004a84b9c7c206363e2eceb9ced769a2c088efc533",
+  "bytes": 74,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S10-24",
+  "feature": "A wire-valid message with ISO-8859-1 text (one byte per character) is not called malformed",
+  "version": "FIX.4.4",
+  "kind": "fix",
+  "basis": "FIX messages are bytes, and BodyLength/CheckSum count bytes; design 3.7 counts the UTF-8 bytes of the pasted characters",
+  "expect": {
+   "stats": {
+    "messages": 1,
+    "valid": 1,
+    "malformed": 0
+   }
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/malformed/S10-24.log",
+  "sha256": "b445fc769fdfd1decc4f96a3727c7c55ac6e37ff73d040f289e1cc330e000410",
+  "bytes": 98,
+  "intentionallyInvalid": true
+ },
+ {
+  "id": "S11-01",
+  "feature": "A log merged from both sides of a connection does not double orders or fills",
+  "version": "multi",
+  "kind": "fix",
+  "basis": "Brief 11; AC-040 counts NewOrderSingle messages, AC-041 dedupes fills only",
+  "expect": {
+   "trades": {
+    "ACME": {
+     "buyOrders": "1",
+     "bought": "100",
+     "avgBuy": "10",
+     "sellOrders": "0",
+     "sold": "0",
+     "avgSell": "–",
+     "net": "+100"
+    }
+   },
+   "stats": {
+    "orders": 1
+   },
+   "gaps": []
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/multi-session/S11-01.log",
+  "sha256": "259e2999ab51ff78304b4bce15c7c612317ed8c72b661ae10c07e0be74b034b5",
+  "bytes": 1164,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S11-02",
+  "feature": "An incomplete log: no gap for the first message; an unmatched correction counts, an unmatched cancel does not",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "AC-044; design 7",
+  "expect": {
+   "gaps": [],
+   "trades": {
+    "ACME": {
+     "buyOrders": "0",
+     "bought": "80",
+     "avgBuy": "10",
+     "sellOrders": "0",
+     "sold": "0",
+     "avgSell": "–",
+     "net": "+80"
+    }
+   },
+   "unmatched": 2,
+   "notes_include": [
+    "2 trade cancels or corrections refer to an execution that is not in this log."
+   ]
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/multi-session/S11-02.log",
+  "sha256": "a8dcf31e8d5c0ae2bf679b63695a8483aa71a65a29fe67b619c7485eb920e5d8",
+  "bytes": 394,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S11-03",
+  "feature": "A reset on one session leaves the other session's numbers alone",
+  "version": "FIX.4.4",
+  "kind": "prd",
+  "basis": "TR-003",
+  "expect": {
+   "gaps": [
+    [
+     8,
+     4,
+     5
+    ]
+   ]
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/multi-session/S11-03.log",
+  "sha256": "7b99d3ca467aab23cff012b8ebf30fffdd009914843917a88025f25e9f89c3ee",
+  "bytes": 586,
+  "intentionallyInvalid": false
+ },
+ {
+  "id": "S11-04",
+  "feature": "FIX 4.2 and FIX 4.4 sessions in one log are each read by their own rules",
+  "version": "multi",
+  "kind": "prd",
+  "basis": "TR-001 (dictionary per message), TR-003",
+  "expect": {
+   "events": [
+    "1:NewOrder",
+    "2:NewOrder",
+    "3:Fill",
+    "4:Fill",
+    "5:TradeCancel"
+   ],
+   "trades": {
+    "ACME": {
+     "buyOrders": "2",
+     "bought": "100",
+     "avgBuy": "12",
+     "sellOrders": "0",
+     "sold": "0",
+     "avgSell": "–",
+     "net": "+100"
+    }
+   },
+   "rows": [
+    {
+     "number": 3,
+     "tag": "32",
+     "field": "LastShares"
+    },
+    {
+     "number": 4,
+     "tag": "32",
+     "field": "LastQty"
+    }
+   ]
+  },
+  "view": null,
+  "note": null,
+  "dataset": "datasets/multi-session/S11-04.log",
+  "sha256": "4a591a0f4bdebb3cb8f536a4fae784655febe74bbf105dca33e256c43f695041",
+  "bytes": 688,
+  "intentionallyInvalid": false
+ }
+]

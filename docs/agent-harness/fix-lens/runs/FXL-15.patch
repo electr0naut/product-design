@@ -1,0 +1,483 @@
+From 8cce6aa1a83a82e30a96bb757d75e9c9d7142fbf Mon Sep 17 00:00:00 2001
+From: Hermes Agent <hermes@agent.local>
+Date: Fri, 27 Nov 2026 15:14:50 +0100
+Subject: [PATCH] FXL-15: Show the story of a selected order
+
+---
+ src/main.js         |  17 +++-
+ src/render.js       | 119 +++++++++++++++++++----
+ test/render.test.js | 228 +++++++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 339 insertions(+), 25 deletions(-)
+
+diff --git a/src/main.js b/src/main.js
+index 91b6199..ae3dad0 100644
+--- a/src/main.js
++++ b/src/main.js
+@@ -21,6 +21,21 @@ themeButton.addEventListener('click', () => {
+ themeButton.hidden = false;
+ 
+ const input = document.querySelector('#paste');
++const view = { orderId: null, filters: {} };
++let result;
++const handlers = {
++  pick(id) {
++    view.orderId = id;
++    renderCurrent();
++  },
++  clear() {
++    view.orderId = null;
++    renderCurrent();
++  },
++};
++const renderCurrent = () => render(result, view, handlers);
++
+ document.querySelector('#decode-button').addEventListener('click', () => {
+-  render(analyse(input.value));
++  result = analyse(input.value);
++  handlers.clear();
+ });
+diff --git a/src/render.js b/src/render.js
+index 7258089..4cca95b 100644
+--- a/src/render.js
++++ b/src/render.js
+@@ -1,4 +1,4 @@
+-import { orderGroups } from './orders.js';
++import { findOrder, orderGroups } from './orders.js';
+ 
+ // Text and classes travel separately: call sites supply only fixed class names.
+ function add(parent, tag, className, text) {
+@@ -14,24 +14,82 @@ const sequence = seqNum => seqNum == null ? '' : `seq ${seqNum}`;
+ const time = sendingTime => sendingTime?.slice(sendingTime.indexOf('-') + 1) ?? '';
+ const count = (n, singular) => `${n} ${singular}${n === 1 ? '' : 's'}`;
+ 
+-function renderStats(section, { decoded, errors, timeline }) {
++function renderStats(section, { decoded, errors, timeline, orders, total, selected }) {
+   const strip = add(section, 'div', 'stats');
+   const gaps = timeline.filter(event => event.name === 'SequenceGap').length;
+-  const orders = orderGroups(decoded).length;
+-  add(strip, 'span', 'stat', count(decoded.length + errors.length, 'message'));
+-  add(strip, 'span', 'stat', `${decoded.length} valid`);
+-  add(strip, 'span', 'stat', `${errors.length} malformed`);
++  if (selected) {
++    add(strip, 'span', 'stat', `${decoded.length} of ${total} messages`);
++  } else {
++    add(strip, 'span', 'stat', count(total, 'message'));
++    add(strip, 'span', 'stat', `${decoded.length} valid`);
++    add(strip, 'span', 'stat', `${errors.length} malformed`);
++  }
+   add(strip, 'span', 'stat', count(gaps, 'sequence gap'));
+   add(strip, 'span', 'stat', count(orders, 'order'));
+ }
+ 
++const fieldOf = (message, tag) => message.fields.find(field => field.tag === tag);
++const valueOf = (message, tag) => fieldOf(message, tag)?.value;
++
++function meaning(message, tag) {
++  const field = fieldOf(message, tag);
++  return field?.enumName && field.enumName !== 'unknown value' ? field.enumName : field?.value;
++}
++
++function orderTerms(messages) {
++  const message = messages.find(entry => valueOf(entry, 35) === 'D') ?? messages[0];
++  const price = valueOf(message, 44);
++  return [meaning(message, 54), valueOf(message, 38), valueOf(message, 55),
++    price ? `@ ${price}` : '', meaning(message, 40)].filter(Boolean).join(' ');
++}
++
++function orderState(messages) {
++  const report = messages.findLast(entry => valueOf(entry, 35) === '8');
++  if (!report) return '';
++  const quantity = valueOf(report, 14);
++  const totalFilled = Number(quantity);
++  const state = [meaning(report, 39)];
++  if (Number.isFinite(totalFilled) && totalFilled > 0) {
++    const price = valueOf(report, 6);
++    state.push(price ? `${quantity} filled @ ${price}` : `${quantity} filled`);
++  }
++  return state.filter(Boolean).join(' · ');
++}
++
++function renderOrderStory(section, group, messages, handlers) {
++  const story = add(section, 'div', 'order-story');
++  add(story, 'strong', null, [...group.clOrdIds, ...group.orderIds].join(' · '));
++  const terms = orderTerms(messages);
++  if (terms) add(story, 'span', 'order-terms', terms);
++  const state = orderState(messages);
++  if (state) add(story, 'span', 'order-state', state);
++  const button = add(story, 'button', 'show-all', 'Show all messages');
++  button.type = 'button';
++  button.addEventListener('click', () => handlers?.clear?.());
++}
++
++const canPickOrder = (tag, id) => id != null && id !== '' && (tag !== 37 || id !== 'NONE');
++
++function addOrderButton(parent, id, text, handlers) {
++  const button = add(parent, 'button', 'order-link', text);
++  button.type = 'button';
++  button.addEventListener('click', () => handlers?.pick?.(id));
++}
++
++function addTimelineId(row, tag, label, id, handlers) {
++  if (id == null) return;
++  const text = `${label} ${id}`;
++  if (canPickOrder(tag, id)) addOrderButton(row, id, text, handlers);
++  else add(row, 'span', 'id', text);
++}
++
+ function eventClass(event) {
+   if (event.name === 'SequenceGap') return 'event gap';
+   if (['SessionReject', 'BusinessReject', 'CancelReject'].includes(event.name)) return 'event reject';
+   return event.kind === 'order' ? 'event order' : 'event session';
+ }
+ 
+-function renderTimeline(section, events) {
++function renderTimeline(section, events, handlers) {
+   if (!events.length) {
+     add(section, 'p', 'empty', 'No timeline events found.');
+     return;
+@@ -46,17 +104,17 @@ function renderTimeline(section, events) {
+     add(row, 'span', 'dir', direction(event.sender, event.target));
+     add(row, 'span', 'seq', sequence(event.seqNum));
+     add(row, 'span', 'detail', event.detail);
+-    if (event.clOrdId != null) add(row, 'span', 'id', `ClOrdID ${event.clOrdId}`);
+-    if (event.orderId != null) add(row, 'span', 'id', `OrderID ${event.orderId}`);
+-    if (event.origClOrdId != null) add(row, 'span', 'id', `OrigClOrdID ${event.origClOrdId}`);
++    addTimelineId(row, 11, 'ClOrdID', event.clOrdId, handlers);
++    addTimelineId(row, 37, 'OrderID', event.orderId, handlers);
++    addTimelineId(row, 41, 'OrigClOrdID', event.origClOrdId, handlers);
+     if (event.execRefId != null) add(row, 'span', 'ref', `ExecRefID ${event.execRefId}`);
+   }
+ }
+ 
+-function renderCard(section, message) {
++function renderCard(section, message, handlers) {
+   const card = add(section, 'article', 'card');
+   const head = add(card, 'header', 'card-head');
+-  const value = tag => message.fields.find(field => field.tag === tag)?.value;
++  const value = tag => valueOf(message, tag);
+   add(head, 'span', 'num', `#${message.number}`);
+   add(head, 'h3', null, message.label.replace(/^Message \d+: /, ''));
+   add(head, 'span', 'dir', direction(value(49), value(56)));
+@@ -72,18 +130,23 @@ function renderCard(section, message) {
+     const row = add(body, 'tr');
+     add(row, 'td', null, field.tag);
+     add(row, 'td', null, message.supported === false ? '' : field.name);
+-    add(row, 'td', null, field.value);
++    if ([11, 37, 41].includes(field.tag) && canPickOrder(field.tag, field.value)) {
++      const cell = add(row, 'td');
++      addOrderButton(cell, field.value, field.value, handlers);
++    } else {
++      add(row, 'td', null, field.value);
++    }
+     add(row, 'td', null, message.supported === false ? '' : field.enumName);
+   }
+ }
+ 
+-function renderMessages(section, decoded, errors) {
++function renderMessages(section, decoded, errors, handlers) {
+   const entries = [...decoded.map(message => ({ number: message.number, message })),
+     ...errors.map(error => ({ number: error.number, error }))];
+   if (!entries.length) add(section, 'p', 'empty', 'No FIX messages found in the pasted text.');
+   for (const { message, error, number } of entries.sort((a, b) => a.number - b.number)) {
+     if (message) {
+-      renderCard(section, message);
++      renderCard(section, message, handlers);
+     } else {
+       const card = add(section, 'article', 'card malformed');
+       const head = add(card, 'header', 'card-head');
+@@ -94,8 +157,10 @@ function renderMessages(section, decoded, errors) {
+   }
+ }
+ 
+-/** Replace generated output without replacing the page's headings. */
+-export function render(result) {
++/** Replace generated output without replacing the page's headings.
++ * Optional view: { orderId, filters }; optional handlers: { pick, clear, setFilter }.
++ */
++export function render(result, view, handlers) {
+   const summary = document.querySelector('#summary');
+   const timeline = document.querySelector('#timeline');
+   const decode = document.querySelector('#decode');
+@@ -106,7 +171,21 @@ export function render(result) {
+     add(decode, 'p', 'warning', result.limit.warning);
+     return;
+   }
+-  renderStats(summary, result);
+-  renderTimeline(timeline, result.timeline);
+-  renderMessages(decode, result.decoded, result.errors);
++  const groups = orderGroups(result.decoded);
++  const group = view?.orderId == null ? null : findOrder(groups, view.orderId);
++  const total = result.decoded.length + result.errors.length;
++  let { decoded, errors, timeline: events } = result;
++  if (group) {
++    // Project the existing events; recreating them would invent sequence gaps.
++    const numbers = new Set(group.numbers);
++    decoded = decoded.filter(message => numbers.has(message.number));
++    events = events.filter(event => numbers.has(event.number));
++    errors = [];
++    renderOrderStory(summary, group, decoded, handlers);
++  }
++  renderStats(summary, {
++    decoded, errors, timeline: events, orders: group ? 1 : groups.length, total, selected: Boolean(group),
++  });
++  renderTimeline(timeline, events, handlers);
++  renderMessages(decode, decoded, errors, handlers);
+ }
+diff --git a/test/render.test.js b/test/render.test.js
+index 77d58f1..95906c0 100644
+--- a/test/render.test.js
++++ b/test/render.test.js
+@@ -1,5 +1,5 @@
+ // @vitest-environment jsdom
+-import { test, expect, beforeEach } from 'vitest';
++import { test, expect, beforeEach, vi } from 'vitest';
+ import { readFileSync } from 'node:fs';
+ import { render } from '../src/render.js';
+ import { analyse } from '../src/analyse.js';
+@@ -27,7 +27,8 @@ const show = (...log) => render(analyse(log.join('\n')));
+ 
+ function expectRow(row, fields, extras = []) {
+   const classes = ['num', 'time', 'badge', 'dir', 'seq', 'detail', ...extras];
+-  expect(Array.from(row.children, child => `${child.localName}.${child.className}`)).toEqual(classes.map(name => `span.${name}`));
++  expect(Array.from(row.children, child => `${child.localName}.${child.className}`))
++    .toEqual(classes.map(name => name === 'order-link' ? 'button.order-link' : `span.${name}`));
+   expect(texts(row.children)).toEqual(fields);
+ }
+ 
+@@ -59,8 +60,8 @@ test('test_render_order_timeline_full_row_text', () => {
+   show(order('8', 'CL-1', [34, 7], [52, stamp], [150, '0'], [37, 'ORD-9']),
+     order('8', 'CL-2', [34, 8], [52, stamp], [150, 'G'], [37, 'ORD-9'], [41, 'CL-1'], [19, 'EX-2']));
+   expect(rows()).toHaveLength(2);
+-  expectRow(rows()[0], ['#1', '10:00:01.000', 'Acknowledgement', 'A → B', 'seq 7', '', 'ClOrdID CL-1', 'OrderID ORD-9'], ['id', 'id']);
+-  expectRow(rows()[1], ['#2', '10:00:01.000', 'TradeCorrect', 'A → B', 'seq 8', '', 'ClOrdID CL-2', 'OrderID ORD-9', 'OrigClOrdID CL-1', 'ExecRefID EX-2'], ['id', 'id', 'id', 'ref']);
++  expectRow(rows()[0], ['#1', '10:00:01.000', 'Acknowledgement', 'A → B', 'seq 7', '', 'ClOrdID CL-1', 'OrderID ORD-9'], ['order-link', 'order-link']);
++  expectRow(rows()[1], ['#2', '10:00:01.000', 'TradeCorrect', 'A → B', 'seq 8', '', 'ClOrdID CL-2', 'OrderID ORD-9', 'OrigClOrdID CL-1', 'ExecRefID EX-2'], ['order-link', 'order-link', 'order-link', 'ref']);
+ });
+ 
+ test('test_render_session_timeline_metadata_text', () => {
+@@ -186,3 +187,222 @@ test('test_render_html_field_value_stays_literal_without_element', () => {
+   expect(cells(fieldRow(58))).toEqual(['58', 'Text', markup, '']);
+   expect(all('img')).toHaveLength(0);
+ });
++
++
++const analyseLog = (...log) => analyse(log.join('\n'));
++const viewOrder = orderId => ({ orderId, filters: {} });
++const optionalMixedLog = () => analyseLog(order('D', 'C1'), fix('A'), malformed, order('D', 'C2'));
++const output = () => ['#summary', '#timeline', '#decode'].map(selector => select(selector).innerHTML);
++const cardNumbers = () => texts(all('#decode .card-head .num'));
++const timelineNumbers = () => texts(all('#timeline .event .num'));
++const storyText = selector => select(`#summary .order-story ${selector}`)?.textContent;
++
++test('test_render_optional_order_view_preserves_whole_log', () => {
++  const result = optionalMixedLog();
++  render(result);
++  expect(cardNumbers()).toEqual(['#1', '#2', '#3', '#4']);
++  expect(timelineNumbers()).toEqual(['#1', '#2', '#4']);
++  expect(stats()).toEqual(['4 messages', '3 valid', '1 malformed', '0 sequence gaps', '2 orders']);
++  const whole = output();
++  const link = select('#timeline button.order-link');
++  expect(link).not.toBeNull();
++  expect(() => link.click()).not.toThrow();
++  expect(output()).toEqual(whole);
++
++  const handlers = { pick: vi.fn(), clear: vi.fn(), setFilter: vi.fn() };
++  render(result, viewOrder(null), handlers);
++  expect(output()).toEqual(whole);
++  select('#timeline button.order-link').click();
++  expect(handlers.pick.mock.calls).toEqual([['C1']]);
++});
++
++test('test_render_order_identifiers_are_typed_pick_buttons', () => {
++  const pick = vi.fn();
++  render(analyseLog(order('G', 'C2', [37, 'O1'], [41, 'C1'])), viewOrder(null), { pick });
++  const timelineLinks = all('#timeline button.order-link');
++  expect(texts(timelineLinks)).toEqual(['ClOrdID C2', 'OrderID O1', 'OrigClOrdID C1']);
++  const cardLinks = [11, 37, 41].map(tag => fieldRow(tag).cells[2].querySelector('button.order-link'));
++  expect(texts(cardLinks)).toEqual(['C2', 'O1', 'C1']);
++  expect(all('#timeline a, #decode a')).toEqual([]);
++  for (const [index, button] of [...timelineLinks, ...cardLinks].entries()) {
++    expect(button.getAttribute('type')).toBe('button');
++    button.click();
++    expect(pick.mock.calls.splice(0)).toEqual([[['C2', 'O1', 'C1'][index % 3]]]);
++  }
++});
++
++test('test_render_none_and_empty_order_identifiers_are_not_buttons', () => {
++  show(order('8', 'C1', [37, 'NONE']), order('G', '', [37, ''], [41, '']));
++  const [withNone, withEmpty] = rows();
++  expect(withNone.textContent).toContain('OrderID NONE');
++  expect(texts(withNone.querySelectorAll('button.order-link'))).toEqual(['ClOrdID C1']);
++  expect(withEmpty.querySelector('button.order-link')).toBeNull();
++  const noneCell = fieldRow(37).cells[2];
++  expect(noneCell.textContent).toBe('NONE');
++  expect(noneCell.children).toHaveLength(0);
++  const emptyRows = [...cards()[1].querySelectorAll('tbody tr')];
++  for (const tag of ['11', '37', '41']) {
++    const cell = emptyRows.find(row => row.cells[0].textContent === tag).cells[2];
++    expect(cell.textContent).toBe('');
++    expect(cell.children).toHaveLength(0);
++  }
++  expect(fieldRow(11).cells[2].querySelector('button.order-link')?.textContent).toBe('C1');
++});
++
++test('test_render_selected_order_keeps_only_original_group_numbers', () => {
++  const result = analyseLog(fix('A'), order('D', 'C1'), order('D', 'OTHER'),
++    order('G', 'C2', [41, 'C1']), fix('0'), order('8', 'C2', [37, 'O1']));
++  for (const id of ['O1', 'C1']) {
++    render(result, viewOrder(id));
++    expect(timelineNumbers()).toEqual(['#2', '#4', '#6']);
++    expect(cardNumbers()).toEqual(['#2', '#4', '#6']);
++  }
++});
++
++test('test_render_order_story_starts_summary_with_identifiers_and_clear', () => {
++  const clear = vi.fn();
++  const result = analyseLog(order('8', 'C2', [37, 'O2']), order('8', 'C1', [37, 'O1'], [41, 'C2']));
++  render(result, viewOrder('O1'), { clear });
++  const story = select('#summary').firstElementChild;
++  expect(story.matches('div.order-story')).toBe(true);
++  expect(story.querySelector('strong').textContent).toBe('C2 · C1 · O2 · O1');
++  const button = story.querySelector('button.show-all[type=button]');
++  expect(button.textContent).toBe('Show all messages');
++  button.click();
++  expect(clear.mock.calls).toEqual([[]]);
++});
++
++test('test_render_order_terms_choose_source_and_skip_missing_parts', () => {
++  render(analyseLog(order('8', 'C', [55, 'BEFORE']),
++    order('D', 'C', [54, '1'], [38, '5'], [55, 'FIRST'], [40, '2']),
++    order('D', 'C', [55, 'SECOND'], [44, '71'])), viewOrder('C'));
++  expect(storyText('span.order-terms')).toBe('Buy 5 FIRST Limit');
++
++  const raw = buildMessage([[8, 'FIX.4.1'], [35, 'G'], [11, 'C'], [54, '1'], [44, '9']]);
++  render(analyseLog(raw, order('8', 'C', [55, 'LATER'])), viewOrder('C'));
++  expect(storyText('span.order-terms')).toBe('1 @ 9');
++
++  render(analyseLog(order('D', 'C', [54, '?'], [40, '~'])), viewOrder('C'));
++  expect(storyText('span.order-terms')).toBe('? ~');
++  render(analyseLog(order('D', 'C')), viewOrder('C'));
++  expect(select('#summary .order-terms')).toBeNull();
++});
++
++test('test_render_order_state_uses_last_report_and_omits_empty_parts', () => {
++  const previous = order('8', 'C', [39, '2'], [14, '100'], [6, '7']);
++  const showLast = (...fields) => render(analyseLog(previous, order('8', 'C', ...fields)), viewOrder('C'));
++  showLast([39, '1'], [14, '2.5']);
++  expect(storyText('span.order-state')).toBe('PartiallyFilled · 2.5 filled');
++  for (const qty of ['0', '-2', 'abc', 'Infinity', undefined]) {
++    showLast([39, '0'], [6, '22'], ...(qty == null ? [] : [[14, qty]]));
++    expect(storyText('span.order-state')).toBe('New');
++  }
++  showLast([14, '3'], [6, '21']);
++  expect(storyText('span.order-state')).toBe('3 filled @ 21');
++  showLast([39, '?']);
++  expect(storyText('span.order-state')).toBe('?');
++  showLast();
++  expect(select('#summary .order-state')).toBeNull();
++  render(analyseLog(order('D', 'C', [39, '2'], [14, '10'])), viewOrder('C'));
++  expect(select('#summary .order-state')).toBeNull();
++});
++
++test('test_render_fxl15_fix44_order_story_matches_example', () => {
++  const result = analyseLog(order('D', 'C1', [54, '1'], [38, '500'], [55, 'VOD.L'], [44, '71.25'], [40, '2']),
++    order('8', 'C1', [37, 'O1'], [150, '0'], [39, '0'], [14, '0'], [6, '0']),
++    order('8', 'C1', [37, 'O1'], [150, 'F'], [39, '2'], [14, '500'], [6, '71.25'], [32, '500'], [31, '71.25']));
++  render(result, viewOrder('O1'));
++  expect(storyText('strong')).toBe('C1 · O1');
++  expect(storyText('span.order-terms')).toBe('Buy 500 VOD.L @ 71.25 Limit');
++  expect(storyText('span.order-state')).toBe('Filled · 500 filled @ 71.25');
++});
++
++test('test_render_selected_stats_count_visible_messages_gaps_and_orders', () => {
++  const result = analyseLog(order('D', 'C1', [34, '1']), fix('0', [34, '2']), malformed,
++    order('8', 'C1', [34, '4']), order('D', 'C2', [34, '6']));
++  expect(result.errors).toHaveLength(1);
++  render(result, viewOrder('C1'));
++  expect(stats()).toEqual(['2 of 5 messages', '1 sequence gap', '1 order']);
++  expect(cards().some(card => card.matches('.malformed'))).toBe(false);
++});
++
++test('test_render_selected_timeline_preserves_existing_gaps_without_new_gaps', () => {
++  const result = analyseLog(order('D', 'C1', [34, '1']), order('D', 'C2', [34, '2']),
++    order('8', 'C1', [34, '3']), order('8', 'C1', [34, '5'], [52, stamp]), order('8', 'C2', [34, '7']));
++  const gapRows = () => all('#timeline .event.gap');
++  render(result);
++  expect(gapRows()).toHaveLength(2);
++  const visible = texts(gapRows()[0].children);
++  expect(visible).toEqual(['#4', '10:00:01.000', 'SequenceGap', 'A → B', 'seq 5', 'expected 4, received 5']);
++  render(result, viewOrder('C1'));
++  expect(gapRows().map(row => texts(row.children))).toEqual([visible]);
++  expect(timelineNumbers()).toEqual(['#1', '#3', '#4', '#4']);
++});
++
++test('test_main_order_selection_resets_on_clear_and_decode_without_storage', async () => {
++  vi.resetModules();
++  const storage = () => [Object.entries(localStorage), Object.entries(sessionStorage), document.cookie];
++  const initialStorage = storage();
++  await import('../src/main.js');
++  const input = select('#paste');
++  const decode = select('#decode-button');
++  input.value = [order('D', 'C1'), malformed, fix('A')].join('\n');
++  decode.click();
++  const original = output();
++  expect(cardNumbers()).toEqual(['#1', '#2', '#3']);
++  expect(storage()).toEqual(initialStorage);
++
++  input.value = [fix('0'), order('D', 'C1')].join('\n');
++  const pick = () => {
++    const button = select('#timeline button.order-link');
++    expect(button).not.toBeNull();
++    button.click();
++    expect(cardNumbers()).toEqual(['#1']);
++    expect(storyText('strong')).toBe('C1');
++    expect(storage()).toEqual(initialStorage);
++  };
++  pick();
++  select('button.show-all').click();
++  expect(output()).toEqual(original);
++  expect(storage()).toEqual(initialStorage);
++
++  pick();
++  decode.click();
++  expect(select('.order-story')).toBeNull();
++  expect(cardNumbers()).toEqual(['#1', '#2']);
++  expect(texts(all('#timeline .badge'))).toEqual(['Heartbeat', 'NewOrder']);
++  expect(storage()).toEqual(initialStorage);
++});
++
++test('test_render_unknown_order_restores_full_log_without_story', () => {
++  const result = optionalMixedLog();
++  render(result);
++  const whole = output();
++  render(result, viewOrder('C1'));
++  expect(cardNumbers()).toEqual(['#1']);
++  expect(storyText('strong')).toBe('C1');
++  render(result, viewOrder('unmatched'));
++  expect(select('.order-story')).toBeNull();
++  expect(output()).toEqual(whole);
++});
++
++test('test_render_literal_order_and_story_values_leave_attributes_fixed', () => {
++  const shape = () => all('#summary *, #timeline *, #decode *').map(node => [node.localName,
++    Object.fromEntries(node.getAttributeNames().map(name => [name, node.getAttribute(name)]))]);
++  const log = (id, exchange, symbol, state) => analyseLog(order('D', id, [55, symbol]),
++    order('8', id, [37, exchange], [39, state]));
++  render(log('C1', 'O1', 'ABC', '?'), viewOrder('O1'));
++  const fixed = shape();
++  const id = `<p class="marker" data-marker="yes">client's</p>`;
++  const exchange = `" '<b>exchange</b>`;
++  const symbol = `<i>symbol " ' &</i>`;
++  const state = `<u>unknown</u>`;
++  render(log(id, exchange, symbol, state), viewOrder(exchange));
++  expect(texts(all('#timeline .order-link'))).toEqual([`ClOrdID ${id}`, `ClOrdID ${id}`, `OrderID ${exchange}`]);
++  expect(texts(all('#decode .order-link'))).toEqual([id, id, exchange]);
++  expect(storyText('strong')).toBe(`${id} · ${exchange}`);
++  expect(storyText('.order-terms')).toBe(symbol);
++  expect(storyText('.order-state')).toBe(state);
++  expect(shape()).toEqual(fixed);
++  expect(select('.marker, [data-marker], #summary i, #summary u, #timeline b')).toBeNull();
++});
+-- 
+2.43.0
+

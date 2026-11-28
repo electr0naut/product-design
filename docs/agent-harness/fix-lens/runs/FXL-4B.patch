@@ -1,0 +1,83 @@
+From 800b45f69638cd4894fa9a30a58c0ace1e4cddf1 Mon Sep 17 00:00:00 2001
+From: Hermes Agent <hermes@agent.local>
+Date: Thu, 26 Nov 2026 22:04:06 +0100
+Subject: [PATCH] Guard FIX dictionary lookups against inherited keys
+
+---
+ src/dictionary.js                | 12 +++++++-----
+ test/dictionary-builtins.test.js | 30 ++++++++++++++++++++++++++++++
+ 2 files changed, 37 insertions(+), 5 deletions(-)
+ create mode 100644 test/dictionary-builtins.test.js
+
+diff --git a/src/dictionary.js b/src/dictionary.js
+index c55b99f..4810260 100644
+--- a/src/dictionary.js
++++ b/src/dictionary.js
+@@ -7,15 +7,15 @@ const dictionaries = {
+ };
+ 
+ export function lookup(beginString, tag) {
++  if (!Object.hasOwn(dictionaries, beginString)) {
++    return null;
++  }
+   const dict = dictionaries[beginString];
+-  if (!dict) {
++  if (!Object.hasOwn(dict.fields, String(tag))) {
+     return null;
+   }
+   
+   const field = dict.fields[String(tag)];
+-  if (!field) {
+-    return null;
+-  }
+   
+   return {
+     name: field.name,
+@@ -30,5 +30,7 @@ export function enumName(beginString, tag, value) {
+     return null;
+   }
+   
+-  return field.enumValues[String(value)] || null;
++  return Object.hasOwn(field.enumValues, String(value))
++    ? field.enumValues[String(value)]
++    : null;
+ }
+diff --git a/test/dictionary-builtins.test.js b/test/dictionary-builtins.test.js
+new file mode 100644
+index 0000000..ea045fa
+--- /dev/null
++++ b/test/dictionary-builtins.test.js
+@@ -0,0 +1,30 @@
++import { test, expect } from 'vitest';
++import { lookup, enumName } from '../src/dictionary.js';
++import { decode } from '../src/decode.js';
++import { splitMessages } from '../src/framing.js';
++
++test('test_enumName_inherited_values_returns_null', () => {
++  for (const value of ['constructor', 'toString', '__proto__', 'hasOwnProperty', 'valueOf']) {
++    expect(enumName('FIX.4.4', 54, value)).toBeNull();
++  }
++});
++
++test('test_lookup_inherited_tags_returns_null', () => {
++  for (const tag of ['constructor', '__proto__', 'toString']) {
++    expect(lookup('FIX.4.4', tag)).toBeNull();
++  }
++  expect(lookup('constructor', 35)).toBeNull();
++});
++
++test('test_decode_constructor_enum_preserves_raw_unknown_value', () => {
++  const text = '8=FIX.4.4|9=35|35=0|34=1|49=A|56=B|54=constructor|10=240|';
++  const [message] = splitMessages(text);
++  expect(message).toBeDefined();
++  const result = decode(message, text);
++  const side = result.fields.find(field => field.tag === 54);
++  expect(side).toMatchObject({ value: 'constructor', enumName: 'unknown value' });
++  for (const field of result.fields) {
++    expect(Object.values(field).some(value => typeof value === 'function')).toBe(false);
++    expect(Object.values(field)).not.toContain('[object Object]');
++  }
++});
+-- 
+2.43.0
+

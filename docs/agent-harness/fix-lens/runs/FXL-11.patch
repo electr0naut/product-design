@@ -1,0 +1,237 @@
+From fa78e7bde23d84ac330bd361a65e2c0ab35ee0c1 Mon Sep 17 00:00:00 2001
+From: Hermes Agent <hermes@agent.local>
+Date: Fri, 27 Nov 2026 13:10:14 +0100
+Subject: [PATCH] FXL-11: Group FIX messages into orders
+
+---
+ src/orders.js       |  66 ++++++++++++++++++++
+ test/orders.test.js | 144 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 210 insertions(+)
+ create mode 100644 src/orders.js
+ create mode 100644 test/orders.test.js
+
+diff --git a/src/orders.js b/src/orders.js
+new file mode 100644
+index 0000000..f34a377
+--- /dev/null
++++ b/src/orders.js
+@@ -0,0 +1,66 @@
++function root(node) {
++  if (node.parent !== null) node.parent = root(node.parent);
++  return node.parent ?? node;
++}
++
++function union(left, right) {
++  let a = root(left);
++  let b = root(right);
++  if (a === b) return;
++  if (a.size < b.size) [a, b] = [b, a];
++  b.parent = a;
++  a.size += b.size;
++}
++
++/** Group decoded FIX messages by their connected order identifiers. */
++export function orderGroups(decoded) {
++  const clientNodes = new Map();
++  const orderNodes = new Map();
++  const messages = [];
++
++  for (const { number, fields } of decoded) {
++    const seenTags = new Set();
++    const nodes = [];
++    for (const { tag, value } of fields) {
++      if ((tag !== 11 && tag !== 41 && tag !== 37) || seenTags.has(tag)) continue;
++      // Even an unusable first value prevents a later occurrence from counting.
++      seenTags.add(tag);
++      const isOrderId = tag === 37;
++      if (value === '' || (isOrderId && value === 'NONE')) continue;
++
++      const namespace = isOrderId ? orderNodes : clientNodes;
++      let node = namespace.get(value);
++      if (!node) {
++        node = { value, isOrderId, parent: null, size: 1 };
++        namespace.set(value, node);
++      }
++      if (nodes.length > 0) union(nodes[0], node);
++      nodes.push(node);
++    }
++    if (nodes.length > 0) messages.push({ number, nodes });
++  }
++
++  // A late message can join earlier orders. Replay only after roots are final
++  // so neither the groups nor their identifiers depend on union order.
++  const groups = new Map();
++  for (const { number, nodes } of messages) {
++    const key = root(nodes[0]);
++    let group = groups.get(key);
++    if (!group) {
++      group = { clOrdIds: new Set(), orderIds: new Set(), numbers: [] };
++      groups.set(key, group);
++    }
++    group.numbers.push(number);
++    for (const { isOrderId, value } of nodes) {
++      (isOrderId ? group.orderIds : group.clOrdIds).add(value);
++    }
++  }
++  return Array.from(groups.values(), ({ clOrdIds, orderIds, numbers }) => ({
++    clOrdIds: [...clOrdIds], orderIds: [...orderIds], numbers,
++  }));
++}
++
++/** Return the first group containing the exact identifier, or null. */
++export function findOrder(groups, id) {
++  return groups.find(({ clOrdIds, orderIds }) => clOrdIds.includes(id) || orderIds.includes(id)) ?? null;
++}
+diff --git a/test/orders.test.js b/test/orders.test.js
+new file mode 100644
+index 0000000..027bf53
+--- /dev/null
++++ b/test/orders.test.js
+@@ -0,0 +1,144 @@
++import { expect, test } from 'vitest';
++import { analyse } from '../src/analyse.js';
++import { findOrder, orderGroups } from '../src/orders.js';
++import { buildMessage } from './helpers/fix.js';
++
++function log(...messages) {
++  return messages.map(([type, ...identifiers]) =>
++    buildMessage([[8, 'FIX.4.4'], [35, type], ...identifiers]),
++  ).join('\n');
++}
++
++function groupsFor(...messages) {
++  return orderGroups(analyse(log(...messages)).decoded);
++}
++
++test('test_order_groups_decoded_log_returns_exact_keys', () => {
++  const text = log(['D', [11, 'A']], ['D', [11, 'B']]);
++  expect(orderGroups(analyse(text).decoded)).toStrictEqual([
++    { clOrdIds: ['A'], orderIds: [], numbers: [1] },
++    { clOrdIds: ['B'], orderIds: [], numbers: [2] },
++  ]);
++});
++
++test('test_order_groups_shared_clordid_merges_messages', () => {
++  expect(groupsFor(['D', [11, 'A']], ['8', [11, 'A']])).toEqual([
++    { clOrdIds: ['A'], orderIds: [], numbers: [1, 2] },
++  ]);
++});
++
++test('test_order_groups_shared_orderid_merges_messages', () => {
++  expect(groupsFor(['8', [11, 'A'], [37, 'X']], ['8', [11, 'B'], [37, 'X']])).toEqual([
++    { clOrdIds: ['A', 'B'], orderIds: ['X'], numbers: [1, 2] },
++  ]);
++});
++
++test('test_order_groups_same_text_in_distinct_namespaces_stays_separate', () => {
++  expect(groupsFor(['D', [11, 'S']], ['8', [37, 'S']])).toEqual([
++    { clOrdIds: ['S'], orderIds: [], numbers: [1] },
++    { clOrdIds: [], orderIds: ['S'], numbers: [2] },
++  ]);
++});
++
++test('test_order_groups_replace_cancel_chain_returns_one_group', () => {
++  expect(groupsFor(
++    ['D', [11, 'C1']],
++    ['G', [11, 'C2'], [41, 'C1']],
++    ['8', [11, 'C2'], [37, 'O1']],
++    ['F', [11, 'C3'], [41, 'C2']],
++  )).toEqual([{ clOrdIds: ['C1', 'C2', 'C3'], orderIds: ['O1'], numbers: [1, 2, 3, 4] }]);
++});
++
++test('test_order_groups_late_execution_report_merges_earlier_groups', () => {
++  expect(groupsFor(
++    ['D', [11, 'A']], ['D', [11, 'B']],
++    ['8', [11, 'A'], [37, 'X']], ['8', [11, 'B'], [37, 'X']],
++  )).toEqual([{ clOrdIds: ['A', 'B'], orderIds: ['X'], numbers: [1, 2, 3, 4] }]);
++});
++
++function cancelRejectGroups(orderId) {
++  return groupsFor(['9', [11, 'K1'], [37, orderId]], ['9', [11, 'K2'], [37, orderId]]);
++}
++
++test('test_order_groups_uppercase_none_omits_order_id', () => {
++  expect(cancelRejectGroups('NONE')).toEqual([
++    { clOrdIds: ['K1'], orderIds: [], numbers: [1] },
++    { clOrdIds: ['K2'], orderIds: [], numbers: [2] },
++  ]);
++});
++
++test('test_order_groups_mixed_case_none_retains_order_id', () => {
++  expect(cancelRejectGroups('None')).toEqual([
++    { clOrdIds: ['K1', 'K2'], orderIds: ['None'], numbers: [1, 2] },
++  ]);
++});
++
++test('test_order_groups_missing_or_empty_identifiers_omits_messages', () => {
++  expect(groupsFor(['0'], ['8', [11, ''], [41, ''], [37, '']], ['D', [11, 'A']])).toEqual([
++    { clOrdIds: ['A'], orderIds: [], numbers: [3] },
++  ]);
++});
++
++test('test_order_groups_interleaved_late_merge_preserves_first_appearance', () => {
++  expect(groupsFor(
++    ['8', [41, 'Z'], [11, 'A'], [37, 'Y']],
++    ['D', [11, 'B']],
++    ['8', [11, 'C'], [37, 'X']],
++    ['8', [11, 'A'], [41, 'C'], [37, 'X']],
++    ['8', [11, 'Z'], [37, 'Y']],
++  )).toEqual([
++    { clOrdIds: ['Z', 'A', 'C'], orderIds: ['Y', 'X'], numbers: [1, 3, 4, 5] },
++    { clOrdIds: ['B'], orderIds: [], numbers: [2] },
++  ]);
++});
++
++test('test_find_order_known_or_missing_id_returns_first_group_or_null', () => {
++  const groups = groupsFor(['D', [11, 'S']], ['8', [37, 'S']], ['8', [11, 'K'], [41, 'ORIG'], [37, 'O']]);
++  expect(findOrder(groups, 'S')).toBe(groups[0]);
++  for (const id of ['K', 'ORIG', 'O']) expect(findOrder(groups, id)).toBe(groups[2]);
++  expect(findOrder(groups, 'unknown')).toBeNull();
++});
++
++test('test_find_order_suppressed_none_returns_null', () => {
++  expect(findOrder(cancelRejectGroups('NONE'), 'NONE')).toBeNull();
++});
++
++test('test_order_groups_repeated_identifier_tags_use_first_values', () => {
++  expect(groupsFor(
++    ['8', [11, 'A'], [41, 'B'], [37, 'X'], [11, 'C'], [41, 'D'], [37, 'Y']],
++    ['9', [11, ''], [37, 'NONE'], [11, 'C'], [37, 'Y']],
++  )).toEqual([{ clOrdIds: ['A', 'B'], orderIds: ['X'], numbers: [1] }]);
++});
++
++function deepFreeze(value) {
++  if (value !== null && typeof value === 'object') {
++    for (const child of Object.values(value)) deepFreeze(child);
++    Object.freeze(value);
++  }
++  return value;
++}
++
++test('test_order_groups_repeated_calls_preserve_input_and_output', () => {
++  const decoded = deepFreeze(analyse(log(['D', [11, 'A']], ['G', [11, 'B'], [41, 'A']])).decoded);
++  const before = structuredClone(decoded);
++  const first = orderGroups(decoded);
++  expect(first).toEqual([{ clOrdIds: ['A', 'B'], orderIds: [], numbers: [1, 2] }]);
++  expect(orderGroups(decoded)).toEqual(first);
++  expect(decoded).toEqual(before);
++});
++
++test('test_order_groups_thousand_valid_messages_finishes_under_one_second', () => {
++  const newOrders = Array.from({ length: 500 }, (_, i) => ['D', [11, `C${i}`]]);
++  const reports = Array.from({ length: 500 }, (_, i) => ['8', [11, `C${i}`], [37, `O${Math.floor(i / 2)}`]]);
++  const { errors, decoded } = analyse(log(...newOrders, ...reports));
++  expect(errors).toEqual([]);
++  expect(decoded).toHaveLength(1000);
++
++  const start = performance.now();
++  const groups = orderGroups(decoded);
++  const elapsed = performance.now() - start;
++
++  expect(elapsed).toBeLessThan(1000);
++  expect(groups).toHaveLength(250);
++  expect(groups.flatMap(group => group.numbers).sort((a, b) => a - b)).toEqual(decoded.map(message => message.number));
++});
+-- 
+2.43.0
+

@@ -1,0 +1,232 @@
+[
+ {
+  "id": "EX-log-analyzer",
+  "feature": "Public sample log log-analyzer/repo/sample_fix44.log: accept / reject verdict per message equals an independent wire check",
+  "version": "as found",
+  "dataset": "log-analyzer/repo/sample_fix44.log (external, not stored)",
+  "status": "PASS",
+  "expected": {
+   "messages": 18,
+   "wireValid": 0
+  },
+  "actual": {
+   "stats": {
+    "messages": 18,
+    "valid": 0,
+    "malformed": 18,
+    "gaps": 0,
+    "orders": 0
+   },
+   "rules": [
+    "body_length"
+   ],
+   "independentReasons": [
+    "BodyLength says 108, actual 68",
+    "BodyLength says 108, actual 73",
+    "BodyLength says 108, actual 74",
+    "BodyLength says 108, actual 83",
+    "BodyLength says 180, actual 106"
+   ]
+  }
+ },
+ {
+  "id": "EX-fix-log-analyzer",
+  "feature": "Public sample log fix-log-analyzer/repo/sample_log.log: accept / reject verdict per message equals an independent wire check",
+  "version": "as found",
+  "dataset": "fix-log-analyzer/repo/sample_log.log (external, not stored)",
+  "status": "PASS",
+  "expected": {
+   "messages": 3,
+   "wireValid": 0
+  },
+  "actual": {
+   "stats": {
+    "messages": 3,
+    "valid": 0,
+    "malformed": 3,
+    "gaps": 0,
+    "orders": 0
+   },
+   "rules": [
+    "body_length"
+   ],
+   "independentReasons": [
+    "BodyLength says 0098, actual 83",
+    "BodyLength says 0102, actual 79",
+    "BodyLength says 0110, actual 113"
+   ]
+  }
+ },
+ {
+  "id": "EX-study-guide",
+  "feature": "Public sample log study-guide/repo/fix_log1.txt: accept / reject verdict per message equals an independent wire check",
+  "version": "as found",
+  "dataset": "study-guide/repo/fix_log1.txt (external, not stored)",
+  "status": "PASS",
+  "expected": {
+   "messages": 8,
+   "wireValid": 7
+  },
+  "actual": {
+   "stats": {
+    "messages": 8,
+    "valid": 7,
+    "malformed": 1,
+    "gaps": 0,
+    "orders": 2
+   },
+   "rules": [
+    "body_length"
+   ],
+   "independentReasons": [
+    "BodyLength says 271, actual 264"
+   ]
+  }
+ },
+ {
+  "id": "EX-fiximulator",
+  "feature": "Public sample log fiximulator/repo/logs/FIX.4.2-FIXIMULATOR-BANZAI.messages.log: accept / reject verdict per message equals an independent wire check",
+  "version": "as found",
+  "dataset": "fiximulator/repo/logs/FIX.4.2-FIXIMULATOR-BANZAI.messages.log (external, not stored)",
+  "status": "PASS",
+  "expected": {
+   "messages": 12,
+   "wireValid": 12
+  },
+  "actual": {
+   "stats": {
+    "messages": 12,
+    "valid": 12,
+    "malformed": 0,
+    "gaps": 0,
+    "orders": 0
+   },
+   "rules": [],
+   "independentReasons": []
+  }
+ },
+ {
+  "id": "EX-quickfix-defs-01",
+  "feature": "QuickFIX acceptance definitions (FIX 4.2, 4.4): accept / reject verdict per message equals an independent wire check",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "quickfix test/definitions/server/fix42, fix44 (external, not stored)",
+  "status": "PASS",
+  "expected": "1042 messages of 113 definitions, same verdicts",
+  "actual": {
+   "agree": 1042,
+   "disagree": []
+  }
+ },
+ {
+  "id": "EX-quickfix-defs-02",
+  "feature": "QuickFIX acceptance definitions: the tool reports a gap exactly where the engine is expected to send a ResendRequest",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "quickfix test/definitions/server/fix42, fix44 (external, not stored)",
+  "status": "INFO",
+  "expected": "exploratory: disagreements are listed for a human to judge",
+  "actual": {
+   "agree": 99,
+   "disagree": [
+    {
+     "definition": "fix42/11c_NewSeqNoLess.def",
+     "engineAsksResend": false,
+     "toolReportsGap": true
+    },
+    {
+     "definition": "fix42/14a_BadField.def",
+     "engineAsksResend": false,
+     "toolReportsGap": true
+    },
+    {
+     "definition": "fix42/14b_RequiredFieldMissing.def",
+     "engineAsksResend": false,
+     "toolReportsGap": true
+    },
+    {
+     "definition": "fix42/14d_TagSpecifiedWithoutValue.def",
+     "engineAsksResend": false,
+     "toolReportsGap": true
+    },
+    {
+     "definition": "fix42/1a_ValidLogonMsgSeqNumTooHigh.def",
+     "engineAsksResend": true,
+     "toolReportsGap": false
+    },
+    {
+     "definition": "fix42/2e_PossDupNotReceived.def",
+     "engineAsksResend": false,
+     "toolReportsGap": true
+    },
+    {
+     "definition": "fix42/2k_CompIDDoesNotMatchProfile.def",
+     "engineAsksResend": false,
+     "toolReportsGap": true
+    },
+    {
+     "definition": "fix44/11c_NewSeqNoLess.def",
+     "engineAsksResend": false,
+     "toolReportsGap": true
+    },
+    {
+     "definition": "fix44/14a_BadField.def",
+     "engineAsksResend": false,
+     "toolReportsGap": true
+    },
+    {
+     "definition": "fix44/14b_RequiredFieldMissing.def",
+     "engineAsksResend": false,
+     "toolReportsGap": true
+    },
+    {
+     "definition": "fix44/14d_TagSpecifiedWithoutValue.def",
+     "engineAsksResend": false,
+     "toolReportsGap": true
+    },
+    {
+     "definition": "fix44/1a_ValidLogonMsgSeqNumTooHigh.def",
+     "engineAsksResend": true,
+     "toolReportsGap": false
+    },
+    {
+     "definition": "fix44/2e_PossDupNotReceived.def",
+     "engineAsksResend": false,
+     "toolReportsGap": true
+    },
+    {
+     "definition": "fix44/2k_CompIDDoesNotMatchProfile.def",
+     "engineAsksResend": false,
+     "toolReportsGap": true
+    }
+   ]
+  }
+ },
+ {
+  "id": "EX-quickfix-defs-03",
+  "feature": "QuickFIX acceptance definitions where the engine ends the session for 'MsgSeqNum too low': does the tool show anything",
+  "version": "FIX.4.2 + FIX.4.4",
+  "dataset": "quickfix test/definitions/server/fix42, fix44 (external, not stored)",
+  "status": "INFO",
+  "expected": "exploratory evidence for defect FL-07",
+  "actual": {
+   "definitions": [
+    {
+     "definition": "fix42/10_MsgSeqNumLess.def",
+     "toolShowsAnything": false
+    },
+    {
+     "definition": "fix42/2c_MsgSeqNumTooLow.def",
+     "toolShowsAnything": false
+    },
+    {
+     "definition": "fix44/10_MsgSeqNumLess.def",
+     "toolShowsAnything": false
+    },
+    {
+     "definition": "fix44/2c_MsgSeqNumTooLow.def",
+     "toolShowsAnything": false
+    }
+   ],
+   "flaggedByTool": 0
+  }
+ }
+]

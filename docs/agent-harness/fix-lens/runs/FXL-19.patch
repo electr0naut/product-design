@@ -1,0 +1,257 @@
+From 4a611b11d8488f211e51b2b1d97b4c29a7c05af6 Mon Sep 17 00:00:00 2001
+From: Hermes Agent <hermes@agent.local>
+Date: Fri, 27 Nov 2026 20:03:31 +0100
+Subject: [PATCH] FXL-19 Raise inclusive FIX log paste limits
+
+---
+ src/limits.js            |  2 +-
+ test/analyse.test.js     | 27 ++++++++++++++-
+ test/limits.test.js      | 74 +++++++++++++++++++++-------------------
+ test/performance.test.js | 71 ++++++++++++++++++++++++++++++++++++++
+ test/render.test.js      |  2 +-
+ 5 files changed, 137 insertions(+), 39 deletions(-)
+ create mode 100644 test/performance.test.js
+
+diff --git a/src/limits.js b/src/limits.js
+index 22b05ed..516f1ac 100644
+--- a/src/limits.js
++++ b/src/limits.js
+@@ -4,7 +4,7 @@ import { splitMessages } from "./framing.js";
+ export function checkLimits(text) {
+   const bytes = new TextEncoder().encode(text).length;
+   const messages = splitMessages(text).length;
+-  const ok = bytes <= 1048576 && messages <= 1000;
++  const ok = bytes <= 10_485_760 && messages <= 10_000;
+   const warning = ok
+     ? null
+     : `Log has ${bytes} bytes and ${messages} message candidates; split the log into smaller chunks.`;
+diff --git a/test/analyse.test.js b/test/analyse.test.js
+index bf30cc0..2525870 100644
+--- a/test/analyse.test.js
++++ b/test/analyse.test.js
+@@ -10,7 +10,7 @@ test('test_analyse_result_has_exact_public_keys', () => {
+ });
+ 
+ test('test_analyse_over_limit_returns_warning_without_decoding', () => {
+-  const text = valid(1) + 'x'.repeat(1048577);
++  const text = valid(1) + 'x'.repeat(10_485_761);
+   expect(analyse(text)).toEqual({ ok: false, limit: checkLimits(text), messages: [], errors: [], decoded: [], timeline: [] });
+ });
+ 
+@@ -24,3 +24,28 @@ test('test_analyse_malformed_between_valid_messages_skips_decode_and_event', ()
+   expect(result.timeline.filter(e => e.name === 'Logon').map(e => e.number)).toEqual([1, 3]);
+   expect(result.timeline.some(e => e.number === 2)).toBe(false);
+ });
++
++function heartbeat(seq) {
++  return buildMessage([[8, 'FIX.4.4'], [35, '0'], [34, seq], [49, 'A'], [56, 'B']]);
++}
++
++function heartbeatLog(count) {
++  return Array.from({ length: count }, (_, index) => heartbeat(index + 1)).join('');
++}
++
++test('test_analyse_exact_candidate_limit_decodes_all_messages', () => {
++  const result = analyse(heartbeatLog(10_000));
++  expect(result.ok).toBe(true);
++  expect(result.decoded).toHaveLength(10_000);
++  expect(result.errors).toEqual([]);
++});
++
++test('test_analyse_over_candidate_limit_returns_empty_results', () => {
++  const atLimit = heartbeatLog(10_000);
++  const text = atLimit + heartbeat(10_001);
++  expect(Buffer.byteLength(text)).toBeLessThan(1_048_576);
++  expect(analyse(text)).toEqual({
++    ok: false, limit: checkLimits(text), messages: [], errors: [], decoded: [], timeline: [],
++  });
++  expect(checkLimits(atLimit).ok).toBe(true);
++});
+diff --git a/test/limits.test.js b/test/limits.test.js
+index b99a69a..f212ccf 100644
+--- a/test/limits.test.js
++++ b/test/limits.test.js
+@@ -7,52 +7,54 @@ test("test_checkLimits_result_has_exact_public_keys", () => {
+   expect(Object.keys(checkLimits("hello")).sort()).toEqual(["bytes", "messages", "ok", "warning"]);
+ });
+ 
+-test("test_checkLimits_exact_byte_limit_is_accepted", () => {
+-  const result = checkLimits("x".repeat(1048576));
+-  expect(result.bytes).toBe(1048576);
+-  expect(result.messages).toBe(0);
+-  expect(result.ok).toBe(true);
++test("test_checkLimits_over_old_byte_limit_returns_exact_accepted_result", () => {
++  expect(checkLimits("x".repeat(1_048_577))).toEqual({
++    ok: true, bytes: 1_048_577, messages: 0, warning: null,
++  });
+ });
+ 
+-test("test_checkLimits_one_byte_over_limit_is_refused", () => {
+-  const result = checkLimits("x".repeat(1048577));
+-  expect(result.bytes).toBe(1048577);
+-  expect(result.messages).toBe(0);
+-  expect(result.ok).toBe(false);
++test("test_checkLimits_over_old_candidate_limit_returns_exact_accepted_result", () => {
++  expect(checkLimits(candidate.repeat(1_001))).toEqual({
++    ok: true, bytes: Buffer.byteLength(candidate) * 1_001, messages: 1_001, warning: null,
++  });
+ });
+ 
+-test("test_checkLimits_multibyte_text_counts_utf8_bytes", () => {
+-  const result = checkLimits("x".repeat(1048575) + "é");
+-  expect(result.bytes).toBe(1048577);
+-  expect(result.messages).toBe(0);
+-  expect(result.ok).toBe(false);
++test("test_checkLimits_exact_10485760_byte_limit_is_accepted", () => {
++  expect(checkLimits("x".repeat(10_485_760))).toEqual({
++    ok: true, bytes: 10_485_760, messages: 0, warning: null,
++  });
++});
++
++test("test_checkLimits_one_byte_over_limit_is_refused", () => {
++  expect(checkLimits("x".repeat(10_485_761))).toEqual({
++    ok: false, bytes: 10_485_761, messages: 0,
++    warning: "Log has 10485761 bytes and 0 message candidates; split the log into smaller chunks.",
++  });
+ });
+ 
+-test("test_checkLimits_thousand_candidates_is_accepted", () => {
+-  const result = checkLimits(candidate.repeat(1000));
+-  expect(result.bytes).toBe(new TextEncoder().encode(candidate).length * 1000);
+-  expect(result.messages).toBe(1000);
+-  expect(result.ok).toBe(true);
++test("test_checkLimits_multibyte_text_counts_utf8_bytes", () => {
++  expect(checkLimits("x".repeat(10_485_759) + "é")).toEqual({
++    ok: false, bytes: 10_485_761, messages: 0,
++    warning: "Log has 10485761 bytes and 0 message candidates; split the log into smaller chunks.",
++  });
+ });
+ 
+-test("test_checkLimits_thousand_one_candidates_is_refused", () => {
+-  const result = checkLimits(candidate.repeat(1001));
+-  expect(result.bytes).toBe(new TextEncoder().encode(candidate).length * 1001);
+-  expect(result.bytes).toBeLessThan(1048576);
+-  expect(result.messages).toBe(1001);
+-  expect(result.ok).toBe(false);
++test("test_checkLimits_exact_candidate_limit_is_accepted", () => {
++  expect(checkLimits(candidate.repeat(10_000))).toEqual({
++    ok: true, bytes: Buffer.byteLength(candidate) * 10_000, messages: 10_000, warning: null,
++  });
+ });
+ 
+-test("test_checkLimits_refusal_reports_measures_and_split_advice", () => {
+-  const text = candidate.repeat(1001);
+-  const result = checkLimits(text);
+-  expect(result.ok).toBe(false);
+-  expect(result.bytes).toBe(new TextEncoder().encode(text).length);
+-  expect(result.messages).toBe(1001);
+-  expect(result.warning).toEqual(expect.any(String));
+-  expect(result.warning).toContain(String(result.bytes));
+-  expect(result.warning).toContain(String(result.messages));
+-  expect(result.warning).toMatch(/split.*smaller chunks/i);
++test("test_checkLimits_one_candidate_over_limit_is_refused", () => {
++  const atLimit = candidate.repeat(10_000);
++  const text = atLimit + candidate;
++  const bytes = Buffer.byteLength(text);
++  expect(bytes).toBeLessThan(1_048_576);
++  expect(checkLimits(text)).toEqual({
++    ok: false, bytes, messages: 10_001,
++    warning: `Log has ${bytes} bytes and 10001 message candidates; split the log into smaller chunks.`,
++  });
++  expect(checkLimits(atLimit).ok).toBe(true);
+ });
+ 
+ test("test_checkLimits_accepted_paste_has_no_warning", () => {
+diff --git a/test/performance.test.js b/test/performance.test.js
+new file mode 100644
+index 0000000..0f1b608
+--- /dev/null
++++ b/test/performance.test.js
+@@ -0,0 +1,71 @@
++import { test, expect } from 'vitest';
++import { analyse } from '../src/analyse.js';
++import { applyFilters } from '../src/filters.js';
++import { orderGroups } from '../src/orders.js';
++import { tradeSummary } from '../src/summary.js';
++import { buildMessage } from './helpers/fix.js';
++
++function frame(type, seq, sender, target, fields = []) {
++  return buildMessage([[8, 'FIX.4.4'], [35, type], [34, seq], [49, sender], [56, target], ...fields]);
++}
++
++function timed(run) {
++  const start = performance.now();
++  const result = run();
++  return { result, ms: performance.now() - start };
++}
++
++test('test_logProcessing_mixed_ten_thousand_messages_meets_time_budgets', () => {
++  const frames = [];
++  for (let i = 0; i < 2_500; i++) {
++    const seq = 2 * i + 1;
++    const clientId = `C${i}`;
++    const symbol = i % 2 === 0 ? 'ALPHA' : 'BETA';
++    frames.push(
++      frame('D', seq, 'CLIENT', 'VENUE', [[11, clientId], [55, symbol], [54, '1'], [38, 2], [40, '2'], [44, 10]]),
++      frame('8', seq, 'VENUE', 'CLIENT', [[11, clientId], [37, `O${i}`], [17, `E${i}`], [150, 'F'],
++        [39, '2'], [55, symbol], [54, '1'], [32, 2], [31, 10]]),
++      frame('0', seq + 1, 'CLIENT', 'VENUE'),
++      frame('0', seq + 1, 'VENUE', 'CLIENT'),
++    );
++  }
++  const log = frames.join('');
++  const analysis = timed(() => analyse(log));
++  const { ok, decoded, errors } = analysis.result;
++  expect(ok).toBe(true);
++  expect(errors).toEqual([]);
++  expect(decoded).toHaveLength(10_000);
++  expect(analysis.ms).toBeLessThan(5_000);
++
++  const groups = timed(() => orderGroups(decoded));
++  expect(groups.result).toHaveLength(2_500);
++  expect(groups.result.every(group => group.numbers.length === 2)).toBe(true);
++  expect(groups.ms).toBeLessThan(1_000);
++
++  const summary = timed(() => tradeSummary(decoded));
++  expect(summary.result.rows).toMatchObject([
++    { symbol: 'ALPHA', buy: { orders: 1_250, fills: 1_250 } },
++    { symbol: 'BETA', buy: { orders: 1_250, fills: 1_250 } },
++  ]);
++  expect(summary.ms).toBeLessThan(1_000);
++
++  const filtered = timed(() => applyFilters(decoded, { senderCompId: 'CLIENT' }));
++  expect(filtered.result).toHaveLength(5_000);
++  expect(filtered.ms).toBeLessThan(1_000);
++}, 15_000);
++
++test('test_analyse_padded_ten_thousand_messages_decodes_under_five_seconds', () => {
++  // Fixed-width sequences keep each frame's encoded size constant.
++  const padding = 'x'.repeat(981);
++  const log = Array.from({ length: 10_000 }, (_, i) =>
++    frame('0', String(i + 1).padStart(5, '0'), 'CLIENT', 'VENUE', [[58, padding]]),
++  ).join('');
++  const bytes = Buffer.byteLength(log);
++  expect(bytes).toBeGreaterThanOrEqual(10_400_000);
++  expect(bytes).toBeLessThanOrEqual(10_485_760);
++  const analysis = timed(() => analyse(log));
++  expect(analysis.result.ok).toBe(true);
++  expect(analysis.result.decoded).toHaveLength(10_000);
++  expect(analysis.result.errors).toEqual([]);
++  expect(analysis.ms).toBeLessThan(5_000);
++}, 10_000);
+diff --git a/test/render.test.js b/test/render.test.js
+index 736e763..f50de5a 100644
+--- a/test/render.test.js
++++ b/test/render.test.js
+@@ -151,7 +151,7 @@ test('test_render_empty_log_shows_empty_states', () => {
+ test('test_render_limit_refusal_shows_only_warning', () => {
+   const [timeline, decode] = ['#timeline > h2', '#decode > h2'].map(select);
+   show(fix('A'), malformed);
+-  const refusal = analyse('x'.repeat(1048577));
++  const refusal = analyse('x'.repeat(10_485_761));
+   expect(refusal.ok).toBe(false);
+   render(refusal);
+   expect(select('#summary').children).toHaveLength(0);
+-- 
+2.43.0
+

@@ -1,0 +1,347 @@
+From 7768c0f39ed0cd73dcf157c777e58b35900ba32a Mon Sep 17 00:00:00 2001
+From: Hermes Agent <hermes@agent.local>
+Date: Thu, 26 Nov 2026 23:00:41 +0100
+Subject: [PATCH 1/2] Render full FIX timeline and use CSP-compatible
+ dictionary modules
+
+---
+ src/dictionary.js                       |  4 +--
+ src/dictionary/{fix42.json => fix42.js} |  4 +--
+ src/dictionary/{fix44.json => fix44.js} |  4 +--
+ src/render.js                           | 16 +++++++--
+ test/dictionary.test.js                 | 43 +++++++++++++++++-------
+ test/render.test.js                     | 44 +++++++++++++++++++++++++
+ test/static-checks.test.js              |  9 ++++-
+ tools/build-dictionary.mjs              |  6 ++--
+ 8 files changed, 107 insertions(+), 23 deletions(-)
+ rename src/dictionary/{fix42.json => fix42.js} (99%)
+ rename src/dictionary/{fix44.json => fix44.js} (99%)
+
+diff --git a/src/dictionary.js b/src/dictionary.js
+index 4810260..70b4dd0 100644
+--- a/src/dictionary.js
++++ b/src/dictionary.js
+@@ -1,5 +1,5 @@
+-import fix42Data from './dictionary/fix42.json' with { type: 'json' };
+-import fix44Data from './dictionary/fix44.json' with { type: 'json' };
++import fix42Data from './dictionary/fix42.js';
++import fix44Data from './dictionary/fix44.js';
+ 
+ const dictionaries = {
+   'FIX.4.2': fix42Data,
+diff --git a/src/dictionary/fix42.json b/src/dictionary/fix42.js
+similarity index 99%
+rename from src/dictionary/fix42.json
+rename to src/dictionary/fix42.js
+index e8cf22b..1233bd9 100644
+--- a/src/dictionary/fix42.json
++++ b/src/dictionary/fix42.js
+@@ -1,4 +1,4 @@
+-{
++export default {
+   "fields": {
+     "1": {
+       "name": "Account",
+@@ -2498,4 +2498,4 @@
+     }
+   },
+   "commit": "ed111f1bd84bb4e7209e52f939aefe83b86cbc7f"
+-}
++};
+diff --git a/src/dictionary/fix44.json b/src/dictionary/fix44.js
+similarity index 99%
+rename from src/dictionary/fix44.json
+rename to src/dictionary/fix44.js
+index d040093..10d1747 100644
+--- a/src/dictionary/fix44.json
++++ b/src/dictionary/fix44.js
+@@ -1,4 +1,4 @@
+-{
++export default {
+   "fields": {
+     "1": {
+       "name": "Account",
+@@ -6569,4 +6569,4 @@
+     }
+   },
+   "commit": "ed111f1bd84bb4e7209e52f939aefe83b86cbc7f"
+-}
++};
+diff --git a/src/render.js b/src/render.js
+index dba9ec9..d1f31e5 100644
+--- a/src/render.js
++++ b/src/render.js
+@@ -20,11 +20,23 @@ export function render(result) {
+     const card = add(decodeSection, 'article', '');
+     add(card, 'h3', message.label);
+     for (const field of message.fields) {
+-      add(card, 'div', `${field.tag} ${field.name}: ${field.value}${field.enumName === null ? '' : ` (${field.enumName})`}`, 'field');
++      const text = message.supported === false
++        ? `${field.tag}: ${field.value}`
++        : `${field.tag} ${field.name}: ${field.value}${field.enumName === null ? '' : ` (${field.enumName})`}`;
++      add(card, 'div', text, 'field');
+     }
+   }
+   for (const error of result.errors) add(decodeSection, 'p', error.text);
+   for (const event of result.timeline) {
+-    add(timelineSection, 'p', `Message ${event.number}: ${event.name}${event.detail ? ` — ${event.detail}` : ''}`);
++    const parts = [`Message ${event.number}: ${event.name}`];
++    if (event.sendingTime != null) parts.push(event.sendingTime);
++    if (event.sender != null || event.target != null) parts.push(`${event.sender ?? ''} → ${event.target ?? ''}`);
++    if (event.seqNum != null) parts.push(`seq ${event.seqNum}`);
++    if (event.kind === 'order') {
++      if (event.clOrdId != null) parts.push(`ClOrdID ${event.clOrdId}`);
++      if (event.orderId != null) parts.push(`OrderID ${event.orderId}`);
++    }
++    if (event.detail) parts.push(event.detail);
++    add(timelineSection, 'p', parts.join(' — '));
+   }
+ }
+diff --git a/test/dictionary.test.js b/test/dictionary.test.js
+index 0cad80b..dbe213e 100644
+--- a/test/dictionary.test.js
++++ b/test/dictionary.test.js
+@@ -6,7 +6,7 @@ import { join } from 'node:path';
+ import { tmpdir } from 'node:os';
+ 
+ const dictDir = 'src/dictionary';
+-const committed = (version) => readFileSync(join(dictDir, `fix${version}.json`));
++const committed = (version) => readFileSync(join(dictDir, `fix${version}.js`));
+ const build = (folder) => execFileSync(process.execPath, ['tools/build-dictionary.mjs', folder]);
+ 
+ // Snapshot every tracked dictionary artifact so the suite cannot silently rewrite src/.
+@@ -35,7 +35,7 @@ test('test_dictionary_temp_build_matches_committed_without_src_writes', () => {
+   try {
+     build(folder);
+     for (const version of ['42', '44']) {
+-      expect(readFileSync(join(folder, `fix${version}.json`)).equals(committed(version))).toBe(true);
++      expect(readFileSync(join(folder, `fix${version}.js`)).equals(committed(version))).toBe(true);
+     }
+     expect(readdirSync(dictDir)).toEqual(Object.keys(before));
+     for (const [name, bytes] of Object.entries(before)) {
+@@ -55,7 +55,7 @@ test('test_dictionary_build_without_jsdom_preserves_xml_output', () => {
+   try {
+     build(folder);
+     for (const version of ['42', '44']) {
+-      expect(readFileSync(join(folder, `fix${version}.json`)).equals(committed(version))).toBe(true);
++      expect(readFileSync(join(folder, `fix${version}.js`)).equals(committed(version))).toBe(true);
+     }
+   } finally {
+     rmSync(folder, { recursive: true, force: true });
+@@ -74,15 +74,15 @@ test('test_dictionary_tests_register_at_top_level', () => {
+ 
+ test('test_dictionary_artifacts_use_lowercase_paths_only', () => {
+   for (const version of ['42', '44']) {
+-    expect(existsSync(join(dictDir, `fix${version}.json`))).toBe(true);
+-    expect(existsSync(join(dictDir, `FIX${version}.json`))).toBe(false);
+-    expect(JSON.parse(committed(version)).fields['35'].name).toBe('MsgType');
++    expect(existsSync(join(dictDir, `fix${version}.js`))).toBe(true);
++    expect(existsSync(join(dictDir, `FIX${version}.js`))).toBe(false);
++    expect(JSON.parse(committed(version).toString().replace(/^export default /, '').replace(/;\s*$/, '')).fields['35'].name).toBe('MsgType');
+   }
+   expect(lookup('FIX.4.2', 35).name).toBe('MsgType');
+   expect(lookup('FIX.4.4', 35).name).toBe('MsgType');
+   const runtime = readFileSync('src/dictionary.js', 'utf8');
+-  expect(runtime).toContain('./dictionary/fix42.json');
+-  expect(runtime).toContain('./dictionary/fix44.json');
++  expect(runtime).toContain('./dictionary/fix42.js');
++  expect(runtime).toContain('./dictionary/fix44.js');
+ });
+ 
+ test('reads only pinned Orchestra XML files and records the pinned commit', () => {
+@@ -115,7 +115,7 @@ test('150=F exists in 4.4 and not in 4.2', () => {
+ 
+ test('each entry has a name and a type', () => {
+   for (const version of ['42', '44']) {
+-    for (const field of Object.values(JSON.parse(committed(version)).fields)) {
++    for (const field of Object.values(JSON.parse(committed(version).toString().replace(/^export default /, '').replace(/;\s*$/, '')).fields)) {
+       expect(field.name).toBeTruthy();
+       expect(field.type).toBeTruthy();
+     }
+@@ -124,7 +124,7 @@ test('each entry has a name and a type', () => {
+ 
+ test('enum symbolic names appear only for fields with a code set', () => {
+   for (const version of ['42', '44']) {
+-    for (const field of Object.values(JSON.parse(committed(version)).fields)) {
++    for (const field of Object.values(JSON.parse(committed(version).toString().replace(/^export default /, '').replace(/;\s*$/, '')).fields)) {
+       if (field.type.endsWith('CodeSet')) expect(field.enumValues).toBeDefined();
+       else expect(field.enumValues).toBeUndefined();
+     }
+@@ -133,7 +133,7 @@ test('enum symbolic names appear only for fields with a code set', () => {
+ 
+ test('no field longer than 80 characters', () => {
+   for (const version of ['42', '44']) {
+-    for (const field of Object.values(JSON.parse(committed(version)).fields)) {
++    for (const field of Object.values(JSON.parse(committed(version).toString().replace(/^export default /, '').replace(/;\s*$/, '')).fields)) {
+       expect(field.name.length).toBeLessThanOrEqual(80);
+       expect(field.type.length).toBeLessThanOrEqual(80);
+       for (const value of Object.keys(field.enumValues || {})) expect(value.length).toBeLessThanOrEqual(80);
+@@ -155,3 +155,24 @@ test('SOURCE.md in src/dictionary/ names the pinned commit', () => {
+   expect(commitMatch).toBeTruthy();
+   expect(dictSource).toContain(commitMatch[1]);
+ });
++
++test('test_dictionary_js_modules_replace_json_artifacts', async () => {
++  for (const version of ['42', '44']) {
++    const file = join(dictDir, `fix${version}.js`);
++    expect(existsSync(file)).toBe(true);
++    expect(existsSync(join(dictDir, `fix${version}.json`))).toBe(false);
++    const source = readFileSync(file, 'utf8');
++    expect(source).toMatch(/^export default \{[\s\S]*\};\n$/);
++    expect(source.match(/\bexport\s+default\b/g)).toHaveLength(1);
++    const data = (await import(`../src/dictionary/fix${version}.js`)).default;
++    expect(data.fields['35'].name).toBe('MsgType');
++  }
++  const runtime = readFileSync('src/dictionary.js', 'utf8');
++  expect(runtime).toContain('./dictionary/fix42.js');
++  expect(runtime).toContain('./dictionary/fix44.js');
++  expect(runtime).not.toMatch(/\.json/);
++  expect(lookup('FIX.4.2', 35).name).toBe('MsgType');
++  expect(lookup('FIX.4.4', 35).type).toBeTruthy();
++  expect(enumName('FIX.4.2', 35, 'A')).toBe('Logon');
++  expect(enumName('FIX.4.4', 35, 'A')).toBe('Logon');
++});
+diff --git a/test/render.test.js b/test/render.test.js
+index c7a2668..0c67910 100644
+--- a/test/render.test.js
++++ b/test/render.test.js
+@@ -1,6 +1,9 @@
+ // @vitest-environment jsdom
+ import { test, expect } from 'vitest';
+ import { render } from '../src/render.js';
++import { analyse } from '../src/analyse.js';
++import { lookup, enumName } from '../src/dictionary.js';
++import { buildMessage } from './helpers/fix.js';
+ 
+ function setup() { document.body.innerHTML = '<section id="decode"><h2>Decode</h2></section><section id="timeline"><h2>Timeline</h2></section>'; }
+ const result = { ok: true, limit: { ok: true }, decoded: [{ number: 1, label: 'Message 1: Logon', fields: [{ tag: 35, name: 'MsgType', value: 'A', enumName: 'Logon', known: true }] }], errors: [{ number: 2, text: 'Message 2: bad checksum' }], timeline: [{ number: 1, name: 'Logon', kind: 'session', detail: null }] };
+@@ -30,3 +33,44 @@ test('test_render_html_field_value_stays_literal_without_element', () => {
+   expect(document.querySelector('#decode').textContent).toContain('<img src=x onerror=alert(1)>');
+   expect(document.querySelectorAll('img')).toHaveLength(0);
+ });
++
++
++function show(fields) { setup(); render(analyse(buildMessage(fields))); }
++const orderFields = [[8, 'FIX.4.4'], [35, '8'], [49, 'BROKER'], [56, 'CLIENT'], [34, 7], [52, '20261126-10:00:01.000'], [150, '0'], [11, 'CL-1'], [37, 'ORD-9']];
++
++test('test_render_public_imports_analyse_and_render_dom', () => {
++  expect(lookup('FIX.4.4', 35).name).toBe('MsgType');
++  expect(enumName('FIX.4.4', 35, 'A')).toBe('Logon');
++  show([[8, 'FIX.4.4'], [35, 'A'], [49, 'A'], [56, 'B'], [34, 1]]);
++  expect(document.querySelector('#decode article h3').textContent).toBe('Message 1: Logon');
++  expect(document.querySelector('#timeline p').textContent).toBe('Message 1: Logon — A → B — seq 1');
++});
++
++test('test_render_order_timeline_full_row_text', () => {
++  show(orderFields);
++  expect(document.querySelector('#timeline p').textContent).toBe('Message 1: Acknowledgement — 20261126-10:00:01.000 — BROKER → CLIENT — seq 7 — ClOrdID CL-1 — OrderID ORD-9');
++});
++
++test('test_render_session_timeline_metadata_text', () => {
++  show([[8, 'FIX.4.4'], [35, 'A'], [49, 'A'], [56, 'B'], [34, 1], [52, '20261126-10:00:00.000']]);
++  expect(document.querySelector('#timeline p').textContent).toBe('Message 1: Logon — 20261126-10:00:00.000 — A → B — seq 1');
++});
++
++test('test_render_sequence_gap_timeline_detail_text', () => {
++  setup(); render(analyse([1, 3].map(n => buildMessage([[8, 'FIX.4.4'], [35, '0'], [49, 'A'], [56, 'B'], [34, n], [52, '20261126-10:00:01.000']])).join('')));
++  expect([...document.querySelectorAll('#timeline p')].map(p => p.textContent)).toContain('Message 2: SequenceGap — 20261126-10:00:01.000 — A → B — seq 3 — expected 2, received 3');
++});
++
++test('test_render_unsupported_version_raw_fields', () => {
++  show([[8, 'FIX.4.1'], [35, '0'], [34, 1], [49, 'A'], [56, 'B']]);
++  expect(document.querySelector('#decode article h3').textContent).toBe('Message 1: unsupported version FIX.4.1');
++  expect([...document.querySelectorAll('#decode .field')].map(e => e.textContent)).toContain('49: A');
++  expect(document.querySelector('#decode').textContent).not.toContain('Unknown tag');
++});
++
++test('test_render_decoded_field_exact_visible_text', () => {
++  show([[8, 'FIX.4.4'], [35, 'A'], [49, 'A'], [56, 'B']]);
++  expect([...document.querySelectorAll('#decode .field')].find(e => e.textContent.startsWith('35')).textContent).toBe('35 MsgType: A (Logon)');
++  show([[8, 'FIX.4.1'], [35, 'A']]);
++  expect([...document.querySelectorAll('#decode .field')].find(e => e.textContent.startsWith('35')).textContent).toBe('35: A');
++});
+diff --git a/test/static-checks.test.js b/test/static-checks.test.js
+index 7724ca9..84a14a9 100644
+--- a/test/static-checks.test.js
++++ b/test/static-checks.test.js
+@@ -14,7 +14,7 @@ const forbidden = [
+ ];
+ const cspValue = "default-src 'self'; connect-src 'none'; form-action 'none'";
+ function stripComments(source) { return source.replace(/<!--[^]*?-->|\/\*[^]*?\*\/|(^|[^:])\/\/[^\r\n]*/gm, (match, prefix) => prefix || ''); }
+-function auditSource(source) { return forbidden.filter(pattern => pattern.test(stripComments(source))).map(String); }
++function auditSource(source) { return [...forbidden, /\bfrom\s*['\"][^'\"]+\.json['\"]/, /\bimport\s*\(\s*['\"][^'\"]+\.json['\"]\s*\)/].filter(pattern => pattern.test(stripComments(source))).map(String); }
+ function auditPage(source) {
+   const doc = new JSDOM(source).window.document;
+   const tags = [...doc.querySelectorAll('meta[http-equiv]')].filter(tag => tag.getAttribute('http-equiv').toLowerCase() === 'content-security-policy');
+@@ -51,3 +51,10 @@ test('test_static_checks_ignore_comments_and_pass_delivered_sources', () => {
+   expect(files.length).toBeGreaterThan(0);
+   for (const file of files) expect(auditSource(readFileSync(file, 'utf8')), file).toHaveLength(0);
+ });
++
++test('test_static_checks_src_json_imports_rejected', () => {
++  expect(auditSource(`import data from './dictionary/fix42.json' with { type: 'json' };`)).not.toHaveLength(0);
++  expect(auditSource(`const data = import("./dictionary/fix44.json")`)).not.toHaveLength(0);
++  expect(auditSource(`// import data from './dictionary/fix42.json'\n/* import('./x.json') */`)).toHaveLength(0);
++  for (const file of sources('src')) expect(auditSource(readFileSync(file, 'utf8')), file).toHaveLength(0);
++});
+diff --git a/tools/build-dictionary.mjs b/tools/build-dictionary.mjs
+index bbc39eb..b274dcd 100644
+--- a/tools/build-dictionary.mjs
++++ b/tools/build-dictionary.mjs
+@@ -83,9 +83,9 @@ const output44 = { fields: sortFields(fix44.fields), commit: fix44.commit };
+ const dictDir = process.argv[2] || join(root, 'src/dictionary');
+ mkdirSync(dictDir, { recursive: true });
+ 
+-// Write JSON files with deterministic formatting
+-writeFileSync(join(dictDir, 'fix42.json'), JSON.stringify(output42, null, 2) + '\n');
+-writeFileSync(join(dictDir, 'fix44.json'), JSON.stringify(output44, null, 2) + '\n');
++// Write native JavaScript modules with deterministic formatting
++writeFileSync(join(dictDir, 'fix42.js'), 'export default ' + JSON.stringify(output42, null, 2) + ';\n');
++writeFileSync(join(dictDir, 'fix44.js'), 'export default ' + JSON.stringify(output44, null, 2) + ';\n');
+ 
+ // Copy LICENSE
+ copyFileSync(join(root, 'vendor/orchestra/LICENSE'), join(dictDir, 'LICENSE'));
+-- 
+2.43.0
+
+
+From e721f3186288ac0f93d0403a7eb2be959c8099c7 Mon Sep 17 00:00:00 2001
+From: Hermes Agent <hermes@agent.local>
+Date: Thu, 26 Nov 2026 23:04:39 +0100
+Subject: [PATCH 2/2] test: cover reproducible JS dictionary build as new AC2
+ test
+
+---
+ test/dictionary.test.js | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+
+diff --git a/test/dictionary.test.js b/test/dictionary.test.js
+index dbe213e..f5d8a07 100644
+--- a/test/dictionary.test.js
++++ b/test/dictionary.test.js
+@@ -176,3 +176,22 @@ test('test_dictionary_js_modules_replace_json_artifacts', async () => {
+   expect(enumName('FIX.4.2', 35, 'A')).toBe('Logon');
+   expect(enumName('FIX.4.4', 35, 'A')).toBe('Logon');
+ });
++
++
++test('test_dictionary_generated_js_is_reproducible_without_mutating_src', () => {
++  const before = snapshot();
++  const folder = mkdtempSync(join(tmpdir(), 'fix-js-repro-'));
++  try {
++    build(folder);
++    for (const version of ['42', '44']) {
++      const generated = readFileSync(join(folder, `fix${version}.js`));
++      expect(generated.equals(committed(version))).toBe(true);
++    }
++    expect(readdirSync(dictDir)).toEqual(Object.keys(before));
++    for (const [name, bytes] of Object.entries(before)) {
++      expect(readFileSync(join(dictDir, name)).equals(bytes)).toBe(true);
++    }
++  } finally {
++    rmSync(folder, { recursive: true, force: true });
++  }
++});
+-- 
+2.43.0
+

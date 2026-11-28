@@ -1,0 +1,7 @@
+{
+  "id": "D-20261127-7",
+  "action": "refresh_copies",
+  "key": "FXL-14",
+  "commit": "9448c0b99295717b02c6689249ac0eca99c37066",
+  "reason": "Hidden suite: acc-render.test.js removed (its five tests retired by D-20261127-6) and acc-framing-rules.test.js added (11 tests for framing rules that mutation testing of FXL-9 showed nothing was holding; they pass on the trusted main). The design is unchanged"
+}

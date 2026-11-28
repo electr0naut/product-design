@@ -1,0 +1,95 @@
+From 3f4b42b23663f43da4088bc8922d1610d06f6bb9 Mon Sep 17 00:00:00 2001
+From: Hermes Agent <hermes@agent.local>
+Date: Fri, 27 Nov 2026 14:22:18 +0100
+Subject: [PATCH 1/2] FXL-17 Keep matching standalone messages in Account
+ filter
+
+---
+ src/filters.js       |  2 +-
+ test/filters.test.js | 28 +++++++++++++++++++++++++---
+ 2 files changed, 26 insertions(+), 4 deletions(-)
+
+diff --git a/src/filters.js b/src/filters.js
+index c36c95e..012804e 100644
+--- a/src/filters.js
++++ b/src/filters.js
+@@ -48,7 +48,7 @@ export function applyFilters(decoded, chosen) {
+ 
+   const accountNumbers = account == null ? null : accountMatches(decoded, account);
+   return decoded.filter(message => {
+-    if (accountNumbers !== null && (!accountNumbers.has(message.number) || firstValue(message, 35) === '0')) {
++    if (accountNumbers !== null && !accountNumbers.has(message.number)) {
+       return false;
+     }
+     return activeParties.every(({ key, tag }) => firstValue(message, tag) === chosen[key]);
+diff --git a/test/filters.test.js b/test/filters.test.js
+index c27aac0..f7b1955 100644
+--- a/test/filters.test.js
++++ b/test/filters.test.js
+@@ -98,9 +98,31 @@ test('test_apply_filters_ungrouped_matching_account_keeps_message', () => {
+   expectSelection(applyFilters(decoded, { account: 'ACC1' }), decoded, 0);
+ });
+ 
+-test('test_apply_filters_heartbeat_with_matching_account_is_excluded', () => {
+-  const decoded = decodeLog(['0', [1, 'ACC1']], ['A', [1, 'ACC1']]);
+-  expectSelection(applyFilters(decoded, { account: 'ACC1' }), decoded, 1);
++test('test_apply_filters_account_choice_keeps_linked_order_and_matching_heartbeat', () => {
++  const decoded = decodeLog(
++    ['D', [11, 'C1'], [1, 'ACC1']], ['8', [11, 'C1'], [37, 'O1']],
++    ['0', [1, 'ACC1']], ['0'],
++  );
++  expectSelection(applyFilters(decoded, { account: 'ACC1' }), decoded, 0, 1, 2);
++});
++
++test('test_apply_filters_ungrouped_account_choice_matches_regardless_of_type', () => {
++  const rows = [['1', [1, 'ACC1']], ['A', [1, 'ACC1']], ['0', [1, 'ACC2']]];
++  for (const decoded of [decodeLog(...rows), decodeLog(...rows, ['1'], ['A'])]) {
++    expectSelection(applyFilters(decoded, { account: 'ACC1' }), decoded, 0, 1);
++    expectSelection(applyFilters(decoded, { account: 'ACC2' }), decoded, 2);
++  }
++});
++
++test('test_apply_filters_account_and_sender_keep_only_matching_messages', () => {
++  const decoded = decodeLog(
++    ['D', [11, 'C1'], [1, 'ACC1'], [49, 'OTHER']],
++    ['8', [11, 'C1'], [37, 'O1'], [49, 'BRK']],
++    ['0', [1, 'ACC1'], [49, 'BRK']], ['0', [49, 'BRK']],
++  );
++  expectSelection(applyFilters(decoded, { account: 'ACC1', senderCompId: 'BRK' }), decoded, 1, 2);
++  expectSelection(applyFilters(decoded, { senderCompId: 'BRK' }), decoded, 1, 2, 3);
++  expectSelection(applyFilters(decoded, { senderCompId: 'OTHER' }), decoded, 0);
+ });
+ 
+ test('test_apply_filters_account_and_sender_returns_intersection', () => {
+-- 
+2.43.0
+
+
+From bfb67b789917b5f15fa0cbfdc1b3bffcf76bc1ee Mon Sep 17 00:00:00 2001
+From: Hermes Agent <hermes@agent.local>
+Date: Fri, 27 Nov 2026 14:25:16 +0100
+Subject: [PATCH 2/2] FXL-17: verify order selection is unchanged by Heartbeats
+
+---
+ test/filters.test.js | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/test/filters.test.js b/test/filters.test.js
+index f7b1955..b775180 100644
+--- a/test/filters.test.js
++++ b/test/filters.test.js
+@@ -103,7 +103,10 @@ test('test_apply_filters_account_choice_keeps_linked_order_and_matching_heartbea
+     ['D', [11, 'C1'], [1, 'ACC1']], ['8', [11, 'C1'], [37, 'O1']],
+     ['0', [1, 'ACC1']], ['0'],
+   );
+-  expectSelection(applyFilters(decoded, { account: 'ACC1' }), decoded, 0, 1, 2);
++  const chosen = { account: 'ACC1' };
++  // Including a matching Heartbeat must not narrow or widen the existing order selection.
++  expectSelection(applyFilters(decoded.slice(0, 2), chosen), decoded, 0, 1);
++  expectSelection(applyFilters(decoded, chosen), decoded, 0, 1, 2);
+ });
+ 
+ test('test_apply_filters_ungrouped_account_choice_matches_regardless_of_type', () => {
+-- 
+2.43.0
+

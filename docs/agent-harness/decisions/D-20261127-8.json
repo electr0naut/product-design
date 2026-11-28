@@ -1,0 +1,7 @@
+{
+  "id": "D-20261127-8",
+  "action": "refresh_copies",
+  "key": "FXL-17",
+  "commit": "23952fd059850fc99b5e43adf2d2054e6aa54047",
+  "reason": "Technical design v1.2.2: one clarification in section 13 (a report that names an unmatched report is unmatched too), approved by Ubay Gonzalez on 2026-11-27 (his word: \"A\"). One hidden test added to acc-summary.test.js pins it; it passes on the trusted main"
+}

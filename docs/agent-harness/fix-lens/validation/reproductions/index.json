@@ -1,0 +1,575 @@
+[
+ {
+  "defect": "FL-01",
+  "severity": "P0",
+  "title": "Two fills that share OrderID and ExecID on different sessions are counted as one",
+  "fixtures": [
+   {
+    "file": "FL-01-S07-08.log",
+    "test": "S07-08",
+    "feature": "Two venues that both use OrderID 1 / ExecID 1: both fills count, and the orders stay apart",
+    "expect": {
+     "trades": {
+      "ACME": {
+       "buyOrders": "2",
+       "bought": "300",
+       "avgBuy": "10.6667",
+       "sellOrders": "0",
+       "sold": "0",
+       "avgSell": "–",
+       "net": "+300"
+      }
+     },
+     "groups": [
+      [
+       1,
+       3
+      ],
+      [
+       2,
+       4
+      ]
+     ]
+    },
+    "view": null,
+    "basis": "Brief 6, 11; FIX: OrderID and ExecID are unique per executing party; AC-041 keys on 37+17 alone",
+    "against": "FIX"
+   }
+  ]
+ },
+ {
+  "defect": "FL-02",
+  "severity": "P0",
+  "title": "Orders of different clients that reuse a ClOrdID are merged, and the Account filter shows the other client's flow",
+  "fixtures": [
+   {
+    "file": "FL-02-S07-06.log",
+    "test": "S07-06",
+    "feature": "The same ClOrdID used by two clients is two orders",
+    "expect": {
+     "groups": [
+      [
+       1,
+       3
+      ],
+      [
+       2,
+       4
+      ]
+     ],
+     "stats": {
+      "orders": 2
+     }
+    },
+    "view": null,
+    "basis": "Brief 6, 7, 11; FIX: ClOrdID is unique per order sender; AC-035 joins on the value alone",
+    "against": "FIX"
+   },
+   {
+    "file": "FL-02-S07-07.log",
+    "test": "S07-07",
+    "feature": "The Account filter does not show another client's order that reuses a ClOrdID",
+    "expect": {
+     "shown": [
+      1,
+      3
+     ],
+     "trades": {
+      "AAA": {
+       "buyOrders": "1",
+       "bought": "100",
+       "avgBuy": "5",
+       "sellOrders": "0",
+       "sold": "0",
+       "avgSell": "–",
+       "net": "+100"
+      }
+     }
+    },
+    "view": {
+     "orderId": null,
+     "filters": {
+      "account": "ACC1"
+     }
+    },
+    "basis": "Brief 11; US-009 'one client's flow in a shared log'; AC-051 follows AC-035",
+    "against": "FIX"
+   }
+  ]
+ },
+ {
+  "defect": "FL-03",
+  "severity": "P1",
+  "title": "Clicking an id opens another order when the value is a ClOrdID of one order and the OrderID of another",
+  "fixtures": [
+   {
+    "file": "FL-03-S07-11.log",
+    "test": "S07-11",
+    "feature": "Clicking OrderID 1001 opens the order that has that OrderID",
+    "expect": {
+     "click": {
+      "card": 4,
+      "tag": "37",
+      "shown": [
+       2,
+       4
+      ],
+      "banner": [
+       "ZZ9"
+      ]
+     }
+    },
+    "view": null,
+    "basis": "AC-034, AC-036 'shows only that order's messages'; design 12 findOrder takes the id alone",
+    "against": "PRD"
+   }
+  ]
+ },
+ {
+  "defect": "FL-04",
+  "severity": "P1",
+  "title": "A trade cancel that stands before its fill in the log is not applied",
+  "fixtures": [
+   {
+    "file": "FL-04-S07-05.log",
+    "test": "S07-05",
+    "feature": "A trade cancel listed before the fill it names still removes that fill",
+    "expect": {
+     "trades": {
+      "ACME": {
+       "buyOrders": "1",
+       "bought": "0",
+       "avgBuy": "–",
+       "sellOrders": "0",
+       "sold": "0",
+       "avgSell": "–",
+       "net": "0"
+      }
+     },
+     "unmatched": 0
+    },
+    "view": null,
+    "basis": "AC-041 'as they stand at the end of the log', AC-042, AC-044 'not in the log'; brief 7 (reports before earlier events)",
+    "against": "PRD"
+   }
+  ]
+ },
+ {
+  "defect": "FL-05",
+  "severity": "P1",
+  "title": "After a session restarts at 1 without ResetSeqNumFlag, sequence gaps are no longer found",
+  "fixtures": [
+   {
+    "file": "FL-05-S06-11.log",
+    "test": "S06-11",
+    "feature": "A gap after the session restarts at 1 without ResetSeqNumFlag is still found",
+    "expect": {
+     "gaps_include": [
+      [
+       11,
+       3,
+       5
+      ]
+     ]
+    },
+    "view": null,
+    "basis": "FIX session protocol: sequence numbers restart at 1 on a new session; TR-003 resets only on 141=Y",
+    "against": "FIX"
+   }
+  ]
+ },
+ {
+  "defect": "FL-06",
+  "severity": "P1",
+  "title": "Sessions told apart only by SubIDs share one sequence counter: missed gaps and false gaps",
+  "fixtures": [
+   {
+    "file": "FL-06-S06-15.log",
+    "test": "S06-15",
+    "feature": "Sessions that differ only by SenderSubID keep separate sequence numbers",
+    "expect": {
+     "gaps": [
+      [
+       6,
+       3,
+       4
+      ]
+     ]
+    },
+    "view": null,
+    "basis": "Brief 11; FIX session identity; TR-003 keys a direction on 49/56 only",
+    "against": "FIX"
+   },
+   {
+    "file": "FL-06-S06-16.log",
+    "test": "S06-16",
+    "feature": "No false gap when a second SubID session of the same CompIDs runs at higher numbers",
+    "expect": {
+     "gaps": []
+    },
+    "view": null,
+    "basis": "Brief 11; FIX session identity; TR-003 keys a direction on 49/56 only",
+    "against": "FIX"
+   }
+  ]
+ },
+ {
+  "defect": "FL-07",
+  "severity": "P1",
+  "title": "A MsgSeqNum that was already used, without PossDupFlag, is shown as a normal message",
+  "fixtures": [
+   {
+    "file": "FL-07-S06-08.log",
+    "test": "S06-08",
+    "feature": "A duplicate MsgSeqNum without PossDupFlag is pointed out",
+    "expect": {
+     "flagged": [
+      4
+     ]
+    },
+    "view": null,
+    "basis": "FIX session protocol, MsgSeqNum lower than expected without PossDupFlag; design 11 says 'Ignored'",
+    "against": "FIX"
+   }
+  ]
+ },
+ {
+  "defect": "FL-08",
+  "severity": "P2",
+  "title": "A resent or duplicated NewOrderSingle is counted as another order in the trading summary",
+  "fixtures": [
+   {
+    "file": "FL-08-S06-13-4.4.log",
+    "test": "S06-13-4.4",
+    "feature": "A resent NewOrderSingle (PossDupFlag=Y) is not a second order",
+    "expect": {
+     "trades_fields": {
+      "ACME": {
+       "buyOrders": "1"
+      }
+     },
+     "stats": {
+      "orders": 1
+     }
+    },
+    "view": null,
+    "basis": "Brief 6: a retransmission is not a new business event; AC-040 counts NewOrderSingle messages",
+    "against": "FIX"
+   },
+   {
+    "file": "FL-08-S06-13-4.2.log",
+    "test": "S06-13-4.2",
+    "feature": "A resent NewOrderSingle (PossDupFlag=Y) is not a second order",
+    "expect": {
+     "trades_fields": {
+      "ACME": {
+       "buyOrders": "1"
+      }
+     },
+     "stats": {
+      "orders": 1
+     }
+    },
+    "view": null,
+    "basis": "Brief 6: a retransmission is not a new business event; AC-040 counts NewOrderSingle messages",
+    "against": "FIX"
+   },
+   {
+    "file": "FL-08-S11-01.log",
+    "test": "S11-01",
+    "feature": "A log merged from both sides of a connection does not double orders or fills",
+    "expect": {
+     "trades": {
+      "ACME": {
+       "buyOrders": "1",
+       "bought": "100",
+       "avgBuy": "10",
+       "sellOrders": "0",
+       "sold": "0",
+       "avgSell": "–",
+       "net": "+100"
+      }
+     },
+     "stats": {
+      "orders": 1
+     },
+     "gaps": []
+    },
+    "view": null,
+    "basis": "Brief 11; AC-040 counts NewOrderSingle messages, AC-041 dedupes fills only",
+    "against": "FIX"
+   }
+  ]
+ },
+ {
+  "defect": "FL-09",
+  "severity": "P2",
+  "title": "False sequence gaps after a PossDup message with the expected number, and after a SequenceReset to a lower number",
+  "fixtures": [
+   {
+    "file": "FL-09-S06-17.log",
+    "test": "S06-17",
+    "feature": "A PossDup message with the expected number fills that number: no gap after it",
+    "expect": {
+     "gaps": []
+    },
+    "view": null,
+    "basis": "FIX session protocol (PossDupFlag: process if MsgSeqNum not yet received); QuickFIX 2e_PossDupNotReceived.def; TR-003 'Messages with PossDupFlag=Y don't advance'",
+    "against": "FIX"
+   },
+   {
+    "file": "FL-09-S06-18.log",
+    "test": "S06-18",
+    "feature": "A SequenceReset to a lower number is not followed by a false gap",
+    "expect": {
+     "gaps": []
+    },
+    "view": null,
+    "basis": "FIX SequenceReset: NewSeqNo may only increase the expected number; QuickFIX 11c_NewSeqNoLess.def; TR-003",
+    "against": "FIX"
+   }
+  ]
+ },
+ {
+  "defect": "FL-10",
+  "severity": "P2",
+  "title": "Values that are not FIX numbers are counted as quantities and prices",
+  "fixtures": [
+   {
+    "file": "FL-10-S10-15-01.log",
+    "test": "S10-15-01",
+    "feature": "LastQty '0x10' (hexadecimal) is not a FIX quantity and is not counted as traded",
+    "expect": {
+     "trades": {}
+    },
+    "view": null,
+    "basis": "FIX Qty/float datatype: digits with an optional decimal point; design 13 'a finite number above zero'",
+    "against": "FIX"
+   },
+   {
+    "file": "FL-10-S10-15-02.log",
+    "test": "S10-15-02",
+    "feature": "LastQty '1e3' (exponent) is not a FIX quantity and is not counted as traded",
+    "expect": {
+     "trades": {}
+    },
+    "view": null,
+    "basis": "FIX Qty/float datatype: digits with an optional decimal point; design 13 'a finite number above zero'",
+    "against": "FIX"
+   },
+   {
+    "file": "FL-10-S10-15-03.log",
+    "test": "S10-15-03",
+    "feature": "LastQty ' 100 ' (spaces) is not a FIX quantity and is not counted as traded",
+    "expect": {
+     "trades": {}
+    },
+    "view": null,
+    "basis": "FIX Qty/float datatype: digits with an optional decimal point; design 13 'a finite number above zero'",
+    "against": "FIX"
+   },
+   {
+    "file": "FL-10-S10-15-12.log",
+    "test": "S10-15-12",
+    "feature": "LastPx '0x10' is not a FIX price and gives no average",
+    "expect": {
+     "trades_fields": {
+      "ACME": {
+       "bought": "100",
+       "avgBuy": "–"
+      }
+     }
+    },
+    "view": null,
+    "basis": "FIX Price/float datatype",
+    "against": "FIX"
+   }
+  ]
+ },
+ {
+  "defect": "FL-11",
+  "severity": "P2",
+  "title": "The order banner takes the order's latest state from a resent older report",
+  "fixtures": [
+   {
+    "file": "FL-11-S07-12.log",
+    "test": "S07-12",
+    "feature": "The order's latest state is not taken from a resent older report",
+    "expect": {
+     "banner": [
+      "100 filled @ 10"
+     ],
+     "trades": {
+      "ACME": {
+       "buyOrders": "1",
+       "bought": "100",
+       "avgBuy": "10",
+       "sellOrders": "0",
+       "sold": "0",
+       "avgSell": "–",
+       "net": "+100"
+      }
+     }
+    },
+    "view": {
+     "orderId": "C1",
+     "filters": {}
+    },
+    "basis": "Brief 6, 7 (duplicate and late reports); AC-036 takes the last ExecutionReport in the log",
+    "against": "FIX"
+   }
+  ]
+ },
+ {
+  "defect": "FL-12",
+  "severity": "P2",
+  "title": "A message without BeginString disappears without an error",
+  "fixtures": [
+   {
+    "file": "FL-12-S10-03.log",
+    "test": "S10-03",
+    "feature": "Missing BeginString: the message is reported as malformed",
+    "expect": {
+     "stats": {
+      "messages": 3,
+      "malformed": 1
+     },
+     "trades": {}
+    },
+    "view": null,
+    "basis": "Brief 10; TR-002 'first three fields are not 8, 9 and 35' but 'a message starts at 8=FIX'",
+    "against": "FIX"
+   }
+  ]
+ },
+ {
+  "defect": "FL-13",
+  "severity": "P2",
+  "title": "A wire-valid message with ISO-8859-1 text is reported as malformed",
+  "fixtures": [
+   {
+    "file": "FL-13-S10-24.log",
+    "test": "S10-24",
+    "feature": "A wire-valid message with ISO-8859-1 text (one byte per character) is not called malformed",
+    "expect": {
+     "stats": {
+      "messages": 1,
+      "valid": 1,
+      "malformed": 0
+     }
+    },
+    "view": null,
+    "basis": "FIX messages are bytes, and BodyLength/CheckSum count bytes; design 3.7 counts the UTF-8 bytes of the pasted characters",
+    "against": "FIX"
+   }
+  ]
+ },
+ {
+  "defect": "FL-14",
+  "severity": "P3",
+  "title": "A valid multiple-value field is labelled 'unknown value'",
+  "fixtures": [
+   {
+    "file": "FL-14-S04-05-4.4.log",
+    "test": "S04-05-4.4",
+    "feature": "A multiple-value field (ExecInst 18=1 6) is not called an unknown value",
+    "expect": {
+     "rows": [
+      {
+       "number": 1,
+       "tag": "18",
+       "value": "1 6",
+       "meaning_not": "unknown value"
+      }
+     ]
+    },
+    "view": null,
+    "basis": "FIX 4.2/4.4 ExecInst (18) is a MultipleValueString; AC-004 'an enum value missing from the dictionary'",
+    "against": "FIX"
+   },
+   {
+    "file": "FL-14-S04-05-4.2.log",
+    "test": "S04-05-4.2",
+    "feature": "A multiple-value field (ExecInst 18=1 6) is not called an unknown value",
+    "expect": {
+     "rows": [
+      {
+       "number": 1,
+       "tag": "18",
+       "value": "1 6",
+       "meaning_not": "unknown value"
+      }
+     ]
+    },
+    "view": null,
+    "basis": "FIX 4.2/4.4 ExecInst (18) is a MultipleValueString; AC-004 'an enum value missing from the dictionary'",
+    "against": "FIX"
+   }
+  ]
+ },
+ {
+  "defect": "FL-15",
+  "severity": "P3",
+  "title": "An average price that ends exactly on a half is rounded down",
+  "fixtures": [
+   {
+    "file": "FL-15-S07-16.log",
+    "test": "S07-16",
+    "feature": "Average price (1 x 1.005 + 1 x 1.0001) / 2 = 1.00255 exactly is shown as 1.0026",
+    "expect": {
+     "trades_fields": {
+      "TIE": {
+       "avgBuy": [
+        "1.0026"
+       ]
+      }
+     }
+    },
+    "view": null,
+    "basis": "AC-045; the PRD names no rounding mode, but half-up and half-even both give 1.0026",
+    "against": "PRD"
+   }
+  ]
+ },
+ {
+  "defect": "FL-16",
+  "severity": "P3",
+  "title": "Figures finer than 4 decimal places or larger than 2^53 are shown as other values",
+  "fixtures": [
+   {
+    "file": "FL-16-S10-16.log",
+    "test": "S10-16",
+    "feature": "Very large quantities are summed exactly",
+    "expect": {
+     "trades_fields": {
+      "ACME": {
+       "bought": "9007199254740995",
+       "net": "+9007199254740995"
+      }
+     }
+    },
+    "view": null,
+    "basis": "Brief 7, 10 (decimal arithmetic, extremely large values)",
+    "against": "FIX"
+   },
+   {
+    "file": "FL-16-S10-17.log",
+    "test": "S10-17",
+    "feature": "Quantities and prices finer than 4 decimal places are not shown as other values",
+    "expect": {
+     "trades_fields": {
+      "BTC": {
+       "bought": "0.00008"
+      },
+      "EURUSD": {
+       "avgBuy": "1.08345"
+      }
+     }
+    },
+    "view": null,
+    "basis": "Brief 7 (decimal arithmetic); design 13 'Figures' rounds every figure to 4 places",
+    "against": "FIX"
+   }
+  ]
+ }
+]

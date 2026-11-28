@@ -1,0 +1,30 @@
+{
+ "command": "npx vitest run (in the product folder)",
+ "files": 19,
+ "tests": 268,
+ "passed": 264,
+ "failed": 4,
+ "failedTests": [
+  {
+   "file": "test/dictionary.test.js",
+   "test": "test_dictionary_temp_build_matches_committed_without_src_writes",
+   "message": "Error: Command failed: /opt/node22/bin/node tools/build-dictionary.mjs /tmp/fix-dictionary-P7whC7"
+  },
+  {
+   "file": "test/dictionary.test.js",
+   "test": "test_dictionary_build_without_jsdom_preserves_xml_output",
+   "message": "Error: Command failed: /opt/node22/bin/node tools/build-dictionary.mjs /tmp/fix-orchestra-UYI23G"
+  },
+  {
+   "file": "test/dictionary.test.js",
+   "test": "licence is present in vendor/orchestra/ and src/dictionary/",
+   "message": "AssertionError: expected 0 to be greater than 0"
+  },
+  {
+   "file": "test/dictionary.test.js",
+   "test": "test_dictionary_generated_js_is_reproducible_without_mutating_src",
+   "message": "Error: Command failed: /opt/node22/bin/node tools/build-dictionary.mjs /tmp/fix-js-repro-PAmyWy"
+  }
+ ],
+ "note": "The 4 failures are in test/dictionary.test.js: this copy lacks vendor/orchestra/OrchestraFIX42.xml and OrchestraFIX44.xml, which the test rebuilds the dictionary from. Known, not a finding. tests/dictionary_check.py makes the same comparison independently and passes."
+}

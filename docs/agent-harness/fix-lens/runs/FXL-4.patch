@@ -1,0 +1,150 @@
+From e4aef93e565b540ff7e29b08881d38f8b32e157e Mon Sep 17 00:00:00 2001
+From: Hermes Agent <hermes@agent.local>
+Date: Thu, 26 Nov 2026 21:09:21 +0100
+Subject: [PATCH] Decode FIX candidates into ordered annotated fields
+
+---
+ src/decode.js       |  22 ++++++++++
+ test/decode.test.js | 101 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 123 insertions(+)
+ create mode 100644 src/decode.js
+ create mode 100644 test/decode.test.js
+
+diff --git a/src/decode.js b/src/decode.js
+new file mode 100644
+index 0000000..4d57d19
+--- /dev/null
++++ b/src/decode.js
+@@ -0,0 +1,22 @@
++import { lookup, enumName } from './dictionary.js';
++
++/** Enrich a splitMessages candidate without changing its field order or raw values. */
++export function decode(message, text) {
++  const beginString = message.fields.find(field => field.tag === 8)?.value;
++  const supported = beginString === 'FIX.4.2' || beginString === 'FIX.4.4';
++  const fields = message.fields.map(({ tag, value }) => {
++    const definition = supported ? lookup(beginString, tag) : null;
++    return {
++      tag,
++      name: definition?.name ?? `Unknown tag ${tag}`,
++      value,
++      enumName: definition?.enumValues ? (enumName(beginString, tag, value) ?? 'unknown value') : null,
++      known: definition !== null,
++    };
++  });
++  const msgType = fields.find(field => field.tag === 35);
++  const label = supported
++    ? `Message ${message.number}: ${msgType?.enumName ?? msgType?.value ?? 'unknown value'}`
++    : `Message ${message.number}: unsupported version ${beginString}`;
++  return { number: message.number, label, beginString, supported, fields };
++}
+diff --git a/test/decode.test.js b/test/decode.test.js
+new file mode 100644
+index 0000000..12de893
+--- /dev/null
++++ b/test/decode.test.js
+@@ -0,0 +1,101 @@
++import { test, expect } from 'vitest';
++import { performance } from 'node:perf_hooks';
++import { decode } from '../src/decode.js';
++import { splitMessages, checkMessage } from '../src/framing.js';
++import { buildMessage } from './helpers/fix.js';
++
++function candidate(fields, opts = {}) {
++  const text = buildMessage(fields, opts);
++  const [message] = splitMessages(text);
++  expect(message).toBeDefined();
++  expect(checkMessage(message, text)).toBeNull();
++  return { message, text };
++}
++
++test('test_decode_candidate_exact_output_shapes', () => {
++  const { message, text } = candidate([[8, 'FIX.4.4'], [35, 'A'], [58, 'hello']]);
++  const result = decode(message, text);
++  expect(Object.keys(result).sort()).toEqual(['number', 'label', 'beginString', 'supported', 'fields'].sort());
++  expect(result.number).toBe(message.number);
++  expect(result.label).toBe('Message 1: Logon');
++  expect(result.beginString).toBe('FIX.4.4');
++  expect(result.supported).toBe(true);
++  expect(result.fields).toHaveLength(message.fields.length);
++  for (const field of result.fields) {
++    expect(Object.keys(field).sort()).toEqual(['tag', 'name', 'value', 'enumName', 'known'].sort());
++  }
++  expect(result.fields.find(f => f.tag === 35)).toEqual({
++    tag: 35, name: 'MsgType', value: 'A', enumName: 'Logon', known: true,
++  });
++});
++
++test('test_decode_repeated_tags_and_empty_value_preserved', () => {
++  const { message, text } = candidate([
++    [8, 'FIX.4.2'], [35, '0'], [58, 'first'], [58, ''], [58, 'last'], [49, 'sender'],
++  ]);
++  const result = decode(message, text);
++  expect(result.fields.map(f => f.tag)).toEqual(message.fields.map(f => f.tag));
++  expect(result.fields.filter(f => f.tag === 58).map(f => f.value)).toEqual(['first', '', 'last']);
++});
++
++test('test_decode_known_and_unknown_tags_keep_raw_values', () => {
++  for (const version of ['FIX.4.2', 'FIX.4.4']) {
++    const { message, text } = candidate([[8, version], [35, '0'], [99999, 'raw-unknown']]);
++    const result = decode(message, text);
++    expect(result.fields.find(f => f.tag === 35)).toMatchObject({ name: 'MsgType', known: true, value: '0' });
++    expect(result.fields.find(f => f.tag === 99999)).toEqual({
++      tag: 99999, name: 'Unknown tag 99999', value: 'raw-unknown', enumName: null, known: false,
++    });
++  }
++});
++
++test('test_decode_enum_known_missing_and_plain_values', () => {
++  for (const version of ['FIX.4.2', 'FIX.4.4']) {
++    const { message, text } = candidate([
++      [8, version], [35, 'A'], [35, 'ZZZ'], [58, 'plain'], [150, 'F'],
++    ]);
++    const result = decode(message, text);
++    expect(result.fields.filter(f => f.tag === 35).map(f => [f.value, f.enumName])).toEqual([
++      ['A', 'Logon'], ['ZZZ', 'unknown value'],
++    ]);
++    expect(result.fields.find(f => f.tag === 58).enumName).toBeNull();
++    expect(result.fields.find(f => f.tag === 150).enumName).toBe(version === 'FIX.4.4' ? 'Trade' : 'unknown value');
++  }
++});
++
++test('test_decode_label_uses_first_repeated_msgtype', () => {
++  const text = [
++    buildMessage([[8, 'FIX.4.2'], [35, '0']]),
++    buildMessage([[8, 'FIX.4.4'], [35, '0']]),
++    buildMessage([[8, 'FIX.4.4'], [35, 'A'], [35, '0']]),
++  ].join('\n');
++  const messages = splitMessages(text);
++  expect(messages).toHaveLength(3);
++  const result = decode(messages[2], text);
++  expect(result.number).toBe(3);
++  expect(result.label).toBe('Message 3: Logon');
++  expect(result.fields.filter(f => f.tag === 35).map(f => f.enumName)).toEqual(['Logon', 'Heartbeat']);
++});
++
++test('test_decode_unsupported_version_uses_raw_fields', () => {
++  const { message, text } = candidate([[8, 'FIX.5.0'], [35, 'A'], [58, 'plain']]);
++  const result = decode(message, text);
++  expect(result.beginString).toBe('FIX.5.0');
++  expect(result.supported).toBe(false);
++  expect(result.label).toBe('Message 1: unsupported version FIX.5.0');
++  expect(result.fields).toEqual(message.fields.map(({ tag, value }) => ({
++    tag, name: `Unknown tag ${tag}`, value, enumName: null, known: false,
++  })));
++});
++
++test('test_decode_hundred_mixed_messages_under_five_seconds', () => {
++  const prepared = Array.from({ length: 100 }, (_, i) => candidate([
++    [8, i % 2 ? 'FIX.4.2' : 'FIX.4.4'], [35, 'A'], [58, `message ${i}`],
++  ], { delim: i % 3 ? '|' : '\x01' }));
++  const start = performance.now();
++  const decoded = prepared.map(({ message, text }) => decode(message, text));
++  const elapsed = performance.now() - start;
++  expect(decoded).toHaveLength(100);
++  expect(decoded.every(result => result.supported && result.fields.length === 5)).toBe(true);
++  expect(elapsed).toBeLessThan(5000);
++});
+-- 
+2.43.0
+

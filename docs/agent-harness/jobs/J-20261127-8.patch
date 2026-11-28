@@ -1,0 +1,451 @@
+diff --git a/pyproject.toml b/pyproject.toml
+index 8d1dc32..39e40f2 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -20,6 +20,7 @@ select = ["E", "F", "I", "B", "UP"]
+ "tests/test_fixloop.py" = ["F811"]
+ "tests/test_d27.py" = ["F811"]
+ "tests/test_d27_fallback.py" = ["F811"]
++"tests/test_ticket_file.py" = ["F811"]
+ "tests/test_risk.py" = ["F811"]
+ "tests/test_repos.py" = ["F811"]
+ "tests/test_review_diff.py" = ["F811"]
+diff --git a/src/harness/decisions.py b/src/harness/decisions.py
+index 05dcfeb..190e54f 100644
+--- a/src/harness/decisions.py
++++ b/src/harness/decisions.py
+@@ -31,8 +31,10 @@ from . import (
+     keys,
+     loader,
+     pipeline,
++    queue,
+     rerun,
+     signing,
++    specs,
+     trusted,
+ )
+ from .gates import GIT_SAFE
+@@ -56,6 +58,7 @@ ACTIONS: dict[str, tuple[str, ...]] = {
+     "refresh_copies": ("commit",),
+     "load_tickets": ("tickets", "commit"),  # D25
+     "rerun_mutation": (),  # D25
++    "refresh_cards": (),
+ }
+ LISTS = ("files", "tests", "tickets")  # the fields that are lists of strings
+ MAX_LINE = 400
+@@ -366,6 +369,56 @@ class Applier:
+         self.kanban(["unblock", d["card"]])
+         return f"unblocked {d['card']} ({card['title']})"
+ 
++    def _refresh_cards(self, d: dict) -> str:
++        """For a ticket loaded before the roles read `ticket.md`: write that file from the host's
++        copy of the ticket, give every stage card that has not run to its end the card text of
++        today, and put the ticket back behind the one before it in the queue (a ticket blocked at
++        triage is skipped by the queue, which is how it lost that link)."""
++        key = d["key"]
++        cards = _cards(self.kanban)
++        mine = [c for c in cards if str(c.get("title", "")).startswith(f"{key} · ")]
++        if not mine:
++            raise HarnessError(f"{key} has no stage card on the board")
++        busy = [c["title"] for c in mine if c.get("status") == "running"]
++        if busy:
++            raise HarnessError(f"a card of {key} is running: {', '.join(busy)}")
++        ticket = loader.parse_ticket_text(specs.read_ticket(key, self.root), f"the host's {key}.md")
++        run = self.kit / "work" / "runs" / key
++        try:
++            repo = Path((run / "repo.txt").read_text().strip())
++        except OSError as exc:
++            raise HarnessError(f"{key} has no repo.txt in its run folder: {exc}") from exc
++        loader.write_ticket_file(ticket, self.kit)
++        edited = []
++        for stage in loader.STAGES:
++            card = _one(mine, f"{key} · {stage}")
++            if card is None or card.get("status") not in ("todo", "ready", "blocked"):
++                continue
++            body = loader.stage_body(stage, ticket, repo, self.kit)
++            self.kanban(["edit", card["id"], "--body", body])
++            edited.append(stage)
++        out = f"ticket.md written for {key}; card text replaced on: {', '.join(edited) or 'none'}"
++        triage = _one(mine, f"{key} · triage")
++        before = self._queue_predecessor(key, cards)
++        if triage and before and triage.get("status") in ("todo", "blocked"):
++            parents = json.loads(self.kanban(["show", triage["id"], "--json"])).get("parents", [])
++            if before["id"] not in parents:
++                self.kanban(["link", before["id"], triage["id"]])
++                out += f"; triage waits on '{before['title']}' again"
++        return out
++
++    def _queue_predecessor(self, key: str, cards: list[dict]) -> dict | None:
++        """The open card that ends the ticket before `key` in the queue, if there is one."""
++        path = queue.queue_path(self.root)
++        if not path.exists():
++            return None
++        order = [t["key"] for t in json.loads(path.read_text())]
++        if key not in order or order.index(key) == 0:
++            return None
++        prev = order[order.index(key) - 1]
++        card = _one(cards, gate_title(prev)) or _one(cards, f"{prev} · scribe")
++        return card if card and card.get("status") != "done" else None
++
+     def _approve_test_edit(self, d: dict) -> str:
+         e = fixloop.record_test_edit_approval(
+             d["key"], self._base(), d["head"], d["files"], d["reason"], root=self.root
+diff --git a/src/harness/fixloop.py b/src/harness/fixloop.py
+index f422c33..91240fc 100644
+--- a/src/harness/fixloop.py
++++ b/src/harness/fixloop.py
+@@ -24,7 +24,7 @@ import time
+ from pathlib import Path
+ 
+ from . import HarnessError, keys, mutation
+-from .loader import create_card, write_rule
++from .loader import create_card, ticket_rule, write_rule
+ from .trusted import TRUSTED_ROOT
+ 
+ MAX_FEEDBACK_CHARS = 12000
+@@ -369,7 +369,8 @@ def _clip(feedback: dict) -> dict:
+ def _common(key: str, repo: Path, run: Path) -> str:
+     return (
+         f"Ticket {key}, fix pass. Work folder: {run}. Repository: {repo} (local only; never push, "
+-        f"never add a remote).\n{write_rule('implementer')}\nFinish by calling kanban_complete "
++        f"never add a remote).\n{ticket_rule(run)}{write_rule('implementer')}\n"
++        "Finish by calling kanban_complete "
+         "with a short summary and the stage's JSON as metadata, or kanban_block with a reason.\n\n"
+     )
+ 
+diff --git a/src/harness/gatekeeper.py b/src/harness/gatekeeper.py
+index 89b2ec1..6b2725f 100644
+--- a/src/harness/gatekeeper.py
++++ b/src/harness/gatekeeper.py
+@@ -12,7 +12,7 @@ import json
+ import subprocess
+ from pathlib import Path
+ 
+-from . import HarnessError, fixloop, repos, trusted
++from . import HarnessError, fixloop, loader, repos, specs, trusted
+ from .gates import run_cmd
+ from .reviewer import (
+     KIT,
+@@ -44,6 +44,17 @@ def gates_command(
+     )
+ 
+ 
++def check_ticket_file(run: Path, key: str, root: Path | None) -> None:
++    """The roles read the ticket from the run folder, which a worker can write. A file that is no
++    longer the host's ticket means the plan or the code may answer another text."""
++    path = run / "ticket.md"
++    if not path.exists() and not path.is_symlink():
++        return  # a ticket loaded before the file existed
++    ticket = loader.parse_ticket_text(specs.read_ticket(key, root), f"the host's {key}.md")
++    if path.is_symlink() or path.read_text() != loader.ticket_text(ticket):
++        raise RunFileError("ticket.md in the run folder is not the ticket the host holds")
++
++
+ def failing_fields(report: dict) -> str:
+     keys = [k for k, v in report.items() if k != "passed" and v not in (True, [], {}, None, "")]
+     return ", ".join(f"{k}={json.dumps(report[k])[:120]}" for k in keys[:8]) or "see gates.json"
+@@ -72,6 +83,7 @@ def run_gatekeeper_once(runner: Runner) -> str:
+             run, key, runner.kit, runner.default_repo, tuple(repos.registry(runner.base_cfg))
+         )
+         runner.attach(repo, head)
++        check_ticket_file(run, key, runner.trusted_root)
+         if not trusted.has_commit(runner.tr, base):
+             raise RunFileError("base.txt names a commit that is not in the repository")
+         tmain = trusted.trusted_main(runner.tr)
+diff --git a/src/harness/loader.py b/src/harness/loader.py
+index e198d9a..305b899 100644
+--- a/src/harness/loader.py
++++ b/src/harness/loader.py
+@@ -1,14 +1,17 @@
+ """Ticket loader: turns tickets/*.md into Kanban cards (HERMES_ORCHESTRATION B3). Stdlib only.
+ 
+-Per ticket, in dependency order: a parent card holding the ticket text (completed at once so its text
+-reaches the stage cards as "Parent task results"), then six stage cards chained with --parent. The first
+-stage card also waits on the last card of every ticket in `blocked_by`.
++Per ticket, in dependency order: a parent card holding the ticket text, then six stage cards chained
++with --parent. The first stage card also waits on the last card of every ticket in `blocked_by`.
++
++The roles read the ticket from `work/runs/<KEY>/ticket.md`. The parent card's result reaches a stage
++card too, as "Parent task results", but Hermes cuts that field at 4 KB, so it is not the source.
+ """  # noqa: E501
+ 
+ from __future__ import annotations
+ 
+ import argparse
+ import json
++import os
+ import re
+ import subprocess
+ import sys
+@@ -131,12 +134,41 @@ def write_rule(profile: str) -> str:
+     )
+ 
+ 
++def ticket_text(t: Ticket) -> str:
++    """What `work/runs/<KEY>/ticket.md` holds: the title and the whole body."""
++    return f"# {t.key}: {t.title}\n\n{t.body}\n"
++
++
++def write_ticket_file(t: Ticket, kit: Path = KIT) -> Path:
++    """Write the ticket where the roles read it. The run folder is writable from the container, so
++    neither it nor the file may be a symlink."""
++    run = kit / "work" / "runs" / t.key
++    run.mkdir(parents=True, exist_ok=True)
++    if run.is_symlink() or run.resolve() != (kit / "work" / "runs").resolve() / t.key:
++        raise HarnessError(f"the run folder of {t.key} is a symlink; refusing to write into it")
++    path = run / "ticket.md"
++    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW, 0o644)
++    with os.fdopen(fd, "w") as fh:
++        fh.write(ticket_text(t))
++    return path
++
++
++def ticket_rule(run: Path) -> str:
++    return (
++        f"The whole ticket is the file {run}/ticket.md. Read it with the file tool from its first "
++        "line to its last before anything else, in several reads if one does not return all of "
++        "it. The copy in the parent task results is cut short: never work from it, and never "
++        "block because that copy is cut.\n"
++    )
++
++
+ def stage_body(stage: str, t: Ticket, repo: Path, kit: Path = KIT) -> str:
+     run = kit / "work" / "runs" / t.key
+     sch = kit / "schemas"
+     collect_text, id_example, id_kind = test_id_text(kit, repo)
+     common = (
+-        f"Ticket {t.key}: {t.title}. The ticket text is in the parent task results.\n"
++        f"Ticket {t.key}: {t.title}.\n"
++        f"{ticket_rule(run)}"
+         f"Work folder for this ticket's JSON files: {run} (create it if missing).\n"
+         f"Fixture repository: {repo} (local only; never push, never add a remote).\n"
+         f"{write_rule(stage)}\n"
+@@ -260,7 +292,8 @@ def load(
+         rdir = kit / "work" / "runs" / t.key  # the runner reads the repository from here
+         rdir.mkdir(parents=True, exist_ok=True)
+         (rdir / "repo.txt").write_text(f"{repo}\n")
+-        (tdir / "ticket.md").write_text(f"# {t.key}: {t.title}\n\n{t.body}\n")
++        write_ticket_file(t, kit)
++        (tdir / "ticket.md").write_text(ticket_text(t))
+         ids["ticket"] = create_card(
+             kanban, f"{t.key}: {t.title}", tdir / "ticket.md", f"{t.key}:ticket"
+         )
+diff --git a/tests/test_d15.py b/tests/test_d15.py
+index 2b2fbdb..193539f 100644
+--- a/tests/test_d15.py
++++ b/tests/test_d15.py
+@@ -22,6 +22,7 @@ class Board:
+     def __init__(self):
+         self.cards = {}
+         self.calls = []
++        self.shown = {}
+         for cid, title, status in (
+             ("t_aaaa1111", "FXL-1B · gatekeeper", "blocked"),
+             ("t_bbbb2222", "FXL-1B · reviewer", "todo"),
+@@ -33,6 +34,8 @@ class Board:
+         verb = args[0]
+         if verb == "list":
+             return json.dumps(list(self.cards.values()))
++        if verb == "show":
++            return json.dumps(self.shown.get(args[1], {"parents": []}))
+         self.calls.append(args)
+         if verb == "unblock":
+             self.cards[args[1]]["status"] = "ready"
+diff --git a/tests/test_loader.py b/tests/test_loader.py
+index 1033a6f..2c49658 100644
+--- a/tests/test_loader.py
++++ b/tests/test_loader.py
+@@ -99,6 +99,18 @@ def test_cli_exits_2_on_unreadable_ticket(tmp_path):
+     assert main([str(tmp_path / "missing.md")]) == 2
+ 
+ 
++def test_load_writes_the_whole_ticket_where_the_card_text_says_it_is(tmp_path):
++    from dataclasses import replace
++
++    from harness.loader import ticket_text
++
++    t = replace(ticket("PRC-1", 1), body="\n".join(f"line {n} " + "x" * 90 for n in range(80)))
++    load([t], FakeKanban(), Path("/repo"), kit=tmp_path)
++    path = tmp_path / "work" / "runs" / "PRC-1" / "ticket.md"
++    assert len(t.body) > 4096 and path.read_text() == ticket_text(t)
++    assert str(path) in (tmp_path / "work" / "cards" / "PRC-1" / "triage.md").read_text()
++
++
+ def test_planner_and_implementer_cards_demand_full_node_ids(tmp_path):
+     load([ticket("PRC-1", 1)], FakeKanban(), Path("/repo"), kit=tmp_path)
+     for stage in ("planner", "implementer"):
+diff --git a/tests/test_ticket_file.py b/tests/test_ticket_file.py
+new file mode 100644
+index 0000000..465a37c
+--- /dev/null
++++ b/tests/test_ticket_file.py
+@@ -0,0 +1,169 @@
++"""The roles read the ticket from a file: Hermes cuts a parent card's result at 4 KB."""
++
++import pytest
++from test_d15 import World, w  # noqa: F401
++
++from harness import HarnessError, gatekeeper, loader, queue, specs
++from harness.loader import Ticket
++from harness.reviewer import RunFileError
++
++LONG = "\n".join(f"AC{n}: the criterion number {n} " + "x" * 80 for n in range(1, 90))
++RAW = f'+++\nkey = "FXL-1B"\ntitle = "a long ticket"\nrank = 1\n+++\n{LONG}\n'
++
++
++def ticket() -> Ticket:
++    return loader.parse_ticket_text(RAW, "test")
++
++
++def test_ticket_text_longer_than_the_cut_is_whole_in_the_file(tmp_path):
++    t = ticket()
++    assert len(t.body) > 4096
++    path = loader.write_ticket_file(t, tmp_path)
++    assert path == tmp_path / "work" / "runs" / "FXL-1B" / "ticket.md"
++    assert path.read_text() == f"# FXL-1B: a long ticket\n\n{t.body}\n"
++
++
++def test_write_ticket_file_symlinked_run_folder_refuses(tmp_path):
++    runs = tmp_path / "work" / "runs"
++    runs.mkdir(parents=True)
++    (tmp_path / "elsewhere").mkdir()
++    (runs / "FXL-1B").symlink_to(tmp_path / "elsewhere")
++    with pytest.raises(HarnessError, match="symlink"):
++        loader.write_ticket_file(ticket(), tmp_path)
++    assert not list((tmp_path / "elsewhere").iterdir())
++
++
++def test_write_ticket_file_symlinked_file_is_not_followed(tmp_path):
++    run = tmp_path / "work" / "runs" / "FXL-1B"
++    run.mkdir(parents=True)
++    target = tmp_path / "target"
++    target.write_text("kept")
++    (run / "ticket.md").symlink_to(target)
++    with pytest.raises(OSError):
++        loader.write_ticket_file(ticket(), tmp_path)
++    assert target.read_text() == "kept"
++
++
++@pytest.mark.parametrize("stage", ["triage", "planner", "implementer", "scribe"])
++def test_stage_body_names_the_ticket_file_and_not_the_parent_results_as_source(stage, tmp_path):
++    body = loader.stage_body(stage, ticket(), tmp_path / "r", tmp_path / "k")
++    assert f"The whole ticket is the file {tmp_path}/k/work/runs/FXL-1B/ticket.md" in body
++    assert "from its first line to its last" in body
++    assert "The ticket text is in the parent task results" not in body
++
++
++def test_fix_pass_body_names_the_ticket_file(tmp_path):
++    from harness import fixloop
++
++    run = tmp_path / "k" / "work" / "runs" / "FXL-1B"
++    body = fixloop.implementer_body("FXL-1B", 1, tmp_path / "r", run, tmp_path / "k")
++    assert f"The whole ticket is the file {run}/ticket.md" in body
++
++
++# ---- the gatekeeper runner refuses a changed ticket file ----
++
++
++def host(tmp_path):
++    root = tmp_path / "state" / "trusted"
++    specs.record_tickets([ticket()], root)
++    return root
++
++
++def test_check_ticket_file_same_text_passes(tmp_path):
++    root = host(tmp_path)
++    path = loader.write_ticket_file(ticket(), tmp_path)
++    gatekeeper.check_ticket_file(path.parent, "FXL-1B", root)
++
++
++def test_check_ticket_file_changed_text_refuses(tmp_path):
++    root = host(tmp_path)
++    path = loader.write_ticket_file(ticket(), tmp_path)
++    path.write_text(path.read_text().replace("AC7:", "AC7 (dropped):"))
++    with pytest.raises(RunFileError, match="not the ticket the host holds"):
++        gatekeeper.check_ticket_file(path.parent, "FXL-1B", root)
++
++
++def test_check_ticket_file_symlink_refuses(tmp_path):
++    root = host(tmp_path)
++    path = loader.write_ticket_file(ticket(), tmp_path)
++    copy = tmp_path / "copy.md"
++    copy.write_text(path.read_text())
++    path.unlink()
++    path.symlink_to(copy)
++    with pytest.raises(RunFileError):
++        gatekeeper.check_ticket_file(path.parent, "FXL-1B", root)
++
++
++def test_check_ticket_file_absent_passes_for_a_ticket_loaded_before(tmp_path):
++    gatekeeper.check_ticket_file(tmp_path, "FXL-1B", tmp_path / "state" / "trusted")
++
++
++# ---- the decision that corrects cards already on the board ----
++
++
++def prepared(w, statuses):
++    """FXL-1B with a host ticket, a run folder, and stage cards in the given statuses."""
++    specs.record_tickets([ticket()], w.root)
++    run = w.tmp / "kit" / "work" / "runs" / "FXL-1B"
++    run.mkdir(parents=True)
++    (run / "repo.txt").write_text(f"{w.tmp}/kit/work/fix-lens\n")
++    w.board.cards.clear()
++    for n, (stage, status) in enumerate(statuses.items()):
++        cid = f"t_eeee{n:04d}"
++        w.board.cards[cid] = {"id": cid, "title": f"FXL-1B · {stage}", "status": status}
++    return run
++
++
++def test_refresh_cards_writes_the_file_and_replaces_only_open_card_text(w):
++    run = prepared(w, {"triage": "blocked", "planner": "todo", "implementer": "done"})
++    w.decide("D-20261128-1", "refresh_cards")
++    (line,) = w.run()
++    assert line.startswith("applied D-20261128-1: ticket.md written for FXL-1B")
++    assert "card text replaced on: triage, planner" in line
++    assert (run / "ticket.md").read_text() == loader.ticket_text(ticket())
++    edits = [c for c in w.board.calls if c[0] == "edit"]
++    assert [c[1] for c in edits] == ["t_eeee0000", "t_eeee0001"]
++    assert all(c[2] == "--body" and f"{run}/ticket.md" in c[3] for c in edits)
++    assert "unblock" not in w.board.verbs()
++    assert w.run() == []
++
++
++def test_refresh_cards_running_card_rejects_and_changes_nothing(w):
++    run = prepared(w, {"triage": "done", "planner": "running"})
++    w.decide("D-20261128-1", "refresh_cards")
++    (line,) = w.run()
++    assert line.startswith("rejected D-20261128-1") and "is running" in line
++    assert not (run / "ticket.md").exists() and w.board.calls == []
++
++
++def test_refresh_cards_ticket_without_cards_rejects(w):
++    w.decide("D-20261128-1", "refresh_cards", key="FXL-77")
++    assert "has no stage card" in w.run()[0]
++
++
++def test_refresh_cards_links_the_triage_behind_the_ticket_before_it_again(w):
++    prepared(w, {"triage": "blocked"})
++    w.board.cards["t_gate0001"] = {"id": "t_gate0001", "title": "accept FXL-1A", "status": "todo"}
++    queue.write_queue([Ticket("FXL-1A", "a", 1), ticket()], w.root)
++    w.board.shown = {"t_eeee0000": {"parents": ["t_other"]}}
++    w.decide("D-20261128-1", "refresh_cards")
++    (line,) = w.run()
++    assert "; triage waits on 'accept FXL-1A' again" in line
++    assert ["link", "t_gate0001", "t_eeee0000"] in w.board.calls
++
++
++def test_refresh_cards_finished_predecessor_adds_no_link(w):
++    prepared(w, {"triage": "blocked"})
++    w.board.cards["t_gate0001"] = {"id": "t_gate0001", "title": "accept FXL-1A", "status": "done"}
++    queue.write_queue([Ticket("FXL-1A", "a", 1), ticket()], w.root)
++    w.decide("D-20261128-1", "refresh_cards")
++    assert "again" not in w.run()[0] and "link" not in w.board.verbs()
++
++
++def test_refresh_cards_already_linked_adds_no_second_link(w):
++    prepared(w, {"triage": "todo"})
++    w.board.cards["t_gate0001"] = {"id": "t_gate0001", "title": "accept FXL-1A", "status": "todo"}
++    queue.write_queue([Ticket("FXL-1A", "a", 1), ticket()], w.root)
++    w.board.shown = {"t_eeee0000": {"parents": ["t_gate0001"]}}
++    w.decide("D-20261128-1", "refresh_cards")
++    assert "again" not in w.run()[0] and "link" not in w.board.verbs()

@@ -1,0 +1,6 @@
+{
+  "id": "D-20261127-27",
+  "action": "refresh_cards",
+  "key": "FXL-25",
+  "reason": "Same cause as D-20261127-22: the open cards of FXL-25 get the card text that names the ticket file, and the ticket keeps its place behind the one before it in the queue. The kit that writes the whole ticket to a file and tells each role to read it is deployed (9f1a4a1; Ubay: 'deployed', 2026-11-28); D-20261127-22 showed the action works on the live board. Nothing is unblocked by this decision."
+}

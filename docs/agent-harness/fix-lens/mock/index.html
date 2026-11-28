@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="en"><head><meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'none'; form-action 'none'"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>FIX Lens</title><link rel="stylesheet" href="styles.css"></head>
+<body>
+<header class="top"><div class="brand"><span class="logo">FIX</span><span class="logo-word">Lens</span></div><p class="privacy">Runs entirely in this page. Nothing you paste is sent, stored or logged.</p><button id="theme-button" type="button" class="ghost">Dark theme</button></header>
+<main>
+<section class="input"><label for="paste">Paste a FIX 4.2 or 4.4 log</label><textarea id="paste" autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" translate="no" placeholder="8=FIX.4.4|9=67|35=A|49=CLIENT|56=BROKER|34=1|..."></textarea><div class="actions"><button id="decode-button" type="button">Decode</button><span class="hint">Fields separated by SOH or |. Up to 1 MB or 1,000 messages.</span></div></section>
+<section id="summary" class="overview"></section>
+<div class="results"><section id="timeline"><h2>Timeline</h2><p class="empty">Session and order events appear here.</p></section><section id="decode"><h2>Decode</h2><p class="empty">Decoded messages appear here.</p></section></div>
+</main>
+<script type="module" src="src/main.js"></script></body></html>

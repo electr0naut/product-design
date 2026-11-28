@@ -1,0 +1,5644 @@
+[
+ {
+  "id": "S04-01",
+  "feature": "Unsupported BeginString is reported per message",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S04-01.log",
+  "kind": "prd",
+  "basis": "PRD Scope; design 5",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "card 1 label",
+    "pass": true,
+    "expected": "unsupported version FIX.4.3",
+    "actual": "#1 | unsupported version FIX.4.3 | A → B | seq 1 | 09:00:00.000"
+   },
+   {
+    "check": "card 2 label",
+    "pass": true,
+    "expected": "unsupported version FIXT.1.1",
+    "actual": "#2 | unsupported version FIXT.1.1 | A → B | seq 2 | 09:00:01.000"
+   },
+   {
+    "check": "card 3 label",
+    "pass": true,
+    "expected": "unsupported version FIX.4.1",
+    "actual": "#3 | unsupported version FIX.4.1 | A → B | seq 3 | 09:00:02.000"
+   },
+   {
+    "check": "card 4 label",
+    "pass": true,
+    "expected": "Heartbeat",
+    "actual": "#4 | Heartbeat | A → B | seq 4 | 09:00:03.000"
+   },
+   {
+    "check": "summary strip",
+    "pass": true,
+    "expected": {
+     "messages": 4,
+     "valid": 4,
+     "malformed": 0
+    },
+    "actual": {
+     "messages": 4,
+     "valid": 4,
+     "malformed": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "S04-02-4.2",
+  "feature": "Unknown tag and unknown enum value are shown raw and labelled",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/S04-02-4.2.log",
+  "kind": "prd",
+  "basis": "AC-004",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "card 1 row for tag 5001",
+    "pass": true,
+    "expected": {
+     "number": 1,
+     "tag": "5001",
+     "field": "Unknown tag 5001",
+     "value": "venue-flag"
+    },
+    "actual": [
+     [
+      "5001",
+      "Unknown tag 5001",
+      "venue-flag",
+      ""
+     ]
+    ]
+   },
+   {
+    "check": "card 1 row for tag 20001",
+    "pass": true,
+    "expected": {
+     "number": 1,
+     "tag": "20001",
+     "field": "Unknown tag 20001",
+     "value": "x=y"
+    },
+    "actual": [
+     [
+      "20001",
+      "Unknown tag 20001",
+      "x=y",
+      ""
+     ]
+    ]
+   },
+   {
+    "check": "card 1 row for tag 54",
+    "pass": true,
+    "expected": {
+     "number": 1,
+     "tag": "54",
+     "field": "Side",
+     "value": "Z",
+     "meaning": "unknown value"
+    },
+    "actual": [
+     [
+      "54",
+      "Side",
+      "Z",
+      "unknown value"
+     ]
+    ]
+   },
+   {
+    "check": "card 1 row for tag 40",
+    "pass": true,
+    "expected": {
+     "number": 1,
+     "tag": "40",
+     "field": "OrdType",
+     "value": "2",
+     "meaning": "Limit"
+    },
+    "actual": [
+     [
+      "40",
+      "OrdType",
+      "2",
+      "Limit"
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S04-02-4.4",
+  "feature": "Unknown tag and unknown enum value are shown raw and labelled",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S04-02-4.4.log",
+  "kind": "prd",
+  "basis": "AC-004",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "card 1 row for tag 5001",
+    "pass": true,
+    "expected": {
+     "number": 1,
+     "tag": "5001",
+     "field": "Unknown tag 5001",
+     "value": "venue-flag"
+    },
+    "actual": [
+     [
+      "5001",
+      "Unknown tag 5001",
+      "venue-flag",
+      ""
+     ]
+    ]
+   },
+   {
+    "check": "card 1 row for tag 20001",
+    "pass": true,
+    "expected": {
+     "number": 1,
+     "tag": "20001",
+     "field": "Unknown tag 20001",
+     "value": "x=y"
+    },
+    "actual": [
+     [
+      "20001",
+      "Unknown tag 20001",
+      "x=y",
+      ""
+     ]
+    ]
+   },
+   {
+    "check": "card 1 row for tag 54",
+    "pass": true,
+    "expected": {
+     "number": 1,
+     "tag": "54",
+     "field": "Side",
+     "value": "Z",
+     "meaning": "unknown value"
+    },
+    "actual": [
+     [
+      "54",
+      "Side",
+      "Z",
+      "unknown value"
+     ]
+    ]
+   },
+   {
+    "check": "card 1 row for tag 40",
+    "pass": true,
+    "expected": {
+     "number": 1,
+     "tag": "40",
+     "field": "OrdType",
+     "value": "2",
+     "meaning": "Limit"
+    },
+    "actual": [
+     [
+      "40",
+      "OrdType",
+      "2",
+      "Limit"
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S04-03-4.2",
+  "feature": "FIX 4.2 execution reports: ExecTransType before ExecType",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/S04-03-4.2.log",
+  "kind": "prd",
+  "basis": "TR-003; design 7.5",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "timeline events",
+    "pass": true,
+    "expected": [
+     "1:Acknowledgement",
+     "2:Fill",
+     "3:Fill",
+     "4:OrderStatus",
+     "5:TradeCancel",
+     "6:TradeCorrect",
+     "7:ExecutionReport (ExecType F)",
+     "8:Cancelled",
+     "9:ExecutionReport (ExecType 8)",
+     "10:ExecutionReport (ExecType C)"
+    ],
+    "actual": [
+     "1:Acknowledgement",
+     "2:Fill",
+     "3:Fill",
+     "4:OrderStatus",
+     "5:TradeCancel",
+     "6:TradeCorrect",
+     "7:ExecutionReport (ExecType F)",
+     "8:Cancelled",
+     "9:ExecutionReport (ExecType 8)",
+     "10:ExecutionReport (ExecType C)"
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {
+     "ACME": {
+      "buyOrders": "0",
+      "bought": "40",
+      "avgBuy": "9",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+40"
+     }
+    },
+    "actual": {
+     "ACME": {
+      "buyOrders": "0",
+      "bought": "40",
+      "avgBuy": "9",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+40"
+     }
+    }
+   },
+   {
+    "check": "unmatched cancels/corrections",
+    "pass": true,
+    "expected": 0,
+    "actual": 0
+   }
+  ]
+ },
+ {
+  "id": "S04-03-4.4",
+  "feature": "FIX 4.4 execution reports: ExecType F, G, H, I",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S04-03-4.4.log",
+  "kind": "prd",
+  "basis": "TR-003; design 7.5",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "timeline events",
+    "pass": true,
+    "expected": [
+     "1:Acknowledgement",
+     "2:Fill",
+     "3:Fill",
+     "4:OrderStatus",
+     "5:TradeCancel",
+     "6:TradeCorrect",
+     "7:Cancelled",
+     "8:ExecutionReport (ExecType 8)",
+     "9:ExecutionReport (ExecType A)",
+     "10:ExecutionReport (ExecType 6)",
+     "11:ExecutionReport (ExecType E)",
+     "12:Replaced",
+     "13:ExecutionReport (ExecType C)"
+    ],
+    "actual": [
+     "1:Acknowledgement",
+     "2:Fill",
+     "3:Fill",
+     "4:OrderStatus",
+     "5:TradeCancel",
+     "6:TradeCorrect",
+     "7:Cancelled",
+     "8:ExecutionReport (ExecType 8)",
+     "9:ExecutionReport (ExecType A)",
+     "10:ExecutionReport (ExecType 6)",
+     "11:ExecutionReport (ExecType E)",
+     "12:Replaced",
+     "13:ExecutionReport (ExecType C)"
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {
+     "ACME": {
+      "buyOrders": "0",
+      "bought": "40",
+      "avgBuy": "9",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+40"
+     }
+    },
+    "actual": {
+     "ACME": {
+      "buyOrders": "0",
+      "bought": "40",
+      "avgBuy": "9",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+40"
+     }
+    }
+   },
+   {
+    "check": "unmatched cancels/corrections",
+    "pass": true,
+    "expected": 0,
+    "actual": 0
+   }
+  ]
+ },
+ {
+  "id": "S04-04",
+  "feature": "FIX 4.4 reports with the FIX 4.2 values ExecType 1 or 2 are not fills and are labelled",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S04-04.log",
+  "kind": "prd",
+  "basis": "TR-003 ('1 or 2 (FIX 4.2)'); AC-004, AC-009; Orchestra FIX 4.4 and QuickFIX FIX44.xml ExecType code sets",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {
+     "ACME": {
+      "buyOrders": "1",
+      "bought": "0",
+      "avgBuy": "–",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "0"
+     }
+    },
+    "actual": {
+     "ACME": {
+      "buyOrders": "1",
+      "bought": "0",
+      "avgBuy": "–",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "0"
+     }
+    }
+   },
+   {
+    "check": "timeline events",
+    "pass": true,
+    "expected": [
+     "1:NewOrder",
+     "2:ExecutionReport (ExecType 1)",
+     "3:ExecutionReport (ExecType 2)"
+    ],
+    "actual": [
+     "1:NewOrder",
+     "2:ExecutionReport (ExecType 1)",
+     "3:ExecutionReport (ExecType 2)"
+    ]
+   },
+   {
+    "check": "card 2 row for tag 150",
+    "pass": true,
+    "expected": {
+     "number": 2,
+     "tag": "150",
+     "value": "1",
+     "meaning": "unknown value"
+    },
+    "actual": [
+     [
+      "150",
+      "ExecType",
+      "1",
+      "unknown value"
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S04-05-4.2",
+  "feature": "A multiple-value field (ExecInst 18=1 6) is not called an unknown value",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/S04-05-4.2.log",
+  "kind": "fix",
+  "basis": "FIX 4.2/4.4 ExecInst (18) is a MultipleValueString; AC-004 'an enum value missing from the dictionary'",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "card 1 row for tag 18",
+    "pass": false,
+    "expected": {
+     "number": 1,
+     "tag": "18",
+     "value": "1 6",
+     "meaning_not": "unknown value"
+    },
+    "actual": [
+     [
+      "18",
+      "ExecInst",
+      "1 6",
+      "unknown value"
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S04-05-4.4",
+  "feature": "A multiple-value field (ExecInst 18=1 6) is not called an unknown value",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S04-05-4.4.log",
+  "kind": "fix",
+  "basis": "FIX 4.2/4.4 ExecInst (18) is a MultipleValueString; AC-004 'an enum value missing from the dictionary'",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "card 1 row for tag 18",
+    "pass": false,
+    "expected": {
+     "number": 1,
+     "tag": "18",
+     "value": "1 6",
+     "meaning_not": "unknown value"
+    },
+    "actual": [
+     [
+      "18",
+      "ExecInst",
+      "1 6",
+      "unknown value"
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S06-01-4.2",
+  "feature": "Every session message type gets its event, in log order",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/S06-01-4.2.log",
+  "kind": "prd",
+  "basis": "AC-007, AC-008",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "timeline events",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "2:Logon",
+     "3:Heartbeat",
+     "4:TestRequest",
+     "5:Heartbeat",
+     "6:ResendRequest",
+     "7:GapFill",
+     "8:SessionReject",
+     "9:BusinessReject",
+     "10:Reset",
+     "11:Heartbeat",
+     "12:Logout",
+     "13:Logout"
+    ],
+    "actual": [
+     "1:Logon",
+     "2:Logon",
+     "3:Heartbeat",
+     "4:TestRequest",
+     "5:Heartbeat",
+     "6:ResendRequest",
+     "7:GapFill",
+     "8:SessionReject",
+     "9:BusinessReject",
+     "10:Reset",
+     "11:Heartbeat",
+     "12:Logout",
+     "13:Logout"
+    ]
+   },
+   {
+    "check": "sequence gaps",
+    "pass": true,
+    "expected": [],
+    "actual": []
+   },
+   {
+    "check": "summary strip",
+    "pass": true,
+    "expected": {
+     "messages": 13,
+     "valid": 13,
+     "malformed": 0,
+     "gaps": 0,
+     "orders": 0
+    },
+    "actual": {
+     "messages": 13,
+     "valid": 13,
+     "malformed": 0,
+     "gaps": 0,
+     "orders": 0
+    }
+   },
+   {
+    "check": "timeline row 1 class",
+    "pass": true,
+    "expected": "session",
+    "actual": "event session"
+   },
+   {
+    "check": "timeline row 8 class",
+    "pass": true,
+    "expected": "reject",
+    "actual": "event reject"
+   },
+   {
+    "check": "timeline row 9 class",
+    "pass": true,
+    "expected": "reject",
+    "actual": "event reject"
+   }
+  ]
+ },
+ {
+  "id": "S06-01-4.4",
+  "feature": "Every session message type gets its event, in log order",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S06-01-4.4.log",
+  "kind": "prd",
+  "basis": "AC-007, AC-008",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "timeline events",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "2:Logon",
+     "3:Heartbeat",
+     "4:TestRequest",
+     "5:Heartbeat",
+     "6:ResendRequest",
+     "7:GapFill",
+     "8:SessionReject",
+     "9:BusinessReject",
+     "10:Reset",
+     "11:Heartbeat",
+     "12:Logout",
+     "13:Logout"
+    ],
+    "actual": [
+     "1:Logon",
+     "2:Logon",
+     "3:Heartbeat",
+     "4:TestRequest",
+     "5:Heartbeat",
+     "6:ResendRequest",
+     "7:GapFill",
+     "8:SessionReject",
+     "9:BusinessReject",
+     "10:Reset",
+     "11:Heartbeat",
+     "12:Logout",
+     "13:Logout"
+    ]
+   },
+   {
+    "check": "sequence gaps",
+    "pass": true,
+    "expected": [],
+    "actual": []
+   },
+   {
+    "check": "summary strip",
+    "pass": true,
+    "expected": {
+     "messages": 13,
+     "valid": 13,
+     "malformed": 0,
+     "gaps": 0,
+     "orders": 0
+    },
+    "actual": {
+     "messages": 13,
+     "valid": 13,
+     "malformed": 0,
+     "gaps": 0,
+     "orders": 0
+    }
+   },
+   {
+    "check": "timeline row 1 class",
+    "pass": true,
+    "expected": "session",
+    "actual": "event session"
+   },
+   {
+    "check": "timeline row 8 class",
+    "pass": true,
+    "expected": "reject",
+    "actual": "event reject"
+   },
+   {
+    "check": "timeline row 9 class",
+    "pass": true,
+    "expected": "reject",
+    "actual": "event reject"
+   }
+  ]
+ },
+ {
+  "id": "S06-02",
+  "feature": "Sequence gaps are found per direction",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S06-02.log",
+  "kind": "prd",
+  "basis": "TR-003",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "sequence gaps",
+    "pass": true,
+    "expected": [
+     [
+      4,
+      3,
+      6
+     ],
+     [
+      7,
+      3,
+      9
+     ]
+    ],
+    "actual": [
+     [
+      4,
+      3,
+      6
+     ],
+     [
+      7,
+      3,
+      9
+     ]
+    ]
+   },
+   {
+    "check": "summary strip",
+    "pass": true,
+    "expected": {
+     "gaps": 2
+    },
+    "actual": {
+     "gaps": 2
+    }
+   }
+  ]
+ },
+ {
+  "id": "S06-03",
+  "feature": "PossDupFlag=Y neither advances nor resets the expected number",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S06-03.log",
+  "kind": "prd",
+  "basis": "TR-003",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "sequence gaps",
+    "pass": true,
+    "expected": [
+     [
+      3,
+      3,
+      5
+     ]
+    ],
+    "actual": [
+     [
+      3,
+      3,
+      5
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S06-04",
+  "feature": "A GapFill sets the expected number to NewSeqNo",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S06-04.log",
+  "kind": "prd",
+  "basis": "TR-003",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "sequence gaps",
+    "pass": true,
+    "expected": [
+     [
+      5,
+      11,
+      12
+     ]
+    ],
+    "actual": [
+     [
+      5,
+      11,
+      12
+     ]
+    ]
+   },
+   {
+    "check": "timeline events",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "2:Heartbeat",
+     "3:GapFill",
+     "4:Heartbeat",
+     "5:SequenceGap",
+     "5:Heartbeat"
+    ],
+    "actual": [
+     "1:Logon",
+     "2:Heartbeat",
+     "3:GapFill",
+     "4:Heartbeat",
+     "5:SequenceGap",
+     "5:Heartbeat"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S06-05",
+  "feature": "SequenceReset in reset mode: MsgSeqNum ignored, expected number becomes NewSeqNo",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S06-05.log",
+  "kind": "prd",
+  "basis": "TR-003; design 7",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "sequence gaps",
+    "pass": true,
+    "expected": [],
+    "actual": []
+   },
+   {
+    "check": "timeline events",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "2:Heartbeat",
+     "3:Reset",
+     "4:Heartbeat",
+     "5:Heartbeat"
+    ],
+    "actual": [
+     "1:Logon",
+     "2:Heartbeat",
+     "3:Reset",
+     "4:Heartbeat",
+     "5:Heartbeat"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S06-06",
+  "feature": "Logon with ResetSeqNumFlag=Y restarts both directions at 1",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S06-06.log",
+  "kind": "prd",
+  "basis": "TR-003",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "sequence gaps",
+    "pass": true,
+    "expected": [
+     [
+      10,
+      3,
+      4
+     ]
+    ],
+    "actual": [
+     [
+      10,
+      3,
+      4
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S06-07",
+  "feature": "Sessions with overlapping sequence numbers are tracked apart",
+  "version": "FIX.4.4",
+  "dataset": "datasets/multi-session/S06-07.log",
+  "kind": "prd",
+  "basis": "TR-003",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "sequence gaps",
+    "pass": true,
+    "expected": [
+     [
+      8,
+      3,
+      5
+     ]
+    ],
+    "actual": [
+     [
+      8,
+      3,
+      5
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S06-08",
+  "feature": "A duplicate MsgSeqNum without PossDupFlag is pointed out",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S06-08.log",
+  "kind": "fix",
+  "basis": "FIX session protocol, MsgSeqNum lower than expected without PossDupFlag; design 11 says 'Ignored'",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "message 4 is flagged",
+    "pass": false,
+    "expected": "an event or a note that marks the anomaly",
+    "actual": [
+     "NewOrder"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S06-09",
+  "feature": "Out-of-order messages: the gap is reported once, the late message adds none",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S06-09.log",
+  "kind": "prd",
+  "basis": "TR-003; design 11",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "sequence gaps",
+    "pass": true,
+    "expected": [
+     [
+      3,
+      3,
+      4
+     ]
+    ],
+    "actual": [
+     [
+      3,
+      3,
+      4
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S06-10",
+  "feature": "Reconnection that continues the sequence numbers",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S06-10.log",
+  "kind": "prd",
+  "basis": "TR-003",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "sequence gaps",
+    "pass": true,
+    "expected": [
+     [
+      9,
+      6,
+      8
+     ]
+    ],
+    "actual": [
+     [
+      9,
+      6,
+      8
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S06-11",
+  "feature": "A gap after the session restarts at 1 without ResetSeqNumFlag is still found",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S06-11.log",
+  "kind": "fix",
+  "basis": "FIX session protocol: sequence numbers restart at 1 on a new session; TR-003 resets only on 141=Y",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "sequence gaps include",
+    "pass": false,
+    "expected": [
+     [
+      11,
+      3,
+      5
+     ]
+    ],
+    "actual": []
+   }
+  ]
+ },
+ {
+  "id": "S06-12-4.2",
+  "feature": "A resent execution report (PossDupFlag=Y) is not a second execution",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/S06-12-4.2.log",
+  "kind": "prd",
+  "basis": "AC-041",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "trading summary figures",
+    "pass": true,
+    "expected": {
+     "ACME": {
+      "bought": "100",
+      "avgBuy": "10",
+      "net": "+100"
+     }
+    },
+    "actual": "as expected"
+   }
+  ]
+ },
+ {
+  "id": "S06-13-4.2",
+  "feature": "A resent NewOrderSingle (PossDupFlag=Y) is not a second order",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/S06-13-4.2.log",
+  "kind": "fix",
+  "basis": "Brief 6: a retransmission is not a new business event; AC-040 counts NewOrderSingle messages",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "trading summary figures",
+    "pass": false,
+    "expected": {
+     "ACME": {
+      "buyOrders": "1"
+     }
+    },
+    "actual": [
+     "ACME.buyOrders: shown 2, expected 1"
+    ]
+   },
+   {
+    "check": "summary strip",
+    "pass": true,
+    "expected": {
+     "orders": 1
+    },
+    "actual": {
+     "orders": 1
+    }
+   }
+  ]
+ },
+ {
+  "id": "S06-12-4.4",
+  "feature": "A resent execution report (PossDupFlag=Y) is not a second execution",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S06-12-4.4.log",
+  "kind": "prd",
+  "basis": "AC-041",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "trading summary figures",
+    "pass": true,
+    "expected": {
+     "ACME": {
+      "bought": "100",
+      "avgBuy": "10",
+      "net": "+100"
+     }
+    },
+    "actual": "as expected"
+   }
+  ]
+ },
+ {
+  "id": "S06-13-4.4",
+  "feature": "A resent NewOrderSingle (PossDupFlag=Y) is not a second order",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S06-13-4.4.log",
+  "kind": "fix",
+  "basis": "Brief 6: a retransmission is not a new business event; AC-040 counts NewOrderSingle messages",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "trading summary figures",
+    "pass": false,
+    "expected": {
+     "ACME": {
+      "buyOrders": "1"
+     }
+    },
+    "actual": [
+     "ACME.buyOrders: shown 2, expected 1"
+    ]
+   },
+   {
+    "check": "summary strip",
+    "pass": true,
+    "expected": {
+     "orders": 1
+    },
+    "actual": {
+     "orders": 1
+    }
+   }
+  ]
+ },
+ {
+  "id": "S06-14",
+  "feature": "A PossDup report whose original is not in the log is still counted once",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S06-14.log",
+  "kind": "prd",
+  "basis": "AC-041",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "sequence gaps",
+    "pass": true,
+    "expected": [
+     [
+      2,
+      2,
+      3
+     ]
+    ],
+    "actual": [
+     [
+      2,
+      2,
+      3
+     ]
+    ]
+   },
+   {
+    "check": "trading summary figures",
+    "pass": true,
+    "expected": {
+     "ACME": {
+      "bought": "100"
+     }
+    },
+    "actual": "as expected"
+   }
+  ]
+ },
+ {
+  "id": "S06-15",
+  "feature": "Sessions that differ only by SenderSubID keep separate sequence numbers",
+  "version": "FIX.4.4",
+  "dataset": "datasets/multi-session/S06-15.log",
+  "kind": "fix",
+  "basis": "Brief 11; FIX session identity; TR-003 keys a direction on 49/56 only",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "sequence gaps",
+    "pass": false,
+    "expected": [
+     [
+      6,
+      3,
+      4
+     ]
+    ],
+    "actual": []
+   }
+  ]
+ },
+ {
+  "id": "S06-16",
+  "feature": "No false gap when a second SubID session of the same CompIDs runs at higher numbers",
+  "version": "FIX.4.4",
+  "dataset": "datasets/multi-session/S06-16.log",
+  "kind": "fix",
+  "basis": "Brief 11; FIX session identity; TR-003 keys a direction on 49/56 only",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "sequence gaps",
+    "pass": false,
+    "expected": [],
+    "actual": [
+     [
+      3,
+      3,
+      50
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S06-17",
+  "feature": "A PossDup message with the expected number fills that number: no gap after it",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S06-17.log",
+  "kind": "fix",
+  "basis": "FIX session protocol (PossDupFlag: process if MsgSeqNum not yet received); QuickFIX 2e_PossDupNotReceived.def; TR-003 'Messages with PossDupFlag=Y don't advance'",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "sequence gaps",
+    "pass": false,
+    "expected": [],
+    "actual": [
+     [
+      4,
+      3,
+      4
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S06-18",
+  "feature": "A SequenceReset to a lower number is not followed by a false gap",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S06-18.log",
+  "kind": "fix",
+  "basis": "FIX SequenceReset: NewSeqNo may only increase the expected number; QuickFIX 11c_NewSeqNoLess.def; TR-003",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "sequence gaps",
+    "pass": false,
+    "expected": [],
+    "actual": [
+     [
+      4,
+      1,
+      4
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S07-01-4.2",
+  "feature": "A cancel/replace chain with fills is one order; figures are exact",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/S07-01-4.2.log",
+  "kind": "prd",
+  "basis": "AC-009, AC-035, AC-036, AC-039..AC-047; design 12 (OrderID NONE)",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "timeline events",
+    "pass": true,
+    "expected": [
+     "1:NewOrder",
+     "2:Acknowledgement",
+     "3:Fill",
+     "4:ReplaceRequest",
+     "5:ExecutionReport (ExecType E)",
+     "6:Replaced",
+     "7:ReplaceRequest",
+     "8:CancelReject",
+     "9:Fill",
+     "10:CancelRequest",
+     "11:ExecutionReport (ExecType 6)",
+     "12:Fill",
+     "13:Cancelled",
+     "14:NewOrder",
+     "15:ExecutionReport (ExecType 8)",
+     "16:CancelRequest",
+     "17:CancelReject"
+    ],
+    "actual": [
+     "1:NewOrder",
+     "2:Acknowledgement",
+     "3:Fill",
+     "4:ReplaceRequest",
+     "5:ExecutionReport (ExecType E)",
+     "6:Replaced",
+     "7:ReplaceRequest",
+     "8:CancelReject",
+     "9:Fill",
+     "10:CancelRequest",
+     "11:ExecutionReport (ExecType 6)",
+     "12:Fill",
+     "13:Cancelled",
+     "14:NewOrder",
+     "15:ExecutionReport (ExecType 8)",
+     "16:CancelRequest",
+     "17:CancelReject"
+    ]
+   },
+   {
+    "check": "order groups",
+    "pass": true,
+    "expected": [
+     [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     [
+      14,
+      15
+     ],
+     [
+      16,
+      17
+     ]
+    ],
+    "actual": [
+     [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     [
+      14,
+      15
+     ],
+     [
+      16,
+      17
+     ]
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {
+     "ACME": {
+      "buyOrders": "1",
+      "bought": "110",
+      "avgBuy": "10.3636",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+110"
+     },
+     "ZETA": {
+      "buyOrders": "0",
+      "bought": "0",
+      "avgBuy": "–",
+      "sellOrders": "1",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "0"
+     }
+    },
+    "actual": {
+     "ACME": {
+      "buyOrders": "1",
+      "bought": "110",
+      "avgBuy": "10.3636",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+110"
+     },
+     "ZETA": {
+      "buyOrders": "0",
+      "bought": "0",
+      "avgBuy": "–",
+      "sellOrders": "1",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "0"
+     }
+    }
+   },
+   {
+    "check": "summary strip",
+    "pass": true,
+    "expected": {
+     "orders": 3
+    },
+    "actual": {
+     "orders": 3
+    }
+   }
+  ]
+ },
+ {
+  "id": "S07-02-4.2",
+  "feature": "Selecting an order shows its messages, terms and last state",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/S07-02-4.2.log",
+  "kind": "prd",
+  "basis": "AC-036, AC-038, AC-049; design 8.2",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "messages shown",
+    "pass": true,
+    "expected": [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13
+    ],
+    "actual": [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13
+    ]
+   },
+   {
+    "check": "order banner",
+    "pass": true,
+    "expected": [
+     "C1 · C2 · C3 · C4 · O1",
+     "100 ACME @ 10",
+     "110 filled @ 10.3636"
+    ],
+    "actual": [
+     "C1 · C2 · C3 · C4 · O1",
+     "Buy 100 ACME @ 10 Limit",
+     "Canceled · 110 filled @ 10.3636",
+     "Show all messages"
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {
+     "ACME": {
+      "buyOrders": "1",
+      "bought": "110",
+      "avgBuy": "10.3636",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+110"
+     }
+    },
+    "actual": {
+     "ACME": {
+      "buyOrders": "1",
+      "bought": "110",
+      "avgBuy": "10.3636",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+110"
+     }
+    }
+   },
+   {
+    "check": "summary strip text",
+    "pass": true,
+    "expected": [
+     "13 of 17 messages",
+     "0 sequence gaps",
+     "1 order"
+    ],
+    "actual": [
+     "13 of 17 messages",
+     "0 sequence gaps",
+     "1 order"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S07-03-4.2",
+  "feature": "The Account filter keeps every message of the account's orders",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/S07-03-4.2.log",
+  "kind": "prd",
+  "basis": "AC-050, AC-051, AC-053",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "messages shown",
+    "pass": true,
+    "expected": [
+     14,
+     15
+    ],
+    "actual": [
+     14,
+     15
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {
+     "ZETA": {
+      "buyOrders": "0",
+      "bought": "0",
+      "avgBuy": "–",
+      "sellOrders": "1",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "0"
+     }
+    },
+    "actual": {
+     "ZETA": {
+      "buyOrders": "0",
+      "bought": "0",
+      "avgBuy": "–",
+      "sellOrders": "1",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "0"
+     }
+    }
+   },
+   {
+    "check": "filter options",
+    "pass": true,
+    "expected": {
+     "Account": [
+      "All",
+      "ACC1",
+      "ACC2"
+     ],
+     "SenderCompID": [
+      "All",
+      "BRK",
+      "CLI"
+     ],
+     "SenderSubID": [
+      "All"
+     ],
+     "TargetCompID": [
+      "All",
+      "BRK",
+      "CLI"
+     ],
+     "TargetSubID": [
+      "All"
+     ]
+    },
+    "actual": {
+     "Account": [
+      "All",
+      "ACC1",
+      "ACC2"
+     ],
+     "SenderCompID": [
+      "All",
+      "BRK",
+      "CLI"
+     ],
+     "SenderSubID": [
+      "All"
+     ],
+     "TargetCompID": [
+      "All",
+      "BRK",
+      "CLI"
+     ],
+     "TargetSubID": [
+      "All"
+     ]
+    }
+   }
+  ]
+ },
+ {
+  "id": "S07-01-4.4",
+  "feature": "A cancel/replace chain with fills is one order; figures are exact",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S07-01-4.4.log",
+  "kind": "prd",
+  "basis": "AC-009, AC-035, AC-036, AC-039..AC-047; design 12 (OrderID NONE)",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "timeline events",
+    "pass": true,
+    "expected": [
+     "1:NewOrder",
+     "2:Acknowledgement",
+     "3:Fill",
+     "4:ReplaceRequest",
+     "5:ExecutionReport (ExecType E)",
+     "6:Replaced",
+     "7:ReplaceRequest",
+     "8:CancelReject",
+     "9:Fill",
+     "10:CancelRequest",
+     "11:ExecutionReport (ExecType 6)",
+     "12:Fill",
+     "13:Cancelled",
+     "14:NewOrder",
+     "15:ExecutionReport (ExecType 8)",
+     "16:CancelRequest",
+     "17:CancelReject"
+    ],
+    "actual": [
+     "1:NewOrder",
+     "2:Acknowledgement",
+     "3:Fill",
+     "4:ReplaceRequest",
+     "5:ExecutionReport (ExecType E)",
+     "6:Replaced",
+     "7:ReplaceRequest",
+     "8:CancelReject",
+     "9:Fill",
+     "10:CancelRequest",
+     "11:ExecutionReport (ExecType 6)",
+     "12:Fill",
+     "13:Cancelled",
+     "14:NewOrder",
+     "15:ExecutionReport (ExecType 8)",
+     "16:CancelRequest",
+     "17:CancelReject"
+    ]
+   },
+   {
+    "check": "order groups",
+    "pass": true,
+    "expected": [
+     [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     [
+      14,
+      15
+     ],
+     [
+      16,
+      17
+     ]
+    ],
+    "actual": [
+     [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13
+     ],
+     [
+      14,
+      15
+     ],
+     [
+      16,
+      17
+     ]
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {
+     "ACME": {
+      "buyOrders": "1",
+      "bought": "110",
+      "avgBuy": "10.3636",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+110"
+     },
+     "ZETA": {
+      "buyOrders": "0",
+      "bought": "0",
+      "avgBuy": "–",
+      "sellOrders": "1",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "0"
+     }
+    },
+    "actual": {
+     "ACME": {
+      "buyOrders": "1",
+      "bought": "110",
+      "avgBuy": "10.3636",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+110"
+     },
+     "ZETA": {
+      "buyOrders": "0",
+      "bought": "0",
+      "avgBuy": "–",
+      "sellOrders": "1",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "0"
+     }
+    }
+   },
+   {
+    "check": "summary strip",
+    "pass": true,
+    "expected": {
+     "orders": 3
+    },
+    "actual": {
+     "orders": 3
+    }
+   }
+  ]
+ },
+ {
+  "id": "S07-02-4.4",
+  "feature": "Selecting an order shows its messages, terms and last state",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S07-02-4.4.log",
+  "kind": "prd",
+  "basis": "AC-036, AC-038, AC-049; design 8.2",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "messages shown",
+    "pass": true,
+    "expected": [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13
+    ],
+    "actual": [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13
+    ]
+   },
+   {
+    "check": "order banner",
+    "pass": true,
+    "expected": [
+     "C1 · C2 · C3 · C4 · O1",
+     "100 ACME @ 10",
+     "110 filled @ 10.3636"
+    ],
+    "actual": [
+     "C1 · C2 · C3 · C4 · O1",
+     "Buy 100 ACME @ 10 Limit",
+     "Canceled · 110 filled @ 10.3636",
+     "Show all messages"
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {
+     "ACME": {
+      "buyOrders": "1",
+      "bought": "110",
+      "avgBuy": "10.3636",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+110"
+     }
+    },
+    "actual": {
+     "ACME": {
+      "buyOrders": "1",
+      "bought": "110",
+      "avgBuy": "10.3636",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+110"
+     }
+    }
+   },
+   {
+    "check": "summary strip text",
+    "pass": true,
+    "expected": [
+     "13 of 17 messages",
+     "0 sequence gaps",
+     "1 order"
+    ],
+    "actual": [
+     "13 of 17 messages",
+     "0 sequence gaps",
+     "1 order"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S07-03-4.4",
+  "feature": "The Account filter keeps every message of the account's orders",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S07-03-4.4.log",
+  "kind": "prd",
+  "basis": "AC-050, AC-051, AC-053",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "messages shown",
+    "pass": true,
+    "expected": [
+     14,
+     15
+    ],
+    "actual": [
+     14,
+     15
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {
+     "ZETA": {
+      "buyOrders": "0",
+      "bought": "0",
+      "avgBuy": "–",
+      "sellOrders": "1",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "0"
+     }
+    },
+    "actual": {
+     "ZETA": {
+      "buyOrders": "0",
+      "bought": "0",
+      "avgBuy": "–",
+      "sellOrders": "1",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "0"
+     }
+    }
+   },
+   {
+    "check": "filter options",
+    "pass": true,
+    "expected": {
+     "Account": [
+      "All",
+      "ACC1",
+      "ACC2"
+     ],
+     "SenderCompID": [
+      "All",
+      "BRK",
+      "CLI"
+     ],
+     "SenderSubID": [
+      "All"
+     ],
+     "TargetCompID": [
+      "All",
+      "BRK",
+      "CLI"
+     ],
+     "TargetSubID": [
+      "All"
+     ]
+    },
+    "actual": {
+     "Account": [
+      "All",
+      "ACC1",
+      "ACC2"
+     ],
+     "SenderCompID": [
+      "All",
+      "BRK",
+      "CLI"
+     ],
+     "SenderSubID": [
+      "All"
+     ],
+     "TargetCompID": [
+      "All",
+      "BRK",
+      "CLI"
+     ],
+     "TargetSubID": [
+      "All"
+     ]
+    }
+   }
+  ]
+ },
+ {
+  "id": "S07-04-4.2",
+  "feature": "Trade cancels and corrections, by original or corrected ExecID, and unmatched ones",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/S07-04-4.2.log",
+  "kind": "prd",
+  "basis": "AC-042, AC-043, AC-044; design 13",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "timeline events",
+    "pass": true,
+    "expected": [
+     "1:NewOrder",
+     "2:Fill",
+     "3:Fill",
+     "4:Fill",
+     "5:TradeCorrect",
+     "6:TradeCorrect",
+     "7:TradeCancel",
+     "8:TradeCancel",
+     "9:TradeCancel",
+     "10:TradeCorrect",
+     "11:TradeCancel"
+    ],
+    "actual": [
+     "1:NewOrder",
+     "2:Fill",
+     "3:Fill",
+     "4:Fill",
+     "5:TradeCorrect",
+     "6:TradeCorrect",
+     "7:TradeCancel",
+     "8:TradeCancel",
+     "9:TradeCancel",
+     "10:TradeCorrect",
+     "11:TradeCancel"
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {
+     "ACME": {
+      "buyOrders": "1",
+      "bought": "125",
+      "avgBuy": "13.6",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+125"
+     }
+    },
+    "actual": {
+     "ACME": {
+      "buyOrders": "1",
+      "bought": "125",
+      "avgBuy": "13.6",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+125"
+     }
+    }
+   },
+   {
+    "check": "unmatched cancels/corrections",
+    "pass": true,
+    "expected": 2,
+    "actual": 2
+   }
+  ]
+ },
+ {
+  "id": "S07-04-4.4",
+  "feature": "Trade cancels and corrections, by original or corrected ExecID, and unmatched ones",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S07-04-4.4.log",
+  "kind": "prd",
+  "basis": "AC-042, AC-043, AC-044; design 13",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "timeline events",
+    "pass": true,
+    "expected": [
+     "1:NewOrder",
+     "2:Fill",
+     "3:Fill",
+     "4:Fill",
+     "5:TradeCorrect",
+     "6:TradeCorrect",
+     "7:TradeCancel",
+     "8:TradeCancel",
+     "9:TradeCancel",
+     "10:TradeCorrect",
+     "11:TradeCancel"
+    ],
+    "actual": [
+     "1:NewOrder",
+     "2:Fill",
+     "3:Fill",
+     "4:Fill",
+     "5:TradeCorrect",
+     "6:TradeCorrect",
+     "7:TradeCancel",
+     "8:TradeCancel",
+     "9:TradeCancel",
+     "10:TradeCorrect",
+     "11:TradeCancel"
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {
+     "ACME": {
+      "buyOrders": "1",
+      "bought": "125",
+      "avgBuy": "13.6",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+125"
+     }
+    },
+    "actual": {
+     "ACME": {
+      "buyOrders": "1",
+      "bought": "125",
+      "avgBuy": "13.6",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+125"
+     }
+    }
+   },
+   {
+    "check": "unmatched cancels/corrections",
+    "pass": true,
+    "expected": 2,
+    "actual": 2
+   }
+  ]
+ },
+ {
+  "id": "S07-05",
+  "feature": "A trade cancel listed before the fill it names still removes that fill",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S07-05.log",
+  "kind": "prd",
+  "basis": "AC-041 'as they stand at the end of the log', AC-042, AC-044 'not in the log'; brief 7 (reports before earlier events)",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "trading summary",
+    "pass": false,
+    "expected": {
+     "ACME": {
+      "buyOrders": "1",
+      "bought": "0",
+      "avgBuy": "–",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "0"
+     }
+    },
+    "actual": [
+     "ACME.bought: shown 100, expected 0",
+     "ACME.avgBuy: shown 10, expected –",
+     "ACME.net: shown +100, expected 0"
+    ]
+   },
+   {
+    "check": "unmatched cancels/corrections",
+    "pass": false,
+    "expected": 0,
+    "actual": 1
+   }
+  ]
+ },
+ {
+  "id": "S07-06",
+  "feature": "The same ClOrdID used by two clients is two orders",
+  "version": "multi",
+  "dataset": "datasets/multi-session/S07-06.log",
+  "kind": "fix",
+  "basis": "Brief 6, 7, 11; FIX: ClOrdID is unique per order sender; AC-035 joins on the value alone",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "order groups",
+    "pass": false,
+    "expected": [
+     [
+      1,
+      3
+     ],
+     [
+      2,
+      4
+     ]
+    ],
+    "actual": [
+     [
+      1,
+      2,
+      3,
+      4
+     ]
+    ]
+   },
+   {
+    "check": "summary strip",
+    "pass": false,
+    "expected": {
+     "orders": 2
+    },
+    "actual": {
+     "orders": 1
+    }
+   }
+  ]
+ },
+ {
+  "id": "S07-07",
+  "feature": "The Account filter does not show another client's order that reuses a ClOrdID",
+  "version": "multi",
+  "dataset": "datasets/multi-session/S07-07.log",
+  "kind": "fix",
+  "basis": "Brief 11; US-009 'one client's flow in a shared log'; AC-051 follows AC-035",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "messages shown",
+    "pass": false,
+    "expected": [
+     1,
+     3
+    ],
+    "actual": [
+     1,
+     2,
+     3,
+     4
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": false,
+    "expected": {
+     "AAA": {
+      "buyOrders": "1",
+      "bought": "100",
+      "avgBuy": "5",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+100"
+     }
+    },
+    "actual": [
+     "BBB: unexpected row {\"buyOrders\":\"0\",\"bought\":\"0\",\"avgBuy\":\"–\",\"sellOrders\":\"1\",\"sold\":\"50\",\"avgSell\":\"7\",\"net\":\"-50\"}"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S07-08",
+  "feature": "Two venues that both use OrderID 1 / ExecID 1: both fills count, and the orders stay apart",
+  "version": "multi",
+  "dataset": "datasets/multi-session/S07-08.log",
+  "kind": "fix",
+  "basis": "Brief 6, 11; FIX: OrderID and ExecID are unique per executing party; AC-041 keys on 37+17 alone",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "trading summary",
+    "pass": false,
+    "expected": {
+     "ACME": {
+      "buyOrders": "2",
+      "bought": "300",
+      "avgBuy": "10.6667",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+300"
+     }
+    },
+    "actual": [
+     "ACME.bought: shown 100, expected 300",
+     "ACME.avgBuy: shown 10, expected 10.6667",
+     "ACME.net: shown +100, expected +300"
+    ]
+   },
+   {
+    "check": "order groups",
+    "pass": false,
+    "expected": [
+     [
+      1,
+      3
+     ],
+     [
+      2,
+      4
+     ]
+    ],
+    "actual": [
+     [
+      1,
+      2,
+      3,
+      4
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S07-09",
+  "feature": "The same ExecID on two different orders is two executions",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S07-09.log",
+  "kind": "prd",
+  "basis": "AC-041 (OrderID and ExecID)",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {
+     "ACME": {
+      "buyOrders": "2",
+      "bought": "300",
+      "avgBuy": "10.6667",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+300"
+     }
+    },
+    "actual": {
+     "ACME": {
+      "buyOrders": "2",
+      "bought": "300",
+      "avgBuy": "10.6667",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+300"
+     }
+    }
+   }
+  ]
+ },
+ {
+  "id": "S07-10",
+  "feature": "An execution seen again on a drop copy is counted once",
+  "version": "multi",
+  "dataset": "datasets/multi-session/S07-10.log",
+  "kind": "prd",
+  "basis": "AC-041",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {
+     "ACME": {
+      "buyOrders": "1",
+      "bought": "100",
+      "avgBuy": "10",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+100"
+     }
+    },
+    "actual": {
+     "ACME": {
+      "buyOrders": "1",
+      "bought": "100",
+      "avgBuy": "10",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+100"
+     }
+    }
+   }
+  ]
+ },
+ {
+  "id": "S07-11",
+  "feature": "Clicking OrderID 1001 opens the order that has that OrderID",
+  "version": "multi",
+  "dataset": "datasets/multi-session/S07-11.log",
+  "kind": "prd",
+  "basis": "AC-034, AC-036 'shows only that order's messages'; design 12 findOrder takes the id alone",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "click tag 37 in card 4: messages shown",
+    "pass": false,
+    "expected": [
+     2,
+     4
+    ],
+    "actual": [
+     1,
+     3
+    ]
+   },
+   {
+    "check": "click tag 37 in card 4: banner",
+    "pass": false,
+    "expected": [
+     "ZZ9"
+    ],
+    "actual": [
+     "1001 · 7",
+     "Buy 100 AAA Market",
+     "New",
+     "Show all messages"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S07-12",
+  "feature": "The order's latest state is not taken from a resent older report",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S07-12.log",
+  "kind": "fix",
+  "basis": "Brief 6, 7 (duplicate and late reports); AC-036 takes the last ExecutionReport in the log",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "order banner",
+    "pass": false,
+    "expected": [
+     "100 filled @ 10"
+    ],
+    "actual": [
+     "C1 · O1",
+     "Buy 100 ACME @ 10 Limit",
+     "PartiallyFilled · 40 filled @ 10",
+     "Show all messages"
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {
+     "ACME": {
+      "buyOrders": "1",
+      "bought": "100",
+      "avgBuy": "10",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+100"
+     }
+    },
+    "actual": {
+     "ACME": {
+      "buyOrders": "1",
+      "bought": "100",
+      "avgBuy": "10",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+100"
+     }
+    }
+   }
+  ]
+ },
+ {
+  "id": "S07-13",
+  "feature": "A fill listed before its NewOrderSingle is grouped with it and counted",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S07-13.log",
+  "kind": "prd",
+  "basis": "AC-035, AC-041",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "order groups",
+    "pass": true,
+    "expected": [
+     [
+      1,
+      2
+     ]
+    ],
+    "actual": [
+     [
+      1,
+      2
+     ]
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {
+     "ACME": {
+      "buyOrders": "1",
+      "bought": "100",
+      "avgBuy": "10",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+100"
+     }
+    },
+    "actual": {
+     "ACME": {
+      "buyOrders": "1",
+      "bought": "100",
+      "avgBuy": "10",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+100"
+     }
+    }
+   }
+  ]
+ },
+ {
+  "id": "S07-14",
+  "feature": "Buy and sell sides, fills without LastQty, messages without Symbol",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S07-14.log",
+  "kind": "prd",
+  "basis": "AC-041, AC-047",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {
+     "ACME": {
+      "buyOrders": "1",
+      "bought": "0",
+      "avgBuy": "–",
+      "sellOrders": "3",
+      "sold": "150",
+      "avgSell": "10.4667",
+      "net": "-150"
+     }
+    },
+    "actual": {
+     "ACME": {
+      "buyOrders": "1",
+      "bought": "0",
+      "avgBuy": "–",
+      "sellOrders": "3",
+      "sold": "150",
+      "avgSell": "10.4667",
+      "net": "-150"
+     }
+    }
+   }
+  ]
+ },
+ {
+  "id": "S07-15",
+  "feature": "Fractional quantities and prices: sums and weighted averages are exact to 4 places",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S07-15.log",
+  "kind": "prd",
+  "basis": "AC-045, AC-046; design 13 'Figures'",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {
+     "FXA": {
+      "buyOrders": "1",
+      "bought": "1",
+      "avgBuy": "1.26",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+1"
+     },
+     "FXB": {
+      "buyOrders": "1",
+      "bought": "4",
+      "avgBuy": "10.0003",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+4"
+     },
+     "FXC": {
+      "buyOrders": "0",
+      "bought": "0",
+      "avgBuy": "–",
+      "sellOrders": "1",
+      "sold": "3.0003",
+      "avgSell": "0.3433",
+      "net": "-3.0003"
+     }
+    },
+    "actual": {
+     "FXA": {
+      "buyOrders": "1",
+      "bought": "1",
+      "avgBuy": "1.26",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+1"
+     },
+     "FXB": {
+      "buyOrders": "1",
+      "bought": "4",
+      "avgBuy": "10.0003",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+4"
+     },
+     "FXC": {
+      "buyOrders": "0",
+      "bought": "0",
+      "avgBuy": "–",
+      "sellOrders": "1",
+      "sold": "3.0003",
+      "avgSell": "0.3433",
+      "net": "-3.0003"
+     }
+    }
+   }
+  ]
+ },
+ {
+  "id": "S07-16",
+  "feature": "Average price (1 x 1.005 + 1 x 1.0001) / 2 = 1.00255 exactly is shown as 1.0026",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S07-16.log",
+  "kind": "prd",
+  "basis": "AC-045; the PRD names no rounding mode, but half-up and half-even both give 1.0026",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "trading summary figures",
+    "pass": false,
+    "expected": {
+     "TIE": {
+      "avgBuy": [
+       "1.0026"
+      ]
+     }
+    },
+    "actual": [
+     "TIE.avgBuy: shown 1.0025, expected 1.0026"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S08-01",
+  "feature": "Repeated tags are listed in order, none dropped, none an error",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S08-01.log",
+  "kind": "prd",
+  "basis": "PRD Scope; design 6",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "card 2 tag order",
+    "pass": true,
+    "expected": [
+     8,
+     9,
+     35,
+     49,
+     56,
+     34,
+     52,
+     37,
+     11,
+     453,
+     448,
+     447,
+     452,
+     448,
+     447,
+     452,
+     17,
+     150,
+     39,
+     55,
+     54,
+     32,
+     31,
+     151,
+     14,
+     6,
+     136,
+     137,
+     138,
+     139,
+     137,
+     138,
+     139,
+     10
+    ],
+    "actual": [
+     8,
+     9,
+     35,
+     49,
+     56,
+     34,
+     52,
+     37,
+     11,
+     453,
+     448,
+     447,
+     452,
+     448,
+     447,
+     452,
+     17,
+     150,
+     39,
+     55,
+     54,
+     32,
+     31,
+     151,
+     14,
+     6,
+     136,
+     137,
+     138,
+     139,
+     137,
+     138,
+     139,
+     10
+    ]
+   },
+   {
+    "check": "card 2 row for tag 448",
+    "pass": true,
+    "expected": {
+     "number": 2,
+     "tag": "448",
+     "value": "TRD9"
+    },
+    "actual": [
+     [
+      "448",
+      "PartyID",
+      "BRK1",
+      ""
+     ],
+     [
+      "448",
+      "PartyID",
+      "TRD9",
+      ""
+     ]
+    ]
+   },
+   {
+    "check": "card 2 row for tag 139",
+    "pass": true,
+    "expected": {
+     "number": 2,
+     "tag": "139",
+     "value": "7"
+    },
+    "actual": [
+     [
+      "139",
+      "MiscFeeType",
+      "4",
+      "ExchangeFees"
+     ],
+     [
+      "139",
+      "MiscFeeType",
+      "7",
+      "Other"
+     ]
+    ]
+   },
+   {
+    "check": "summary strip",
+    "pass": true,
+    "expected": {
+     "malformed": 0,
+     "valid": 2
+    },
+    "actual": {
+     "malformed": 0,
+     "valid": 2
+    }
+   }
+  ]
+ },
+ {
+  "id": "S08-02",
+  "feature": "A FIX 4.2 NewOrderList keeps both orders' fields, in order",
+  "version": "FIX.4.2",
+  "dataset": "datasets/FIX42/S08-02.log",
+  "kind": "prd",
+  "basis": "PRD Scope; design 6",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "card 1 tag order",
+    "pass": true,
+    "expected": [
+     8,
+     9,
+     35,
+     49,
+     56,
+     34,
+     52,
+     66,
+     394,
+     68,
+     73,
+     11,
+     67,
+     55,
+     54,
+     38,
+     40,
+     11,
+     67,
+     55,
+     54,
+     38,
+     40,
+     10
+    ],
+    "actual": [
+     8,
+     9,
+     35,
+     49,
+     56,
+     34,
+     52,
+     66,
+     394,
+     68,
+     73,
+     11,
+     67,
+     55,
+     54,
+     38,
+     40,
+     11,
+     67,
+     55,
+     54,
+     38,
+     40,
+     10
+    ]
+   },
+   {
+    "check": "summary strip",
+    "pass": true,
+    "expected": {
+     "malformed": 0
+    },
+    "actual": {
+     "malformed": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "S09-01",
+  "feature": "Empty input",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S09-01.log",
+  "kind": "prd",
+  "basis": "design 8.2",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "summary strip",
+    "pass": true,
+    "expected": {
+     "messages": 0,
+     "valid": 0,
+     "malformed": 0
+    },
+    "actual": {
+     "messages": 0,
+     "valid": 0,
+     "malformed": 0
+    }
+   },
+   {
+    "check": "empty-state text",
+    "pass": true,
+    "expected": "No FIX messages found in the pasted text.",
+    "actual": 0
+   }
+  ]
+ },
+ {
+  "id": "S09-02",
+  "feature": "Only empty lines and non-FIX lines",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S09-02.log",
+  "kind": "prd",
+  "basis": "TR-002",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "summary strip",
+    "pass": true,
+    "expected": {
+     "messages": 0
+    },
+    "actual": {
+     "messages": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "S09-03",
+  "feature": "Timeline order follows the log, not SendingTime",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S09-03.log",
+  "kind": "prd",
+  "basis": "AC-007",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "timeline events",
+    "pass": true,
+    "expected": [
+     "1:Heartbeat",
+     "2:Heartbeat",
+     "3:Logout"
+    ],
+    "actual": [
+     "1:Heartbeat",
+     "2:Heartbeat",
+     "3:Logout"
+    ]
+   },
+   {
+    "check": "sequence gaps",
+    "pass": true,
+    "expected": [],
+    "actual": []
+   }
+  ]
+ },
+ {
+  "id": "S09-04",
+  "feature": "Truncated input: the cut message is an error, the one before it is kept",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S09-04.log",
+  "kind": "prd",
+  "basis": "AC-012, AC-014; TR-002",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "summary strip",
+    "pass": true,
+    "expected": {
+     "messages": 2,
+     "valid": 1,
+     "malformed": 1
+    },
+    "actual": {
+     "messages": 2,
+     "valid": 1,
+     "malformed": 1
+    }
+   },
+   {
+    "check": "errors (number, rule, position, text)",
+    "pass": true,
+    "expected": [
+     {
+      "number": 2,
+      "rule": "missing_checksum",
+      "position": [
+       123,
+       124
+      ]
+     }
+    ],
+    "actual": [
+     {
+      "number": 2,
+      "rule": "missing_checksum",
+      "position": 124,
+      "text": "Message 2: missing CheckSum (tag 10) at position 124"
+     }
+    ]
+   },
+   {
+    "check": "error cards on the page",
+    "pass": true,
+    "expected": [
+     "Message 2: missing CheckSum (tag 10) at position 124"
+    ],
+    "actual": [
+     "Message 2: missing CheckSum (tag 10) at position 124"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S09-05",
+  "feature": "A message wrapped over two lines is reported, not silently dropped; its neighbours are kept",
+  "version": "FIX.4.4",
+  "dataset": "datasets/FIX44/S09-05.log",
+  "kind": "prd",
+  "basis": "design 3 'a message never crosses a line end'; AC-012, AC-014",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "summary strip",
+    "pass": true,
+    "expected": {
+     "messages": 3,
+     "valid": 2,
+     "malformed": 1
+    },
+    "actual": {
+     "messages": 3,
+     "valid": 2,
+     "malformed": 1
+    }
+   },
+   {
+    "check": "malformed message numbers",
+    "pass": true,
+    "expected": [
+     2
+    ],
+    "actual": [
+     2
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S10-01",
+  "feature": "Wrong BodyLength",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-01.log",
+  "kind": "prd",
+  "basis": "TR-002; AC-012, AC-015",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "errors (number, rule, position, text)",
+    "pass": true,
+    "expected": [
+     {
+      "number": 2,
+      "rule": "body_length",
+      "position": 91,
+      "text": "Message 2: BodyLength (9) says 85, actual 81 at position 91"
+     }
+    ],
+    "actual": [
+     {
+      "number": 2,
+      "rule": "body_length",
+      "position": 91,
+      "text": "Message 2: BodyLength (9) says 85, actual 81 at position 91"
+     }
+    ]
+   },
+   {
+    "check": "error cards on the page",
+    "pass": true,
+    "expected": [
+     "Message 2: BodyLength (9) says 85, actual 81 at position 91"
+    ],
+    "actual": [
+     "Message 2: BodyLength (9) says 85, actual 81 at position 91"
+    ]
+   },
+   {
+    "check": "valid message numbers",
+    "pass": true,
+    "expected": [
+     1,
+     3
+    ],
+    "actual": [
+     1,
+     3
+    ]
+   },
+   {
+    "check": "timeline includes",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "3:Heartbeat"
+    ],
+    "actual": [
+     "1:Logon",
+     "3:SequenceGap",
+     "3:Heartbeat"
+    ]
+   },
+   {
+    "check": "summary strip",
+    "pass": true,
+    "expected": {
+     "messages": 3,
+     "valid": 2,
+     "malformed": 1
+    },
+    "actual": {
+     "messages": 3,
+     "valid": 2,
+     "malformed": 1
+    }
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-02",
+  "feature": "Wrong CheckSum",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-02.log",
+  "kind": "prd",
+  "basis": "TR-002; AC-012",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "errors (number, rule, position, text)",
+    "pass": true,
+    "expected": [
+     {
+      "number": 2,
+      "rule": "checksum",
+      "position": 177
+     }
+    ],
+    "actual": [
+     {
+      "number": 2,
+      "rule": "checksum",
+      "position": 177,
+      "text": "Message 2: CheckSum mismatch at position 177"
+     }
+    ]
+   },
+   {
+    "check": "error cards on the page",
+    "pass": true,
+    "expected": [
+     "Message 2: CheckSum mismatch at position 177"
+    ],
+    "actual": [
+     "Message 2: CheckSum mismatch at position 177"
+    ]
+   },
+   {
+    "check": "valid message numbers",
+    "pass": true,
+    "expected": [
+     1,
+     3
+    ],
+    "actual": [
+     1,
+     3
+    ]
+   },
+   {
+    "check": "timeline includes",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "3:Heartbeat"
+    ],
+    "actual": [
+     "1:Logon",
+     "3:SequenceGap",
+     "3:Heartbeat"
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-03",
+  "feature": "Missing BeginString: the message is reported as malformed",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-03.log",
+  "kind": "fix",
+  "basis": "Brief 10; TR-002 'first three fields are not 8, 9 and 35' but 'a message starts at 8=FIX'",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "summary strip",
+    "pass": false,
+    "expected": {
+     "messages": 3,
+     "malformed": 1
+    },
+    "actual": {
+     "messages": 2,
+     "malformed": 0
+    }
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-04",
+  "feature": "BodyLength and MsgType swapped",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-04.log",
+  "kind": "prd",
+  "basis": "TR-002; design 3.8",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "errors (number, rule, position, text)",
+    "pass": true,
+    "expected": [
+     {
+      "number": 2,
+      "rule": "header_order",
+      "position": 91
+     }
+    ],
+    "actual": [
+     {
+      "number": 2,
+      "rule": "header_order",
+      "position": 91,
+      "text": "Message 2: header order wrong at position 91"
+     }
+    ]
+   },
+   {
+    "check": "error cards on the page",
+    "pass": true,
+    "expected": [
+     "Message 2: header order wrong at position 91"
+    ],
+    "actual": [
+     "Message 2: header order wrong at position 91"
+    ]
+   },
+   {
+    "check": "valid message numbers",
+    "pass": true,
+    "expected": [
+     1,
+     3
+    ],
+    "actual": [
+     1,
+     3
+    ]
+   },
+   {
+    "check": "timeline includes",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "3:Heartbeat"
+    ],
+    "actual": [
+     "1:Logon",
+     "3:SequenceGap",
+     "3:Heartbeat"
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-05",
+  "feature": "MsgType missing",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-05.log",
+  "kind": "prd",
+  "basis": "TR-002",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "errors (number, rule, position, text)",
+    "pass": true,
+    "expected": [
+     {
+      "number": 2,
+      "rule": "header_order"
+     }
+    ],
+    "actual": [
+     {
+      "number": 2,
+      "rule": "header_order",
+      "position": 96,
+      "text": "Message 2: header order wrong at position 96"
+     }
+    ]
+   },
+   {
+    "check": "error cards on the page",
+    "pass": true,
+    "expected": [
+     "Message 2: header order wrong at position 96"
+    ],
+    "actual": [
+     "Message 2: header order wrong at position 96"
+    ]
+   },
+   {
+    "check": "valid message numbers",
+    "pass": true,
+    "expected": [
+     1,
+     3
+    ],
+    "actual": [
+     1,
+     3
+    ]
+   },
+   {
+    "check": "timeline includes",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "3:Heartbeat"
+    ],
+    "actual": [
+     "1:Logon",
+     "3:SequenceGap",
+     "3:Heartbeat"
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-06",
+  "feature": "BodyLength missing",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-06.log",
+  "kind": "prd",
+  "basis": "TR-002",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "errors (number, rule, position, text)",
+    "pass": true,
+    "expected": [
+     {
+      "number": 2,
+      "rule": "header_order"
+     }
+    ],
+    "actual": [
+     {
+      "number": 2,
+      "rule": "header_order",
+      "position": 91,
+      "text": "Message 2: header order wrong at position 91"
+     }
+    ]
+   },
+   {
+    "check": "error cards on the page",
+    "pass": true,
+    "expected": [
+     "Message 2: header order wrong at position 91"
+    ],
+    "actual": [
+     "Message 2: header order wrong at position 91"
+    ]
+   },
+   {
+    "check": "valid message numbers",
+    "pass": true,
+    "expected": [
+     1,
+     3
+    ],
+    "actual": [
+     1,
+     3
+    ]
+   },
+   {
+    "check": "timeline includes",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "3:Heartbeat"
+    ],
+    "actual": [
+     "1:Logon",
+     "3:SequenceGap",
+     "3:Heartbeat"
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-07",
+  "feature": "Missing trailer",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-07.log",
+  "kind": "prd",
+  "basis": "TR-002; AC-015",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "errors (number, rule, position, text)",
+    "pass": true,
+    "expected": [
+     {
+      "number": 2,
+      "rule": "missing_checksum",
+      "position": [
+       176,
+       177
+      ]
+     }
+    ],
+    "actual": [
+     {
+      "number": 2,
+      "rule": "missing_checksum",
+      "position": 177,
+      "text": "Message 2: missing CheckSum (tag 10) at position 177"
+     }
+    ]
+   },
+   {
+    "check": "error cards on the page",
+    "pass": true,
+    "expected": [
+     "Message 2: missing CheckSum (tag 10) at position 177"
+    ],
+    "actual": [
+     "Message 2: missing CheckSum (tag 10) at position 177"
+    ]
+   },
+   {
+    "check": "valid message numbers",
+    "pass": true,
+    "expected": [
+     1,
+     3
+    ],
+    "actual": [
+     1,
+     3
+    ]
+   },
+   {
+    "check": "timeline includes",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "3:Heartbeat"
+    ],
+    "actual": [
+     "1:Logon",
+     "3:SequenceGap",
+     "3:Heartbeat"
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-08",
+  "feature": "A field without '='",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-08.log",
+  "kind": "prd",
+  "basis": "TR-002",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "errors (number, rule, position, text)",
+    "pass": true,
+    "expected": [
+     {
+      "number": 2,
+      "rule": "field_without_equals",
+      "position": 152
+     }
+    ],
+    "actual": [
+     {
+      "number": 2,
+      "rule": "field_without_equals",
+      "position": 152,
+      "text": "Message 2: field without '=' at position 152"
+     }
+    ]
+   },
+   {
+    "check": "error cards on the page",
+    "pass": true,
+    "expected": [
+     "Message 2: field without '=' at position 152"
+    ],
+    "actual": [
+     "Message 2: field without '=' at position 152"
+    ]
+   },
+   {
+    "check": "valid message numbers",
+    "pass": true,
+    "expected": [
+     1,
+     3
+    ],
+    "actual": [
+     1,
+     3
+    ]
+   },
+   {
+    "check": "timeline includes",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "3:Heartbeat"
+    ],
+    "actual": [
+     "1:Logon",
+     "3:SequenceGap",
+     "3:Heartbeat"
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-09-1",
+  "feature": "A tag that is not a positive integer: 'abc'",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-09-1.log",
+  "kind": "prd",
+  "basis": "TR-002; design 3.8.2",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "errors (number, rule, position, text)",
+    "pass": true,
+    "expected": [
+     {
+      "number": 2,
+      "rule": "bad_tag",
+      "position": 152
+     }
+    ],
+    "actual": [
+     {
+      "number": 2,
+      "rule": "bad_tag",
+      "position": 152,
+      "text": "Message 2: bad tag 'abc' at position 152"
+     }
+    ]
+   },
+   {
+    "check": "error cards on the page",
+    "pass": true,
+    "expected": [
+     "Message 2: bad tag 'abc' at position 152"
+    ],
+    "actual": [
+     "Message 2: bad tag 'abc' at position 152"
+    ]
+   },
+   {
+    "check": "valid message numbers",
+    "pass": true,
+    "expected": [
+     1,
+     3
+    ],
+    "actual": [
+     1,
+     3
+    ]
+   },
+   {
+    "check": "timeline includes",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "3:Heartbeat"
+    ],
+    "actual": [
+     "1:Logon",
+     "3:SequenceGap",
+     "3:Heartbeat"
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-09-2",
+  "feature": "A tag that is not a positive integer: '0'",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-09-2.log",
+  "kind": "prd",
+  "basis": "TR-002; design 3.8.2",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "errors (number, rule, position, text)",
+    "pass": true,
+    "expected": [
+     {
+      "number": 2,
+      "rule": "bad_tag",
+      "position": 152
+     }
+    ],
+    "actual": [
+     {
+      "number": 2,
+      "rule": "bad_tag",
+      "position": 152,
+      "text": "Message 2: bad tag '0' at position 152"
+     }
+    ]
+   },
+   {
+    "check": "error cards on the page",
+    "pass": true,
+    "expected": [
+     "Message 2: bad tag '0' at position 152"
+    ],
+    "actual": [
+     "Message 2: bad tag '0' at position 152"
+    ]
+   },
+   {
+    "check": "valid message numbers",
+    "pass": true,
+    "expected": [
+     1,
+     3
+    ],
+    "actual": [
+     1,
+     3
+    ]
+   },
+   {
+    "check": "timeline includes",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "3:Heartbeat"
+    ],
+    "actual": [
+     "1:Logon",
+     "3:SequenceGap",
+     "3:Heartbeat"
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-09-3",
+  "feature": "A tag that is not a positive integer: '-5'",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-09-3.log",
+  "kind": "prd",
+  "basis": "TR-002; design 3.8.2",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "errors (number, rule, position, text)",
+    "pass": true,
+    "expected": [
+     {
+      "number": 2,
+      "rule": "bad_tag",
+      "position": 152
+     }
+    ],
+    "actual": [
+     {
+      "number": 2,
+      "rule": "bad_tag",
+      "position": 152,
+      "text": "Message 2: bad tag '-5' at position 152"
+     }
+    ]
+   },
+   {
+    "check": "error cards on the page",
+    "pass": true,
+    "expected": [
+     "Message 2: bad tag '-5' at position 152"
+    ],
+    "actual": [
+     "Message 2: bad tag '-5' at position 152"
+    ]
+   },
+   {
+    "check": "valid message numbers",
+    "pass": true,
+    "expected": [
+     1,
+     3
+    ],
+    "actual": [
+     1,
+     3
+    ]
+   },
+   {
+    "check": "timeline includes",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "3:Heartbeat"
+    ],
+    "actual": [
+     "1:Logon",
+     "3:SequenceGap",
+     "3:Heartbeat"
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-09-4",
+  "feature": "A tag that is not a positive integer: '007'",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-09-4.log",
+  "kind": "prd",
+  "basis": "TR-002; design 3.8.2",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "errors (number, rule, position, text)",
+    "pass": true,
+    "expected": [
+     {
+      "number": 2,
+      "rule": "bad_tag",
+      "position": 152
+     }
+    ],
+    "actual": [
+     {
+      "number": 2,
+      "rule": "bad_tag",
+      "position": 152,
+      "text": "Message 2: bad tag '007' at position 152"
+     }
+    ]
+   },
+   {
+    "check": "error cards on the page",
+    "pass": true,
+    "expected": [
+     "Message 2: bad tag '007' at position 152"
+    ],
+    "actual": [
+     "Message 2: bad tag '007' at position 152"
+    ]
+   },
+   {
+    "check": "valid message numbers",
+    "pass": true,
+    "expected": [
+     1,
+     3
+    ],
+    "actual": [
+     1,
+     3
+    ]
+   },
+   {
+    "check": "timeline includes",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "3:Heartbeat"
+    ],
+    "actual": [
+     "1:Logon",
+     "3:SequenceGap",
+     "3:Heartbeat"
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-09-5",
+  "feature": "A tag that is not a positive integer: '1.5'",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-09-5.log",
+  "kind": "prd",
+  "basis": "TR-002; design 3.8.2",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "errors (number, rule, position, text)",
+    "pass": true,
+    "expected": [
+     {
+      "number": 2,
+      "rule": "bad_tag",
+      "position": 152
+     }
+    ],
+    "actual": [
+     {
+      "number": 2,
+      "rule": "bad_tag",
+      "position": 152,
+      "text": "Message 2: bad tag '1.5' at position 152"
+     }
+    ]
+   },
+   {
+    "check": "error cards on the page",
+    "pass": true,
+    "expected": [
+     "Message 2: bad tag '1.5' at position 152"
+    ],
+    "actual": [
+     "Message 2: bad tag '1.5' at position 152"
+    ]
+   },
+   {
+    "check": "valid message numbers",
+    "pass": true,
+    "expected": [
+     1,
+     3
+    ],
+    "actual": [
+     1,
+     3
+    ]
+   },
+   {
+    "check": "timeline includes",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "3:Heartbeat"
+    ],
+    "actual": [
+     "1:Logon",
+     "3:SequenceGap",
+     "3:Heartbeat"
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-09-6",
+  "feature": "A tag that is not a positive integer: ''",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-09-6.log",
+  "kind": "prd",
+  "basis": "TR-002; design 3.8.2",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "errors (number, rule, position, text)",
+    "pass": true,
+    "expected": [
+     {
+      "number": 2,
+      "rule": "bad_tag",
+      "position": 152
+     }
+    ],
+    "actual": [
+     {
+      "number": 2,
+      "rule": "bad_tag",
+      "position": 152,
+      "text": "Message 2: bad tag '' at position 152"
+     }
+    ]
+   },
+   {
+    "check": "error cards on the page",
+    "pass": true,
+    "expected": [
+     "Message 2: bad tag '' at position 152"
+    ],
+    "actual": [
+     "Message 2: bad tag '' at position 152"
+    ]
+   },
+   {
+    "check": "valid message numbers",
+    "pass": true,
+    "expected": [
+     1,
+     3
+    ],
+    "actual": [
+     1,
+     3
+    ]
+   },
+   {
+    "check": "timeline includes",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "3:Heartbeat"
+    ],
+    "actual": [
+     "1:Logon",
+     "3:SequenceGap",
+     "3:Heartbeat"
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-09-7",
+  "feature": "A tag that is not a positive integer: '1234567890'",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-09-7.log",
+  "kind": "prd",
+  "basis": "TR-002; design 3.8.2",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "errors (number, rule, position, text)",
+    "pass": true,
+    "expected": [
+     {
+      "number": 2,
+      "rule": "bad_tag",
+      "position": 152
+     }
+    ],
+    "actual": [
+     {
+      "number": 2,
+      "rule": "bad_tag",
+      "position": 152,
+      "text": "Message 2: bad tag '1234567890' at position 152"
+     }
+    ]
+   },
+   {
+    "check": "error cards on the page",
+    "pass": true,
+    "expected": [
+     "Message 2: bad tag '1234567890' at position 152"
+    ],
+    "actual": [
+     "Message 2: bad tag '1234567890' at position 152"
+    ]
+   },
+   {
+    "check": "valid message numbers",
+    "pass": true,
+    "expected": [
+     1,
+     3
+    ],
+    "actual": [
+     1,
+     3
+    ]
+   },
+   {
+    "check": "timeline includes",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "3:Heartbeat"
+    ],
+    "actual": [
+     "1:Logon",
+     "3:SequenceGap",
+     "3:Heartbeat"
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-10",
+  "feature": "An unsupported delimiter (;) is reported, not misread",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-10.log",
+  "kind": "prd",
+  "basis": "TR-002; design 11",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "errors (number, rule, position, text)",
+    "pass": true,
+    "expected": [
+     {
+      "number": 2,
+      "rule": "header_order"
+     }
+    ],
+    "actual": [
+     {
+      "number": 2,
+      "rule": "header_order",
+      "position": 81,
+      "text": "Message 2: header order wrong at position 81"
+     }
+    ]
+   },
+   {
+    "check": "error cards on the page",
+    "pass": true,
+    "expected": [
+     "Message 2: header order wrong at position 81"
+    ],
+    "actual": [
+     "Message 2: header order wrong at position 81"
+    ]
+   },
+   {
+    "check": "valid message numbers",
+    "pass": true,
+    "expected": [
+     1,
+     3
+    ],
+    "actual": [
+     1,
+     3
+    ]
+   },
+   {
+    "check": "timeline includes",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "3:Heartbeat"
+    ],
+    "actual": [
+     "1:Logon",
+     "3:SequenceGap",
+     "3:Heartbeat"
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-11",
+  "feature": "Equals signs and other delimiter forms inside a value of an SOH message are kept",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-11.log",
+  "kind": "prd",
+  "basis": "TR-002",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "summary strip",
+    "pass": true,
+    "expected": {
+     "messages": 3,
+     "valid": 3,
+     "malformed": 0
+    },
+    "actual": {
+     "messages": 3,
+     "valid": 3,
+     "malformed": 0
+    }
+   },
+   {
+    "check": "card 2 row for tag 58",
+    "pass": true,
+    "expected": {
+     "number": 2,
+     "tag": "58",
+     "value": "a=b=c|d^A<SOH>e"
+    },
+    "actual": [
+     [
+      "58",
+      "Text",
+      "a=b=c|d^A<SOH>e",
+      ""
+     ]
+    ]
+   },
+   {
+    "check": "card 2 row for tag 5001",
+    "pass": true,
+    "expected": {
+     "number": 2,
+     "tag": "5001",
+     "value": "="
+    },
+    "actual": [
+     [
+      "5001",
+      "Unknown tag 5001",
+      "=",
+      ""
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S10-12-pipe",
+  "feature": "The delimiter inside a value, pipe form",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-12-pipe.log",
+  "kind": "prd",
+  "basis": "TR-002 'A delimiter inside a value'",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "summary strip",
+    "pass": true,
+    "expected": {
+     "messages": 3,
+     "valid": 3,
+     "malformed": 0
+    },
+    "actual": {
+     "messages": 3,
+     "valid": 3,
+     "malformed": 0
+    }
+   },
+   {
+    "check": "card 2 row for tag 58",
+    "pass": true,
+    "expected": {
+     "number": 2,
+     "tag": "58",
+     "value": "left|right || end|"
+    },
+    "actual": [
+     [
+      "58",
+      "Text",
+      "left|right || end|",
+      ""
+     ]
+    ]
+   },
+   {
+    "check": "card 2 row for tag 5001",
+    "pass": true,
+    "expected": {
+     "number": 2,
+     "tag": "5001",
+     "value": "a|b"
+    },
+    "actual": [
+     [
+      "5001",
+      "Unknown tag 5001",
+      "a|b",
+      ""
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S10-12-caret",
+  "feature": "The delimiter inside a value, caret form",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-12-caret.log",
+  "kind": "prd",
+  "basis": "TR-002 'A delimiter inside a value'",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "summary strip",
+    "pass": true,
+    "expected": {
+     "messages": 3,
+     "valid": 3,
+     "malformed": 0
+    },
+    "actual": {
+     "messages": 3,
+     "valid": 3,
+     "malformed": 0
+    }
+   },
+   {
+    "check": "card 2 row for tag 58",
+    "pass": true,
+    "expected": {
+     "number": 2,
+     "tag": "58",
+     "value": "left^Aright ^A^A end^A"
+    },
+    "actual": [
+     [
+      "58",
+      "Text",
+      "left^Aright ^A^A end^A",
+      ""
+     ]
+    ]
+   },
+   {
+    "check": "card 2 row for tag 5001",
+    "pass": true,
+    "expected": {
+     "number": 2,
+     "tag": "5001",
+     "value": "a^Ab"
+    },
+    "actual": [
+     [
+      "5001",
+      "Unknown tag 5001",
+      "a^Ab",
+      ""
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S10-12-angle",
+  "feature": "The delimiter inside a value, angle form",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-12-angle.log",
+  "kind": "prd",
+  "basis": "TR-002 'A delimiter inside a value'",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "summary strip",
+    "pass": true,
+    "expected": {
+     "messages": 3,
+     "valid": 3,
+     "malformed": 0
+    },
+    "actual": {
+     "messages": 3,
+     "valid": 3,
+     "malformed": 0
+    }
+   },
+   {
+    "check": "card 2 row for tag 58",
+    "pass": true,
+    "expected": {
+     "number": 2,
+     "tag": "58",
+     "value": "left<SOH>right <SOH><SOH> end<SOH>"
+    },
+    "actual": [
+     [
+      "58",
+      "Text",
+      "left<SOH>right <SOH><SOH> end<SOH>",
+      ""
+     ]
+    ]
+   },
+   {
+    "check": "card 2 row for tag 5001",
+    "pass": true,
+    "expected": {
+     "number": 2,
+     "tag": "5001",
+     "value": "a<SOH>b"
+    },
+    "actual": [
+     [
+      "5001",
+      "Unknown tag 5001",
+      "a<SOH>b",
+      ""
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S10-13",
+  "feature": "The one case text cannot settle (value holds delimiter + digits + '='): a CheckSum error",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-13.log",
+  "kind": "prd",
+  "basis": "TR-002 'The one case that text cannot settle'",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "errors (number, rule, position, text)",
+    "pass": true,
+    "expected": [
+     {
+      "number": 2,
+      "rule": "checksum"
+     }
+    ],
+    "actual": [
+     {
+      "number": 2,
+      "rule": "checksum",
+      "position": 200,
+      "text": "Message 2: CheckSum mismatch at position 200"
+     }
+    ]
+   },
+   {
+    "check": "error cards on the page",
+    "pass": true,
+    "expected": [
+     "Message 2: CheckSum mismatch at position 200"
+    ],
+    "actual": [
+     "Message 2: CheckSum mismatch at position 200"
+    ]
+   },
+   {
+    "check": "valid message numbers",
+    "pass": true,
+    "expected": [
+     1,
+     3
+    ],
+    "actual": [
+     1,
+     3
+    ]
+   },
+   {
+    "check": "timeline includes",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "3:Heartbeat"
+    ],
+    "actual": [
+     "1:Logon",
+     "3:SequenceGap",
+     "3:Heartbeat"
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-14",
+  "feature": "Invalid MsgType, unknown tag, invalid enum, duplicate fields: decoded, no event, first value counts",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-14.log",
+  "kind": "prd",
+  "basis": "AC-004; design 6, 11",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "summary strip",
+    "pass": true,
+    "expected": {
+     "messages": 3,
+     "valid": 3,
+     "malformed": 0
+    },
+    "actual": {
+     "messages": 3,
+     "valid": 3,
+     "malformed": 0
+    }
+   },
+   {
+    "check": "timeline events",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "3:Heartbeat"
+    ],
+    "actual": [
+     "1:Logon",
+     "3:Heartbeat"
+    ]
+   },
+   {
+    "check": "card 2 label",
+    "pass": true,
+    "expected": [
+     "ZZ",
+     "unknown"
+    ],
+    "actual": "#2 | unknown value | A → B | seq 2 | 09:00:01.000"
+   },
+   {
+    "check": "card 2 row for tag 55",
+    "pass": true,
+    "expected": {
+     "number": 2,
+     "tag": "55",
+     "value": "DUP2"
+    },
+    "actual": [
+     [
+      "55",
+      "Symbol",
+      "ACME",
+      ""
+     ],
+     [
+      "55",
+      "Symbol",
+      "DUP2",
+      ""
+     ]
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-15-01",
+  "feature": "LastQty '0x10' (hexadecimal) is not a FIX quantity and is not counted as traded",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-15-01.log",
+  "kind": "fix",
+  "basis": "FIX Qty/float datatype: digits with an optional decimal point; design 13 'a finite number above zero'",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "trading summary",
+    "pass": false,
+    "expected": {},
+    "actual": [
+     "ACME: unexpected row {\"buyOrders\":\"0\",\"bought\":\"16\",\"avgBuy\":\"10\",\"sellOrders\":\"0\",\"sold\":\"0\",\"avgSell\":\"–\",\"net\":\"+16\"}"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S10-15-02",
+  "feature": "LastQty '1e3' (exponent) is not a FIX quantity and is not counted as traded",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-15-02.log",
+  "kind": "fix",
+  "basis": "FIX Qty/float datatype: digits with an optional decimal point; design 13 'a finite number above zero'",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "trading summary",
+    "pass": false,
+    "expected": {},
+    "actual": [
+     "ACME: unexpected row {\"buyOrders\":\"0\",\"bought\":\"1000\",\"avgBuy\":\"10\",\"sellOrders\":\"0\",\"sold\":\"0\",\"avgSell\":\"–\",\"net\":\"+1000\"}"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S10-15-03",
+  "feature": "LastQty ' 100 ' (spaces) is not a FIX quantity and is not counted as traded",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-15-03.log",
+  "kind": "fix",
+  "basis": "FIX Qty/float datatype: digits with an optional decimal point; design 13 'a finite number above zero'",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "trading summary",
+    "pass": false,
+    "expected": {},
+    "actual": [
+     "ACME: unexpected row {\"buyOrders\":\"0\",\"bought\":\"100\",\"avgBuy\":\"10\",\"sellOrders\":\"0\",\"sold\":\"0\",\"avgSell\":\"–\",\"net\":\"+100\"}"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S10-15-04",
+  "feature": "LastQty '0b11' (binary) is not a FIX quantity and is not counted as traded",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-15-04.log",
+  "kind": "fix",
+  "basis": "FIX Qty/float datatype: digits with an optional decimal point; design 13 'a finite number above zero'",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "trading summary",
+    "pass": false,
+    "expected": {},
+    "actual": [
+     "ACME: unexpected row {\"buyOrders\":\"0\",\"bought\":\"3\",\"avgBuy\":\"10\",\"sellOrders\":\"0\",\"sold\":\"0\",\"avgSell\":\"–\",\"net\":\"+3\"}"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S10-15-05",
+  "feature": "LastQty '+100' (plus sign) is not a FIX quantity and is not counted as traded",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-15-05.log",
+  "kind": "fix",
+  "basis": "FIX Qty/float datatype: digits with an optional decimal point; design 13 'a finite number above zero'",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "trading summary",
+    "pass": false,
+    "expected": {},
+    "actual": [
+     "ACME: unexpected row {\"buyOrders\":\"0\",\"bought\":\"100\",\"avgBuy\":\"10\",\"sellOrders\":\"0\",\"sold\":\"0\",\"avgSell\":\"–\",\"net\":\"+100\"}"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S10-15-06",
+  "feature": "LastQty 'abc' (text) is not a FIX quantity and is not counted as traded",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-15-06.log",
+  "kind": "fix",
+  "basis": "FIX Qty/float datatype: digits with an optional decimal point; design 13 'a finite number above zero'",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-15-07",
+  "feature": "LastQty '' (empty) is not a FIX quantity and is not counted as traded",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-15-07.log",
+  "kind": "fix",
+  "basis": "FIX Qty/float datatype: digits with an optional decimal point; design 13 'a finite number above zero'",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-15-08",
+  "feature": "LastQty '-100' (negative) is not a FIX quantity and is not counted as traded",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-15-08.log",
+  "kind": "fix",
+  "basis": "FIX Qty/float datatype: digits with an optional decimal point; design 13 'a finite number above zero'",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-15-09",
+  "feature": "LastQty 'NaN' (NaN) is not a FIX quantity and is not counted as traded",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-15-09.log",
+  "kind": "fix",
+  "basis": "FIX Qty/float datatype: digits with an optional decimal point; design 13 'a finite number above zero'",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-15-10",
+  "feature": "LastQty 'Infinity' (Infinity) is not a FIX quantity and is not counted as traded",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-15-10.log",
+  "kind": "fix",
+  "basis": "FIX Qty/float datatype: digits with an optional decimal point; design 13 'a finite number above zero'",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-15-11",
+  "feature": "LastQty '1,000' (thousands separator) is not a FIX quantity and is not counted as traded",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-15-11.log",
+  "kind": "fix",
+  "basis": "FIX Qty/float datatype: digits with an optional decimal point; design 13 'a finite number above zero'",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-15-12",
+  "feature": "LastPx '0x10' is not a FIX price and gives no average",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-15-12.log",
+  "kind": "fix",
+  "basis": "FIX Price/float datatype",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "trading summary figures",
+    "pass": false,
+    "expected": {
+     "ACME": {
+      "bought": "100",
+      "avgBuy": "–"
+     }
+    },
+    "actual": [
+     "ACME.avgBuy: shown 16, expected –"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S10-16",
+  "feature": "Very large quantities are summed exactly",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-16.log",
+  "kind": "fix",
+  "basis": "Brief 7, 10 (decimal arithmetic, extremely large values)",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "trading summary figures",
+    "pass": false,
+    "expected": {
+     "ACME": {
+      "bought": "9007199254740995",
+      "net": "+9007199254740995"
+     }
+    },
+    "actual": [
+     "ACME.bought: shown 9007199254740994, expected 9007199254740995",
+     "ACME.net: shown +9007199254740994, expected +9007199254740995"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S10-17",
+  "feature": "Quantities and prices finer than 4 decimal places are not shown as other values",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-17.log",
+  "kind": "fix",
+  "basis": "Brief 7 (decimal arithmetic); design 13 'Figures' rounds every figure to 4 places",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "trading summary figures",
+    "pass": false,
+    "expected": {
+     "BTC": {
+      "bought": "0.00008"
+     },
+     "EURUSD": {
+      "avgBuy": "1.08345"
+     }
+    },
+    "actual": [
+     "BTC.bought: shown 0.0001, expected 0.00008",
+     "EURUSD.avgBuy: shown 1.0835, expected 1.08345"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S10-18",
+  "feature": "Binary garbage before, between and after valid messages on the same lines",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-18.log",
+  "kind": "prd",
+  "basis": "AC-014; TR-002",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "summary strip",
+    "pass": true,
+    "expected": {
+     "messages": 3,
+     "valid": 3,
+     "malformed": 0
+    },
+    "actual": {
+     "messages": 3,
+     "valid": 3,
+     "malformed": 0
+    }
+   },
+   {
+    "check": "timeline events",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "2:NewOrder",
+     "3:Heartbeat"
+    ],
+    "actual": [
+     "1:Logon",
+     "2:NewOrder",
+     "3:Heartbeat"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S10-19",
+  "feature": "A cut message, a corrupt message and a valid message on one line: the valid ones survive",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-19.log",
+  "kind": "prd",
+  "basis": "AC-014; design 3.2",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "summary strip",
+    "pass": true,
+    "expected": {
+     "messages": 5,
+     "valid": 3,
+     "malformed": 2
+    },
+    "actual": {
+     "messages": 5,
+     "valid": 3,
+     "malformed": 2
+    }
+   },
+   {
+    "check": "valid message numbers",
+    "pass": true,
+    "expected": [
+     1,
+     4,
+     5
+    ],
+    "actual": [
+     1,
+     4,
+     5
+    ]
+   },
+   {
+    "check": "timeline events",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "4:NewOrder",
+     "5:Heartbeat"
+    ],
+    "actual": [
+     "1:Logon",
+     "4:NewOrder",
+     "5:Heartbeat"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S10-20-1",
+  "feature": "CheckSum that is not three digits: '7'",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-20-1.log",
+  "kind": "prd",
+  "basis": "design 3.8.4",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "errors (number, rule, position, text)",
+    "pass": true,
+    "expected": [
+     {
+      "number": 2,
+      "rule": "checksum_format"
+     }
+    ],
+    "actual": [
+     {
+      "number": 2,
+      "rule": "checksum_format",
+      "position": 177,
+      "text": "Message 2: CheckSum format wrong at position 177"
+     }
+    ]
+   },
+   {
+    "check": "error cards on the page",
+    "pass": true,
+    "expected": [
+     "Message 2: CheckSum format wrong at position 177"
+    ],
+    "actual": [
+     "Message 2: CheckSum format wrong at position 177"
+    ]
+   },
+   {
+    "check": "valid message numbers",
+    "pass": true,
+    "expected": [
+     1,
+     3
+    ],
+    "actual": [
+     1,
+     3
+    ]
+   },
+   {
+    "check": "timeline includes",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "3:Heartbeat"
+    ],
+    "actual": [
+     "1:Logon",
+     "3:SequenceGap",
+     "3:Heartbeat"
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-20-2",
+  "feature": "CheckSum that is not three digits: '1234'",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-20-2.log",
+  "kind": "prd",
+  "basis": "design 3.8.4",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "errors (number, rule, position, text)",
+    "pass": true,
+    "expected": [
+     {
+      "number": 2,
+      "rule": "checksum_format"
+     }
+    ],
+    "actual": [
+     {
+      "number": 2,
+      "rule": "checksum_format",
+      "position": 177,
+      "text": "Message 2: CheckSum format wrong at position 177"
+     }
+    ]
+   },
+   {
+    "check": "error cards on the page",
+    "pass": true,
+    "expected": [
+     "Message 2: CheckSum format wrong at position 177"
+    ],
+    "actual": [
+     "Message 2: CheckSum format wrong at position 177"
+    ]
+   },
+   {
+    "check": "valid message numbers",
+    "pass": true,
+    "expected": [
+     1,
+     3
+    ],
+    "actual": [
+     1,
+     3
+    ]
+   },
+   {
+    "check": "timeline includes",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "3:Heartbeat"
+    ],
+    "actual": [
+     "1:Logon",
+     "3:SequenceGap",
+     "3:Heartbeat"
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-20-3",
+  "feature": "CheckSum that is not three digits: 'ab1'",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-20-3.log",
+  "kind": "prd",
+  "basis": "design 3.8.4",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "errors (number, rule, position, text)",
+    "pass": true,
+    "expected": [
+     {
+      "number": 2,
+      "rule": "checksum_format"
+     }
+    ],
+    "actual": [
+     {
+      "number": 2,
+      "rule": "checksum_format",
+      "position": 177,
+      "text": "Message 2: CheckSum format wrong at position 177"
+     }
+    ]
+   },
+   {
+    "check": "error cards on the page",
+    "pass": true,
+    "expected": [
+     "Message 2: CheckSum format wrong at position 177"
+    ],
+    "actual": [
+     "Message 2: CheckSum format wrong at position 177"
+    ]
+   },
+   {
+    "check": "valid message numbers",
+    "pass": true,
+    "expected": [
+     1,
+     3
+    ],
+    "actual": [
+     1,
+     3
+    ]
+   },
+   {
+    "check": "timeline includes",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "3:Heartbeat"
+    ],
+    "actual": [
+     "1:Logon",
+     "3:SequenceGap",
+     "3:Heartbeat"
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-20-4",
+  "feature": "CheckSum that is not three digits: ''",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-20-4.log",
+  "kind": "prd",
+  "basis": "design 3.8.4",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "errors (number, rule, position, text)",
+    "pass": true,
+    "expected": [
+     {
+      "number": 2,
+      "rule": "checksum_format"
+     }
+    ],
+    "actual": [
+     {
+      "number": 2,
+      "rule": "checksum_format",
+      "position": 177,
+      "text": "Message 2: CheckSum format wrong at position 177"
+     }
+    ]
+   },
+   {
+    "check": "error cards on the page",
+    "pass": true,
+    "expected": [
+     "Message 2: CheckSum format wrong at position 177"
+    ],
+    "actual": [
+     "Message 2: CheckSum format wrong at position 177"
+    ]
+   },
+   {
+    "check": "valid message numbers",
+    "pass": true,
+    "expected": [
+     1,
+     3
+    ],
+    "actual": [
+     1,
+     3
+    ]
+   },
+   {
+    "check": "timeline includes",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "3:Heartbeat"
+    ],
+    "actual": [
+     "1:Logon",
+     "3:SequenceGap",
+     "3:Heartbeat"
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-21",
+  "feature": "BodyLength that is not a number",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-21.log",
+  "kind": "prd",
+  "basis": "design 3.8.5",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "errors (number, rule, position, text)",
+    "pass": true,
+    "expected": [
+     {
+      "number": 2,
+      "rule": "body_length",
+      "position": 91
+     }
+    ],
+    "actual": [
+     {
+      "number": 2,
+      "rule": "body_length",
+      "position": 91,
+      "text": "Message 2: BodyLength (9) not a number at position 91"
+     }
+    ]
+   },
+   {
+    "check": "error cards on the page",
+    "pass": true,
+    "expected": [
+     "Message 2: BodyLength (9) not a number at position 91"
+    ],
+    "actual": [
+     "Message 2: BodyLength (9) not a number at position 91"
+    ]
+   },
+   {
+    "check": "valid message numbers",
+    "pass": true,
+    "expected": [
+     1,
+     3
+    ],
+    "actual": [
+     1,
+     3
+    ]
+   },
+   {
+    "check": "timeline includes",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "3:Heartbeat"
+    ],
+    "actual": [
+     "1:Logon",
+     "3:SequenceGap",
+     "3:Heartbeat"
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {},
+    "actual": {}
+   }
+  ]
+ },
+ {
+  "id": "S10-22",
+  "feature": "A 150,000-character value",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-22.log",
+  "kind": "prd",
+  "basis": "TR-005; AC-014",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "summary strip",
+    "pass": true,
+    "expected": {
+     "messages": 3,
+     "valid": 3,
+     "malformed": 0
+    },
+    "actual": {
+     "messages": 3,
+     "valid": 3,
+     "malformed": 0
+    }
+   },
+   {
+    "check": "timeline events",
+    "pass": true,
+    "expected": [
+     "1:Logon",
+     "2:NewOrder",
+     "3:Heartbeat"
+    ],
+    "actual": [
+     "1:Logon",
+     "2:NewOrder",
+     "3:Heartbeat"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S10-23",
+  "feature": "Unusual but valid: BodyLength with leading zeros and an empty value are accepted",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-23.log",
+  "kind": "prd",
+  "basis": "TR-002; design 6 ('58=' is shown as empty)",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "summary strip",
+    "pass": true,
+    "expected": {
+     "messages": 1,
+     "valid": 1,
+     "malformed": 0
+    },
+    "actual": {
+     "messages": 1,
+     "valid": 1,
+     "malformed": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "S10-24",
+  "feature": "A wire-valid message with ISO-8859-1 text (one byte per character) is not called malformed",
+  "version": "FIX.4.4",
+  "dataset": "datasets/malformed/S10-24.log",
+  "kind": "fix",
+  "basis": "FIX messages are bytes, and BodyLength/CheckSum count bytes; design 3.7 counts the UTF-8 bytes of the pasted characters",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "summary strip",
+    "pass": false,
+    "expected": {
+     "messages": 1,
+     "valid": 1,
+     "malformed": 0
+    },
+    "actual": {
+     "messages": 1,
+     "valid": 0,
+     "malformed": 1
+    }
+   }
+  ]
+ },
+ {
+  "id": "S11-01",
+  "feature": "A log merged from both sides of a connection does not double orders or fills",
+  "version": "multi",
+  "dataset": "datasets/multi-session/S11-01.log",
+  "kind": "fix",
+  "basis": "Brief 11; AC-040 counts NewOrderSingle messages, AC-041 dedupes fills only",
+  "status": "FAIL",
+  "stable": true,
+  "checks": [
+   {
+    "check": "trading summary",
+    "pass": false,
+    "expected": {
+     "ACME": {
+      "buyOrders": "1",
+      "bought": "100",
+      "avgBuy": "10",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+100"
+     }
+    },
+    "actual": [
+     "ACME.buyOrders: shown 2, expected 1"
+    ]
+   },
+   {
+    "check": "summary strip",
+    "pass": true,
+    "expected": {
+     "orders": 1
+    },
+    "actual": {
+     "orders": 1
+    }
+   },
+   {
+    "check": "sequence gaps",
+    "pass": true,
+    "expected": [],
+    "actual": []
+   }
+  ]
+ },
+ {
+  "id": "S11-02",
+  "feature": "An incomplete log: no gap for the first message; an unmatched correction counts, an unmatched cancel does not",
+  "version": "FIX.4.4",
+  "dataset": "datasets/multi-session/S11-02.log",
+  "kind": "prd",
+  "basis": "AC-044; design 7",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "sequence gaps",
+    "pass": true,
+    "expected": [],
+    "actual": []
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {
+     "ACME": {
+      "buyOrders": "0",
+      "bought": "80",
+      "avgBuy": "10",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+80"
+     }
+    },
+    "actual": {
+     "ACME": {
+      "buyOrders": "0",
+      "bought": "80",
+      "avgBuy": "10",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+80"
+     }
+    }
+   },
+   {
+    "check": "unmatched cancels/corrections",
+    "pass": true,
+    "expected": 2,
+    "actual": 2
+   },
+   {
+    "check": "notes",
+    "pass": true,
+    "expected": [
+     "2 trade cancels or corrections refer to an execution that is not in this log."
+    ],
+    "actual": [
+     "Bought and sold are filled quantities from execution reports in this log, counted once per ExecID, after trade cancels and corrections.",
+     "2 trade cancels or corrections refer to an execution that is not in this log."
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S11-03",
+  "feature": "A reset on one session leaves the other session's numbers alone",
+  "version": "FIX.4.4",
+  "dataset": "datasets/multi-session/S11-03.log",
+  "kind": "prd",
+  "basis": "TR-003",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "sequence gaps",
+    "pass": true,
+    "expected": [
+     [
+      8,
+      4,
+      5
+     ]
+    ],
+    "actual": [
+     [
+      8,
+      4,
+      5
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "S11-04",
+  "feature": "FIX 4.2 and FIX 4.4 sessions in one log are each read by their own rules",
+  "version": "multi",
+  "dataset": "datasets/multi-session/S11-04.log",
+  "kind": "prd",
+  "basis": "TR-001 (dictionary per message), TR-003",
+  "status": "PASS",
+  "stable": true,
+  "checks": [
+   {
+    "check": "timeline events",
+    "pass": true,
+    "expected": [
+     "1:NewOrder",
+     "2:NewOrder",
+     "3:Fill",
+     "4:Fill",
+     "5:TradeCancel"
+    ],
+    "actual": [
+     "1:NewOrder",
+     "2:NewOrder",
+     "3:Fill",
+     "4:Fill",
+     "5:TradeCancel"
+    ]
+   },
+   {
+    "check": "trading summary",
+    "pass": true,
+    "expected": {
+     "ACME": {
+      "buyOrders": "2",
+      "bought": "100",
+      "avgBuy": "12",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+100"
+     }
+    },
+    "actual": {
+     "ACME": {
+      "buyOrders": "2",
+      "bought": "100",
+      "avgBuy": "12",
+      "sellOrders": "0",
+      "sold": "0",
+      "avgSell": "–",
+      "net": "+100"
+     }
+    }
+   },
+   {
+    "check": "card 3 row for tag 32",
+    "pass": true,
+    "expected": {
+     "number": 3,
+     "tag": "32",
+     "field": "LastShares"
+    },
+    "actual": [
+     [
+      "32",
+      "LastShares",
+      "100",
+      ""
+     ]
+    ]
+   },
+   {
+    "check": "card 4 row for tag 32",
+    "pass": true,
+    "expected": {
+     "number": 4,
+     "tag": "32",
+     "field": "LastQty"
+    },
+    "actual": [
+     [
+      "32",
+      "LastQty",
+      "100",
+      ""
+     ]
+    ]
+   }
+  ]
+ }
+]
