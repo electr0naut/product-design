@@ -1,10 +1,10 @@
 # Harness state
 
-Written by the runner at 2026-11-28T01:49:08+0100. Host-only copy: `state.json`.
+Written by the runner at 2026-11-28T02:03:13+0100. Host-only copy: `state.json`.
 Kit: `9f1a4a1c122a802f5d25734dbca5318ab305c415`
 
 ## What changed
-- finished: FXL-23
+- finished: FXL-24
 
 ## Tickets
 - **SMK-1** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
@@ -24,8 +24,8 @@ Kit: `9f1a4a1c122a802f5d25734dbca5318ab305c415`
 - **FXL-21** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
 - **FXL-22** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
 - **FXL-23** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
-- **FXL-24** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: running
-- **FXL-25** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: todo
+- **FXL-24** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
+- **FXL-25** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: running
 - **FXL-26** (open): gatekeeper: todo, implementer: todo, planner: todo, reviewer: todo, scribe: todo, triage: todo
 
 ## Blocks
@@ -35,7 +35,7 @@ Kit: `9f1a4a1c122a802f5d25734dbca5318ab305c415`
 - none
 
 ## Last hidden-suite result
-{'ticket': 'FXL-23', 'enabled': True, 'passed': 259, 'total': 277, 'regressions': [], 'trusted_main': '4c479c6c4fbaa00b632c16d35d20984f5749fbc9'}
+{'ticket': 'FXL-24', 'enabled': True, 'passed': 263, 'total': 277, 'regressions': [], 'trusted_main': 'e1a91b6974ffd0050050ddb5edca35a9cb547049'}
 
 ## Profiles
 | profile | default | fallbacks |
