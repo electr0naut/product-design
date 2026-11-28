@@ -1,0 +1,211 @@
+From f1dd618de883c616951245343be0834e6816ce33 Mon Sep 17 00:00:00 2001
+From: Hermes Agent <hermes@agent.local>
+Date: Sat, 28 Nov 2026 02:10:18 +0100
+Subject: [PATCH] FXL-25: Accept valid ISO-8859-1 FIX framing
+
+---
+ src/framing.js       |  30 ++++++++--
+ test/framing.test.js | 136 ++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 160 insertions(+), 6 deletions(-)
+
+diff --git a/src/framing.js b/src/framing.js
+index 3df5ef3..32efa06 100644
+--- a/src/framing.js
++++ b/src/framing.js
+@@ -93,6 +93,26 @@ export function splitMessages(text) {
+   return candidates;
+ }
+ 
++// Retry with ISO-8859-1 only if the candidate is representable and non-ASCII.
++function matchesSingleByteCounts(pieces, expectedLength, expectedChecksum) {
++  let hasNonAscii = false;
++  let length = 0;
++  let sum = 0;
++  // The final piece is the already-validated ASCII checksum field.
++  for (let i = 0; i < pieces.length - 1; i++) {
++    const { field, separated } = pieces[i];
++    if (i >= 2) length += field.length + Number(separated);
++    if (separated) sum++;
++    for (let j = 0; j < field.length; j++) {
++      const code = field.charCodeAt(j);
++      if (code > 0xff) return false;
++      if (code >= 0x80) hasNonAscii = true;
++      sum += code;
++    }
++  }
++  return hasNonAscii && length === expectedLength && sum % 256 === expectedChecksum;
++}
++
+ /** Return the first validation error (one-based position), or null. */
+ export function checkMessage(candidate, text) {
+   const { number, start, end } = candidate;
+@@ -137,11 +157,13 @@ export function checkMessage(candidate, text) {
+     if (separated) sum++;
+   }
+   const expectedLength = Number(lengthValue);
++  const expectedChecksum = Number(checksum.field.slice(3));
++  if (actualLength === expectedLength && sum % 256 === expectedChecksum) return null;
++  if (matchesSingleByteCounts(pieces, expectedLength, expectedChecksum)) return null;
++
++  // On failure, preserve the UTF-8 error and its original precedence.
+   if (actualLength !== expectedLength) {
+     return error("body_length", bodyLength.position, `BodyLength (9) says ${expectedLength}, actual ${actualLength}`);
+   }
+-  if (Number(checksum.field.slice(3)) !== sum % 256) {
+-    return error("checksum", checksum.position, "CheckSum mismatch");
+-  }
+-  return null;
++  return error("checksum", checksum.position, "CheckSum mismatch");
+ }
+diff --git a/test/framing.test.js b/test/framing.test.js
+index 241ffd5..595939a 100644
+--- a/test/framing.test.js
++++ b/test/framing.test.js
+@@ -1,6 +1,7 @@
+ import { analyse } from "../src/analyse.js";
+-import { describe, it, expect } from "vitest";
+-import { splitMessages } from "../src/framing.js";
++import { describe, it, expect, test } from "vitest";
++import { checkMessage, splitMessages } from "../src/framing.js";
++import { tradeSummary } from "../src/summary.js";
+ import { buildMessage } from "./helpers/fix.js";
+ 
+ // ── AC1 ──────────────────────────────────────────────────────────────────────
+@@ -439,3 +440,134 @@ it('test_analyse_hundred_mixed_delimiter_messages_finishes_under_five_seconds',
+   expect(result.errors).toEqual([]);
+   expect(result.messages).toHaveLength(100);
+ });
++
++const latin1Reference = '8=FIX.4.4|9=57|35=D|49=CLI|56=BRK|34=1|11=A1|55=ABC|54=1|38=100|58=café|10=031|';
++const utf8Reference = '8=FIX.4.4|9=58|35=D|49=CLI|56=BRK|34=1|11=A1|55=ABC|54=1|38=100|58=café|10=163|';
++const referenceBody = ['35=D', '49=CLI', '56=BRK', '34=1', '11=A1', '55=ABC', '54=1', '38=100'];
++
++// Deliberately allows code units above 255 to construct an invalid fixture.
++function frameSingleByte(fields, begin = '8=FIX.4.4') {
++  const body = fields.join('\x01') + '\x01';
++  const wire = `${begin}\x019=${body.length}\x01${body}`;
++  const sum = wire.split('').reduce((total, ch) => total + ch.charCodeAt(0), 0);
++  return `${wire}10=${String(sum % 256).padStart(3, '0')}\x01`.replaceAll('\x01', '|');
++}
++
++const textField = message => message.fields.find(({ tag }) => tag === 58);
++const euroFixture = frameSingleByte([...referenceBody, '58=café€']);
++
++test('test_analyse_single_byte_reference_preserves_text_and_contract', () => {
++  const candidates = splitMessages(latin1Reference);
++  expect(candidates).toHaveLength(1);
++  const [candidate] = candidates;
++  expect(Object.keys(candidate).sort()).toEqual(['end', 'fields', 'number', 'start']);
++  for (const field of candidate.fields) {
++    expect(Object.keys(field).sort()).toEqual(['position', 'tag', 'value']);
++  }
++  expect(checkMessage(candidate, latin1Reference)).toBeNull();
++
++  const result = analyse(latin1Reference);
++  expect(Object.keys(result).sort()).toEqual(['decoded', 'errors', 'limit', 'messages', 'ok', 'timeline']);
++  expect(result.ok).toBe(true);
++  expect(result.messages).toEqual(candidates);
++  expect(result.errors).toEqual([]);
++  expect(result.decoded).toHaveLength(1);
++  expect(textField(result.decoded[0])).toMatchObject({ name: 'Text', value: 'café' });
++});
++
++test('test_analyse_both_reference_encodings_accepts_all_delimiters', () => {
++  for (const delim of ['\x01', '|', '^A', '<SOH>']) {
++    const [utf8, latin1] = [utf8Reference, latin1Reference].map(line => line.replaceAll('|', delim));
++    for (const [lines, lengths] of [[[utf8], ['58']], [[latin1], ['57']], [[latin1, utf8], ['57', '58']]]) {
++      const { errors, decoded } = analyse(lines.join('\n'));
++      expect(errors, JSON.stringify(delim)).toEqual([]);
++      expect(decoded.map(message => message.fields.find(({ tag }) => tag === 9).value)).toEqual(lengths);
++      expect(decoded.map(message => textField(message).value)).toEqual(lines.map(() => 'café'));
++    }
++  }
++});
++
++test('test_analyse_swapped_reference_checksums_rejects_mixed_counts', () => {
++  for (const [line, error] of [
++    [latin1Reference.replace('10=031', '10=163'), 'Message 1: BodyLength (9) says 57, actual 58 at position 11'],
++    [utf8Reference.replace('10=163', '10=031'), 'Message 1: CheckSum mismatch at position 73'],
++  ]) {
++    const result = analyse(line);
++    expect(result.decoded).toEqual([]);
++    expect(result.errors.map(({ text }) => text)).toEqual([error]);
++  }
++  expect(analyse(latin1Reference).errors).toEqual([]);
++});
++
++test('test_checkMessage_latin1_begin_string_accepts_checksum_only_retry', () => {
++  const line = frameSingleByte(['35=0', '49=CLI', '56=BRK'], '8=FIX.4.4é');
++  expect(checkMessage(splitMessages(line)[0], line)).toBeNull();
++});
++
++test('test_analyse_single_byte_text_edit_reports_original_utf8_length', () => {
++  const { decoded, errors } = analyse(latin1Reference.replace('58=café', '58=cafés'));
++  expect(decoded).toEqual([]);
++  expect(errors.map(({ text }) => text)).toEqual(['Message 1: BodyLength (9) says 57, actual 59 at position 11']);
++  expect(analyse(latin1Reference).errors).toEqual([]);
++});
++
++test('test_analyse_euro_in_single_byte_fixture_rejects_fallback', () => {
++  const { decoded, errors } = analyse(euroFixture);
++  expect(decoded).toEqual([]);
++  expect(errors.map(({ text }) => text)).toEqual(['Message 1: BodyLength (9) says 58, actual 61 at position 11']);
++  const control = analyse(frameSingleByte([...referenceBody, '58=café']));
++  expect(control.errors).toEqual([]);
++  expect(control.decoded).toHaveLength(1);
++});
++
++test('test_analyse_latin1_value_range_uses_original_byte_values', () => {
++  for (let code = 0x80; code <= 0xff; code++) {
++    const value = String.fromCharCode(code);
++    const { decoded, errors } = analyse(frameSingleByte(['35=0', `58=${value}`]));
++    expect(errors, `U+${code.toString(16)}`).toEqual([]);
++    expect(decoded).toHaveLength(1);
++    expect(textField(decoded[0]).value).toBe(value);
++  }
++});
++
++test('test_analyse_mixed_paste_keeps_candidate_verdicts_and_positions', () => {
++  const ascii = referenceMessages[0];
++  const lines = [ascii, latin1Reference, euroFixture];
++  const paste = lines.join('');
++  const candidates = splitMessages(paste);
++  const pasted = analyse(paste);
++  expect(candidates).toHaveLength(3);
++  expect(pasted.decoded.map(({ number }) => number)).toEqual([1, 2]);
++  expect(pasted.errors).toHaveLength(1);
++  const [pastedError] = pasted.errors;
++  const [asciiOnly, latin1Only, malformedOnly] = lines.map(line => analyse(line));
++  for (const result of [asciiOnly, latin1Only]) {
++    expect(result.errors).toEqual([]);
++    expect(result.decoded).toHaveLength(1);
++  }
++  expect(malformedOnly.decoded).toEqual([]);
++  expect(malformedOnly.errors).toHaveLength(1);
++  const [originalError] = malformedOnly.errors;
++  const thirdStart = ascii.length + latin1Reference.length;
++  expect(candidates[2].start).toBe(thirdStart);
++  const position = originalError.position + thirdStart;
++  expect(pastedError).toEqual({
++    number: 3,
++    rule: originalError.rule,
++    position,
++    text: `Message 3: BodyLength (9) says 58, actual 61 at position ${position}`,
++  });
++  expect(originalError.text).toBe(`Message 1: BodyLength (9) says 58, actual 61 at position ${originalError.position}`);
++});
++
++test('test_tradeSummary_single_byte_fill_counts_normally', () => {
++  const fill = ['35=8', '49=BRK', '56=CLI', '34=1', '37=O1', '17=E1', '150=F', '55=ABC', '54=1', '32=10', '31=12.5'];
++  const accented = analyse(frameSingleByte([...fill, '58=café']));
++  const ascii = analyse(frameSingleByte([...fill, '58=cafe']));
++  expect(accented.errors).toEqual([]);
++  expect(ascii.errors).toEqual([]);
++  const summary = tradeSummary(accented.decoded);
++  expect(summary.rows).toHaveLength(1);
++  expect(summary.rows[0]).toMatchObject({ symbol: 'ABC', buy: { fills: 1, filledQty: 10, notional: 125 } });
++  expect(summary).toEqual(tradeSummary(ascii.decoded));
++});
+-- 
+2.43.0
+
