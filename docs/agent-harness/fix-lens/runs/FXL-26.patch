@@ -1,0 +1,316 @@
+From 572a0895a799079d9f8b1a6f2315600e7ccbb00b Mon Sep 17 00:00:00 2001
+From: Hermes Agent <hermes@agent.local>
+Date: Sat, 28 Nov 2026 02:33:57 +0100
+Subject: [PATCH] FXL-26 Resolve order links by message and round decimal
+ halves away from zero
+
+---
+ src/main.js         |  7 ++--
+ src/render.js       | 33 ++++++++++++------
+ test/page.test.js   | 67 ++++++++++++++++++++++++++++++++++++
+ test/render.test.js | 82 +++++++++++++++++++++++++++++++++++++++++++--
+ 4 files changed, 174 insertions(+), 15 deletions(-)
+
+diff --git a/src/main.js b/src/main.js
+index 49b7634..1d38d02 100644
+--- a/src/main.js
++++ b/src/main.js
+@@ -21,15 +21,17 @@ themeButton.addEventListener('click', () => {
+ themeButton.hidden = false;
+ 
+ const input = document.querySelector('#paste');
+-const view = { orderId: null, filters: {}, page: 1 };
++const view = { orderId: null, orderMessage: null, filters: {}, page: 1 };
+ let result;
+ const handlers = {
+-  pick(id) {
++  pick(id, number = null) {
+     view.orderId = id;
++    view.orderMessage = number;
+     renderFirstPage();
+   },
+   clear() {
+     view.orderId = null;
++    view.orderMessage = null;
+     renderFirstPage();
+   },
+   setFilter(key, value) {
+@@ -58,6 +60,7 @@ function renderFirstPage() {
+ document.querySelector('#decode-button').addEventListener('click', () => {
+   result = analyse(input.value);
+   view.orderId = null;
++  view.orderMessage = null;
+   view.filters = {};
+   renderFirstPage();
+ });
+diff --git a/src/render.js b/src/render.js
+index ec155dc..38610c5 100644
+--- a/src/render.js
++++ b/src/render.js
+@@ -25,7 +25,17 @@ const NO_MESSAGES = 'No FIX messages found in the pasted text.';
+ const NO_EVENTS = 'No timeline events found.';
+ const NOT_AVAILABLE = '–';
+ 
+-const round4 = value => Number(value.toFixed(4));
++function round4(value) {
++  const decimal = /^(\d+)\.(\d{5,})$/.exec(Math.abs(value).toPrecision(15));
++  if (!decimal) return Number(value.toFixed(4));
++
++  const [, whole, fraction] = decimal;
++  // Round the decimal digits so binary floating-point error cannot move a half below the tie.
++  const units = BigInt(whole + fraction.slice(0, 4)) + (fraction[4] >= '5' ? 1n : 0n);
++  const digits = units.toString().padStart(5, '0');
++  const rounded = Number(`${digits.slice(0, -4)}.${digits.slice(-4)}`);
++  return value < 0 ? -rounded : rounded;
++}
+ const format = value => String(round4(value));
+ const average = side => side.pricedQty === 0 ? NOT_AVAILABLE : format(side.notional / side.pricedQty);
+ const netText = value => {
+@@ -155,16 +165,16 @@ function renderOrderStory(section, group, messages, handlers) {
+ 
+ const canPickOrder = (tag, id) => id != null && id !== '' && (tag !== 37 || id !== 'NONE');
+ 
+-function addOrderButton(parent, id, text, handlers) {
++function addOrderButton(parent, id, number, text, handlers) {
+   const button = add(parent, 'button', 'order-link', text);
+   button.type = 'button';
+-  button.addEventListener('click', () => handlers?.pick?.(id));
++  button.addEventListener('click', () => handlers?.pick?.(id, number));
+ }
+ 
+-function addTimelineId(row, tag, label, id, handlers) {
++function addTimelineId(row, tag, label, id, number, handlers) {
+   if (id == null) return;
+   const text = `${label} ${id}`;
+-  if (canPickOrder(tag, id)) addOrderButton(row, id, text, handlers);
++  if (canPickOrder(tag, id)) addOrderButton(row, id, number, text, handlers);
+   else add(row, 'span', 'id', text);
+ }
+ 
+@@ -189,9 +199,9 @@ function renderTimeline(section, events, handlers) {
+     add(row, 'span', 'dir', direction(event.sender, event.target));
+     add(row, 'span', 'seq', sequence(event.seqNum));
+     add(row, 'span', 'detail', event.detail);
+-    addTimelineId(row, 11, 'ClOrdID', event.clOrdId, handlers);
+-    addTimelineId(row, 37, 'OrderID', event.orderId, handlers);
+-    addTimelineId(row, 41, 'OrigClOrdID', event.origClOrdId, handlers);
++    addTimelineId(row, 11, 'ClOrdID', event.clOrdId, event.number, handlers);
++    addTimelineId(row, 37, 'OrderID', event.orderId, event.number, handlers);
++    addTimelineId(row, 41, 'OrigClOrdID', event.origClOrdId, event.number, handlers);
+     if (event.execRefId != null) add(row, 'span', 'ref', `ExecRefID ${event.execRefId}`);
+   }
+ }
+@@ -217,7 +227,7 @@ function renderCard(section, message, handlers) {
+     add(row, 'td', null, message.supported === false ? '' : field.name);
+     if ([11, 37, 41].includes(field.tag) && canPickOrder(field.tag, field.value)) {
+       const cell = add(row, 'td');
+-      addOrderButton(cell, field.value, field.value, handlers);
++      addOrderButton(cell, field.value, message.number, field.value, handlers);
+     } else {
+       add(row, 'td', null, field.value);
+     }
+@@ -246,7 +256,8 @@ function renderMessages(section, entries, handlers, narrowed) {
+ }
+ 
+ /** Replace generated output without replacing the page's headings.
+- * Optional view: { orderId, filters, page }; optional handlers: { pick, clear, setFilter, setPage }.
++ * Optional view: { orderId, orderMessage, filters, page }.
++ * Optional handlers: { pick, clear, setFilter, setPage }.
+  */
+ export function render(result, view, handlers) {
+   const summary = document.querySelector('#summary');
+@@ -260,7 +271,7 @@ export function render(result, view, handlers) {
+     return;
+   }
+   const groups = orderGroups(result.decoded);
+-  const group = view?.orderId == null ? null : findOrder(groups, view.orderId);
++  const group = view?.orderId == null ? null : findOrder(groups, view.orderId, view.orderMessage);
+   const chosen = view?.filters ?? {};
+   const total = result.decoded.length + result.errors.length;
+   const narrowed = Boolean(group) || FILTERS.some(({ key }) => chosen[key] != null);
+diff --git a/test/page.test.js b/test/page.test.js
+index ecb515a..3bbeef9 100644
+--- a/test/page.test.js
++++ b/test/page.test.js
+@@ -238,3 +238,70 @@ test('test_page_decoding_again_from_page_two_resets_to_first_page', async () =>
+   expect(get('#decode .card').textContent).toContain('replacement log');
+   expect(scroll).not.toHaveBeenCalled();
+ });
++
++const scopedFrame = (type, sender, target, ...fields) =>
++  buildMessage([[8, 'FIX.4.4'], [35, type], [49, sender], [56, target], ...fields]);
++const ambiguousOrderFrames = () => [
++  scopedFrame('D', 'ALPHA', 'BRK', [11, '500'], [55, 'AAA'], [54, '1'], [38, '100']),
++  scopedFrame('D', 'BETA', 'BRK', [11, 'Q9'], [55, 'BBB'], [54, '2'], [38, '50']),
++  scopedFrame('8', 'BRK', 'ALPHA', [37, '12'], [11, '500'], [150, '0']),
++  scopedFrame('8', 'BRK', 'BETA', [37, '500'], [11, 'Q9'], [150, 'F'], [55, 'BBB'], [54, '2'], [32, '50'], [31, '7']),
++];
++
++
++const pageTexts = selector => [...document.querySelectorAll(selector)].map(node => node.textContent);
++const pageCards = () => pageTexts('#decode .card-head .num');
++const pressOrderLink = (selector, caption) => {
++  const link = [...document.querySelectorAll(`${selector} button.order-link`)]
++    .find(button => button.textContent === caption);
++  expect(link).toBeDefined();
++  link.click();
++};
++
++test('test_page_ambiguous_order_clicks_open_their_messages', async () => {
++  await start();
++  decodeFrames(ambiguousOrderFrames());
++  const wholeLog = ['#1', '#2', '#3', '#4'];
++  expect(pageCards()).toEqual(wholeLog);
++
++  pressOrderLink('#decode .card:nth-of-type(4)', '500');
++  expect(pageCards()).toEqual(['#2', '#4']);
++  expect(get('.order-story strong')?.textContent).toBe('Q9 · 500');
++  press('.order-story .show-all');
++  expect(pageCards()).toEqual(wholeLog);
++  expect(get('.order-story')).toBeNull();
++
++  pressOrderLink('#timeline .event:first-child', 'ClOrdID 500');
++  expect(pageCards()).toEqual(['#1', '#3']);
++  expect(get('.order-story strong')?.textContent).toBe('500 · 12');
++  press('#decode-button');
++  expect(pageCards()).toEqual(wholeLog);
++  expect(get('.order-story')).toBeNull();
++});
++
++test('test_page_shared_clordid_clicks_scope_both_summaries', async () => {
++  await start();
++  decodeFrames([
++    scopedFrame('D', 'ALPHA', 'BRK', [11, '7'], [55, 'AAA'], [54, '1']),
++    scopedFrame('D', 'BETA', 'BRK', [11, '7'], [55, 'BBB'], [54, '2']),
++    scopedFrame('8', 'BRK', 'ALPHA', [37, 'X1'], [11, '7'], [17, 'E1'], [150, 'F'],
++      [55, 'AAA'], [54, '1'], [32, '2'], [31, '10']),
++    scopedFrame('8', 'BRK', 'BETA', [37, 'X2'], [11, '7'], [17, 'E2'], [150, 'F'],
++      [55, 'BBB'], [54, '2'], [32, '3'], [31, '20']),
++    scopedFrame('F', 'ALPHA', 'BRK', [11, '8'], [41, '7'], [37, 'X1']),
++    scopedFrame('9', 'BRK', 'ALPHA', [37, 'X1'], [11, '8'], [41, '7']),
++  ]);
++  const tradeCells = () => pageTexts('.trade-table tbody td');
++  const stats = () => pageTexts('#summary .stat');
++
++  pressOrderLink('#timeline .event:nth-child(2)', 'ClOrdID 7');
++  expect(pageCards()).toEqual(['#2', '#4']);
++  expect(stats()).toEqual(['2 of 6 messages', '0 sequence gaps', '1 order']);
++  expect(tradeCells()).toEqual(['BBB', '0', '0', '–', '1', '3', '20', '-3']);
++
++  press('.order-story .show-all');
++  pressOrderLink('#timeline .event:nth-child(3)', 'ClOrdID 7');
++  expect(pageCards()).toEqual(['#1', '#3', '#5', '#6']);
++  expect(stats()).toEqual(['4 of 6 messages', '0 sequence gaps', '1 order']);
++  expect(tradeCells()).toEqual(['AAA', '1', '2', '10', '0', '0', '–', '+2']);
++});
+diff --git a/test/render.test.js b/test/render.test.js
+index 284e61b..1508759 100644
+--- a/test/render.test.js
++++ b/test/render.test.js
+@@ -216,7 +216,7 @@ test('test_render_optional_order_view_preserves_whole_log', () => {
+   render(result, viewOrder(null), handlers);
+   expect(output()).toEqual(whole);
+   select('#timeline button.order-link').click();
+-  expect(handlers.pick.mock.calls).toEqual([['C1']]);
++  expect(handlers.pick.mock.calls).toEqual([['C1', 1]]);
+ });
+ 
+ test('test_render_order_identifiers_are_typed_pick_buttons', () => {
+@@ -229,8 +229,51 @@ test('test_render_order_identifiers_are_typed_pick_buttons', () => {
+   expect(all('#timeline a, #decode a')).toEqual([]);
+   for (const [index, button] of [...timelineLinks, ...cardLinks].entries()) {
+     expect(button.getAttribute('type')).toBe('button');
++    expect(button.getAttributeNames().sort()).toEqual(['class', 'type']);
+     button.click();
+-    expect(pick.mock.calls.splice(0)).toEqual([[['C2', 'O1', 'C1'][index % 3]]]);
++    expect(pick.mock.calls.splice(0)).toEqual([[['C2', 'O1', 'C1'][index % 3], 1]]);
++  }
++});
++
++const scopedFrame = (type, sender, target, ...fields) =>
++  buildMessage([[8, 'FIX.4.4'], [35, type], [49, sender], [56, target], ...fields]);
++const ambiguousOrderFrames = () => [
++  scopedFrame('D', 'ALPHA', 'BRK', [11, '500'], [55, 'AAA'], [54, '1'], [38, '100']),
++  scopedFrame('D', 'BETA', 'BRK', [11, 'Q9'], [55, 'BBB'], [54, '2'], [38, '50']),
++  scopedFrame('8', 'BRK', 'ALPHA', [37, '12'], [11, '500'], [150, '0']),
++  scopedFrame('8', 'BRK', 'BETA', [37, '500'], [11, 'Q9'], [150, 'F'], [55, 'BBB'], [54, '2'], [32, '50'], [31, '7']),
++];
++
++
++test('test_render_ambiguous_order_buttons_pass_own_message', () => {
++  const pick = vi.fn();
++  render(analyseLog(...ambiguousOrderFrames()), viewOrder(null), { pick });
++  for (const [index, caption] of [[0, 'ClOrdID 500'], [3, 'OrderID 500']]) {
++    const timelineLink = [...rows()[index].querySelectorAll('button.order-link')]
++      .find(button => button.textContent === caption);
++    const cardLink = [...cards()[index].querySelectorAll('button.order-link')]
++      .find(button => button.textContent === '500');
++    expect(timelineLink).toBeDefined();
++    expect(cardLink).toBeDefined();
++    timelineLink.click();
++    cardLink.click();
++  }
++  expect(pick.mock.calls).toEqual([['500', 1], ['500', 1], ['500', 4], ['500', 4]]);
++});
++
++test('test_render_ambiguous_order_view_selects_by_message', () => {
++  const result = analyseLog(...ambiguousOrderFrames());
++  for (const [view, numbers, banner] of [
++    [{ orderId: '500', orderMessage: 4 }, ['#2', '#4'], 'Q9 · 500'],
++    [{ orderId: '500', orderMessage: 1 }, ['#1', '#3'], '500 · 12'],
++    [{ orderId: '500', orderMessage: 3 }, ['#1', '#3'], '500 · 12'],
++    [{ orderId: '500', orderMessage: null }, ['#1', '#3'], '500 · 12'],
++    [{ orderId: '500' }, ['#1', '#3'], '500 · 12'],
++    [{ orderId: null, orderMessage: 4 }, ['#1', '#2', '#3', '#4'], undefined],
++  ]) {
++    render(result, view);
++    expect(cardNumbers(), JSON.stringify(view)).toEqual(numbers);
++    expect(storyText('strong')).toBe(banner);
+   }
+ });
+ 
+@@ -534,6 +577,41 @@ test('test_render_format_net_leading_plus_and_zero_never_signed', () => {
+   expect(bySymbol.CCC[7]).toBe('-50');
+ });
+ 
++test('test_render_average_half_rounds_away_from_zero', () => {
++  show(
++    fillMessage('POS', '1', 'E1', '1', '1.005'),
++    fillMessage('POS', '1', 'E2', '1', '1.0001'),
++    fillMessage('NEG', '1', 'E3', '1', '-1.005'),
++    fillMessage('NEG', '1', 'E4', '1', '-1.0001'),
++    fillMessage('CONTROL', '1', 'E5', '2', '1'),
++    fillMessage('CONTROL', '1', 'E6', '1', '2'),
++  );
++  const averages = Object.fromEntries(tradeRows().map(row => [row[0], row[3]]));
++  expect(averages).toEqual({ POS: '1.0026', NEG: '-1.0026', CONTROL: '1.3333' });
++});
++
++test('test_render_quantity_halves_round_away_from_zero', () => {
++  const cases = [
++    ['BUY-HALF', '1', '7.00015', '7.0002'],
++    ['SELL-HALF', '2', '3.00025', '3.0003'],
++    ['SMALL-HALF', '1', '0.00035', '0.0004'],
++    ['LARGE-HALF', '1', '87654321.00005', '87654321.0001'],
++    ['CARRY', '1', '9.99995', '10'],
++    ['BELOW-HALF', '1', '2.00004', '2'],
++    ['ABOVE-HALF', '1', '2.00006', '2.0001'],
++    ['LARGE-CONTROL', '1', '123456789012.5', '123456789012.5'],
++    ['BUY-ZERO', '1', '0.00004', '0'],
++    ['SELL-ZERO', '2', '0.00004', '0'],
++  ];
++  show(...cases.map(([symbol, side, qty]) => fillMessage(symbol, side, `E-${symbol}`, qty, '1')));
++  const bySymbol = Object.fromEntries(tradeRows().map(row => [row[0], row]));
++  for (const [symbol, side, , rounded] of cases) {
++    const row = bySymbol[symbol];
++    expect(row[side === '1' ? 2 : 5], symbol).toBe(rounded);
++    expect(row[7], symbol).toBe(rounded === '0' ? '0' : `${side === '1' ? '+' : '-'}${rounded}`);
++  }
++});
++
+ test('test_render_logA_trades_body_rows_exact', () => {
+   render(logAResult());
+   expect(tradeRows()).toEqual([
+-- 
+2.43.0
+
