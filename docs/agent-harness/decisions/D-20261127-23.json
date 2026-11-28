@@ -1,0 +1,6 @@
+{
+  "id": "D-20261127-23",
+  "action": "refresh_cards",
+  "key": "FXL-23",
+  "reason": "FXL-23 triage blocked on a ticket cut at 4 KB (reports/V14-triage-truncation.md). The kit that writes the whole ticket to a file and tells each role to read it is deployed (9f1a4a1; Ubay: 'deployed', 2026-11-28); D-20261127-22 showed the action works on the live board. This gives the open FXL-23 cards that card text and puts FXL-23 back behind the acceptance gate of FXL-22, which the queue removed when FXL-22 blocked. Nothing is unblocked by this decision."
+}
