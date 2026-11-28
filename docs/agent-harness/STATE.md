@@ -1,10 +1,10 @@
 # Harness state
 
-Written by the runner at 2026-11-28T01:03:13+0100. Host-only copy: `state.json`.
+Written by the runner at 2026-11-28T01:04:32+0100. Host-only copy: `state.json`.
 Kit: `9f1a4a1c122a802f5d25734dbca5318ab305c415`
 
 ## What changed
-- kit commit is now 9f1a4a1c122a802f5d25734dbca5318ab305c415
+- decision applied D-20261127-22: ticket.md written for FXL-22; card text replaced on: triage, planner, implementer, gatekeeper, reviewer, scribe [commit 6ac65b0160a5, 2026-11-28T00:03:17+00:00, signature: by a listed key]
 
 ## Tickets
 - **SMK-1** (finished): gatekeeper: done, implementer: done, planner: done, reviewer: done, scribe: done, triage: done
