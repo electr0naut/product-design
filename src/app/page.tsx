@@ -31,9 +31,15 @@ const phases = [
   },
   {
     id: "06",
+    name: "Backlog",
+    path: "06-backlog/",
+    output: "Traceable user stories",
+  },
+  {
+    id: "07",
     name: "Implementation",
-    path: "06-implementation/",
-    output: "Scaffold plan or code",
+    path: "07-implementation/",
+    output: "Implementation plan",
   },
 ];
 
@@ -43,6 +49,8 @@ const commands = [
   "python shared/scripts/generate_brd.py --idea 01-ideation/my-product.md --analysis 02-analysis/",
   "python shared/scripts/generate_prd.py --brd 03-brd/my-product-brd.md",
   "python shared/scripts/generate_technical_design.py --prd 04-prd/my-product-prd.md",
+  "python shared/scripts/generate_stories.py --prd 04-prd/my-product-prd.md --technical-design 05-technical-design/architecture/my-product-technical-design.md",
+  "python shared/scripts/validate_backlog.py --brd 03-brd/my-product-brd.md --prd 04-prd/my-product-prd.md",
   "python shared/scripts/scaffold_code.py --technical-design 05-technical-design/architecture/my-product-technical-design.md",
 ];
 

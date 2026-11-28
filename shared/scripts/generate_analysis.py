@@ -5,17 +5,19 @@ from __future__ import annotations
 
 import argparse
 
+from gate_reviews import add_review_args, generation_receipt, maybe_enforce_gate, verify_bundle
 from workflow_common import (
+    PROMPT_SUFFIX,
     PROMPTS,
     ROOT,
     add_common_args,
     bundle_documents,
     compose_prompt,
+    exit_status,
     generate,
     project_path,
     slug_from_path,
 )
-
 
 ROLES = {
     "bizdev": ("02-analysis-bizdev.md", "business-development-template.md", "business-development"),
@@ -34,22 +36,44 @@ def main() -> None:
     parser.add_argument("--out-dir", default="02-analysis", help="Output directory.")
     parser.add_argument("--role", choices=sorted(ROLES), help="Generate one role only.")
     add_common_args(parser)
+    add_review_args(parser)
     args = parser.parse_args()
 
     idea = project_path(args.idea)
     slug = slug_from_path(idea)
+    statuses = maybe_enforce_gate(
+        args,
+        slug,
+        "ideation-to-analysis",
+        [idea],
+        [args.role] if args.role else None,
+        search_from=idea,
+    )
     context = bundle_documents("Idea Canvas", [idea])
+    verify_bundle(context, statuses)
     roles = {args.role: ROLES[args.role]} if args.role else ROLES
 
+    outcomes = []
     for role, (prompt_name, template_name, folder) in roles.items():
         prompt = compose_prompt(
             PROMPTS / prompt_name,
             ROOT / "02-analysis" / "templates" / template_name,
             context,
         )
-        suffix = ".prompt.md" if args.prompt_only else ".md"
-        output = project_path(args.out_dir) / folder / f"{slug}-{role}-analysis{suffix}"
-        generate(prompt, output, args.prompt_only, args.claude_bin)
+        suffix = PROMPT_SUFFIX if args.prompt_only else ".md"
+        draft = ".draft" if args.draft else ""
+        output = project_path(args.out_dir) / folder / f"{slug}-{role}-analysis{draft}{suffix}"
+        outcomes.append(
+            generate(
+                prompt,
+                output,
+                args.prompt_only,
+                args.claude_bin,
+                args.force,
+                snapshot=None if args.prompt_only else generation_receipt(statuses, output),
+            )
+        )
+    exit_status(outcomes)
 
 
 if __name__ == "__main__":

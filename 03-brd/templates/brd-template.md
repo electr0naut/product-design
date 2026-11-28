@@ -54,9 +54,22 @@ Brief overview of the business need and proposed solution.
 |------|--------|------------|
 |      |        |            |
 
-## 8. Success Criteria
+## 8. Success Criteria & Kill Criteria
+### Success Metrics
 - [ ] 
 - [ ] 
+
+### Kill Criteria
+Conditions under which the product should be discontinued:
+
+- 
+- 
+
+### Post-Launch Review
+A review will be conducted 30-90 days after launch to assess:
+- Actual vs. expected success metrics
+- Whether kill criteria have been triggered
+- Next steps (continue, pivot, or discontinue)
 
 ## 9. Budget Summary
 | Category | Estimate | Notes |

@@ -1,0 +1,105 @@
+{
+  "assumptions": [
+    {
+      "checked_at": "2026-01-10",
+      "id": "A-001",
+      "review_by": "2026-04-10",
+      "source": "EXAMPLE: data inventory v1",
+      "statement": "EXAMPLE: accounts hold no special-category personal data."
+    },
+    {
+      "checked_at": "2026-01-10",
+      "id": "A-002",
+      "review_by": "2026-07-10",
+      "source": "EXAMPLE: tax guidance citation",
+      "statement": "EXAMPLE: invoices are retained for the statutory period."
+    }
+  ],
+  "change_events": [],
+  "changes": [
+    {
+      "affected": [
+        {
+          "gate": "design-to-backlog",
+          "lane": "E02"
+        }
+      ],
+      "effective_at": "2026-03-01",
+      "id": "CHG-001",
+      "raised_at": "2026-01-16T09:00:00Z",
+      "source": "EXAMPLE: regulator notice or vendor decision reference"
+    }
+  ],
+  "decisions": [
+    {
+      "artifact_sha256": {
+        "04-prd/EXAMPLE-prd.md": "0000000000000000000000000000000000000000000000000000000000000000",
+        "05-technical-design/architecture/EXAMPLE-technical-design.md": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "decision": "request_changes",
+      "evidence": "review-thread-or-ticket-reference",
+      "feedback": [
+        {
+          "id": "F-001",
+          "status": "open",
+          "text": "EXAMPLE: state the retention period and its legal source."
+        }
+      ],
+      "gate": "design-to-backlog",
+      "id": "D-001",
+      "lane": "E01",
+      "recorded_at": "2026-01-15T10:00:00Z",
+      "reviewer": "Named human reviewer",
+      "role": "product"
+    }
+  ],
+  "feedback_events": [],
+  "gates": [
+    {
+      "id": "design-to-backlog",
+      "lanes": {
+        "E01": {
+          "artifacts": [
+            "04-prd/EXAMPLE-prd.md",
+            "05-technical-design/architecture/EXAMPLE-technical-design.md"
+          ],
+          "assumptions": [
+            "A-001"
+          ],
+          "depends_on": [],
+          "epic": true,
+          "roles": [
+            "product",
+            "engineering"
+          ]
+        },
+        "E02": {
+          "artifacts": [
+            "04-prd/EXAMPLE-prd.md",
+            "05-technical-design/architecture/EXAMPLE-technical-design.md",
+            "05-technical-design/architecture/EXAMPLE-billing.md"
+          ],
+          "assumptions": [
+            "A-002"
+          ],
+          "depends_on": [
+            {
+              "gate": "design-to-backlog",
+              "lane": "E01"
+            }
+          ],
+          "epic": true,
+          "roles": [
+            "product",
+            "engineering",
+            "legal"
+          ]
+        }
+      }
+    }
+  ],
+  "product": "EXAMPLE",
+  "question_answers": [],
+  "questions": [],
+  "schema_version": 2
+}

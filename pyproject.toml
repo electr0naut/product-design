@@ -1,0 +1,45 @@
+[project]
+name = "product-design"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "hypothesis>=6.170.17",
+    "pyright>=1.1.414",
+    "pytest>=9.2.0",
+    "ruff>=0.17.6",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["shared/scripts/tests"]
+
+[tool.mutmut]
+source_paths = ["shared/scripts/gate_reviews.py", "shared/scripts/backlog.py"]
+pytest_add_cli_args_test_selection = ["shared/scripts/tests"]
+also_copy = [
+    "shared/",
+    "01-ideation/templates/",
+    "02-analysis/templates/",
+    "03-brd/templates/",
+    "04-prd/templates/",
+    "05-technical-design/architecture/",
+    "06-backlog/templates/",
+]
+mutate_only_covered_lines = true
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+extend-exclude = [".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.pyright]
+include = ["shared/scripts"]
+exclude = [".venv"]
+pythonVersion = "3.11"
+typeCheckingMode = "basic"
