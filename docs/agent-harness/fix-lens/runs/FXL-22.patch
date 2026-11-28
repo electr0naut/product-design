@@ -1,0 +1,551 @@
+From dfb01e69052e9a515a18bc3475ccf15ee5454080 Mon Sep 17 00:00:00 2001
+From: Hermes Agent <hermes@agent.local>
+Date: Sat, 28 Nov 2026 01:17:55 +0100
+Subject: [PATCH] FXL-22 Scope order identifiers by FIX party
+
+---
+ src/orders.js        |  30 ++++++--
+ test/filters.test.js |  33 ++++++---
+ test/orders.test.js  | 168 +++++++++++++++++++++++++++++++++++++++++++
+ test/page.test.js    |   5 +-
+ test/render.test.js  |  85 ++++++++++++----------
+ 5 files changed, 269 insertions(+), 52 deletions(-)
+
+diff --git a/src/orders.js b/src/orders.js
+index f34a377..b839d17 100644
+--- a/src/orders.js
++++ b/src/orders.js
+@@ -12,13 +12,23 @@ function union(left, right) {
+   a.size += b.size;
+ }
+ 
+-/** Group decoded FIX messages by their connected order identifiers. */
++function firstValue(fields, tag) {
++  return fields.find(field => field.tag === tag)?.value ?? '';
++}
++
++/** Group decoded FIX messages by their connected, party-scoped order identifiers. */
+ export function orderGroups(decoded) {
+   const clientNodes = new Map();
+   const orderNodes = new Map();
+   const messages = [];
+ 
+   for (const { number, fields } of decoded) {
++    const type = firstValue(fields, 35);
++    const sender = firstValue(fields, 49);
++    const target = firstValue(fields, 56);
++    const isReply = type === '8' || type === '9';
++    const client = isReply ? target : sender;
++    const executor = isReply ? sender : target;
+     const seenTags = new Set();
+     const nodes = [];
+     for (const { tag, value } of fields) {
+@@ -29,10 +39,16 @@ export function orderGroups(decoded) {
+       if (value === '' || (isOrderId && value === 'NONE')) continue;
+ 
+       const namespace = isOrderId ? orderNodes : clientNodes;
+-      let node = namespace.get(value);
++      const party = isOrderId ? executor : client;
++      let partyNodes = namespace.get(party);
++      if (!partyNodes) {
++        partyNodes = new Map();
++        namespace.set(party, partyNodes);
++      }
++      let node = partyNodes.get(value);
+       if (!node) {
+         node = { value, isOrderId, parent: null, size: 1 };
+-        namespace.set(value, node);
++        partyNodes.set(value, node);
+       }
+       if (nodes.length > 0) union(nodes[0], node);
+       nodes.push(node);
+@@ -60,7 +76,11 @@ export function orderGroups(decoded) {
+   }));
+ }
+ 
+-/** Return the first group containing the exact identifier, or null. */
+-export function findOrder(groups, id) {
++/** Prefer the group containing the message number, then the first exact ID match. */
++export function findOrder(groups, id, number) {
++  if (number != null) {
++    const group = groups.find(({ numbers }) => numbers.includes(number));
++    if (group) return group;
++  }
+   return groups.find(({ clOrdIds, orderIds }) => clOrdIds.includes(id) || orderIds.includes(id)) ?? null;
+ }
+diff --git a/test/filters.test.js b/test/filters.test.js
+index b775180..3903e8a 100644
+--- a/test/filters.test.js
++++ b/test/filters.test.js
+@@ -119,8 +119,8 @@ test('test_apply_filters_ungrouped_account_choice_matches_regardless_of_type', (
+ 
+ test('test_apply_filters_account_and_sender_keep_only_matching_messages', () => {
+   const decoded = decodeLog(
+-    ['D', [11, 'C1'], [1, 'ACC1'], [49, 'OTHER']],
+-    ['8', [11, 'C1'], [37, 'O1'], [49, 'BRK']],
++    ['D', [11, 'C1'], [1, 'ACC1'], [49, 'OTHER'], [56, 'BRK']],
++    ['8', [11, 'C1'], [37, 'O1'], [49, 'BRK'], [56, 'OTHER']],
+     ['0', [1, 'ACC1'], [49, 'BRK']], ['0', [49, 'BRK']],
+   );
+   expectSelection(applyFilters(decoded, { account: 'ACC1', senderCompId: 'BRK' }), decoded, 1, 2);
+@@ -138,12 +138,13 @@ test('test_apply_filters_account_and_sender_returns_intersection', () => {
+ 
+ test('test_apply_filters_sender_exclusions_preserve_full_log_order_links', () => {
+   const decoded = decodeLog(
+-    ['D', [11, 'C1'], [1, 'ACC1'], [49, 'OTHER']],
+-    ['8', [37, 'O1'], [49, 'KEEP']],
+-    ['8', [37, 'O2'], [49, 'KEEP']],
+-    ['8', [11, 'C1'], [37, 'O1'], [49, 'OTHER']],
++    ['D', [11, 'C1'], [1, 'ACC1'], [49, 'KEEP'], [56, 'BRK']],
++    // The hidden report connects C1 to O1; the visible cancel has no OrigClOrdID.
++    ['8', [11, 'C1'], [37, 'O1'], [49, 'BRK'], [56, 'KEEP']],
++    ['F', [11, 'C2'], [37, 'O1'], [49, 'KEEP'], [56, 'BRK']],
++    ['D', [11, 'OTHER'], [49, 'KEEP'], [56, 'BRK']],
+   );
+-  expectSelection(applyFilters(decoded, { account: 'ACC1', senderCompId: 'KEEP' }), decoded, 1);
++  expectSelection(applyFilters(decoded, { account: 'ACC1', senderCompId: 'KEEP' }), decoded, 0, 2);
+ });
+ 
+ test('test_apply_filters_interleaved_matching_orders_return_original_log_subsequence', () => {
+@@ -156,14 +157,15 @@ test('test_apply_filters_interleaved_matching_orders_return_original_log_subsequ
+ 
+ test('test_filters_frozen_inputs_remain_unchanged', () => {
+   const decoded = deepFreeze(decodeLog(
+-    ['D', [11, 'C1'], [1, 'ACC1'], [49, 'OTHER']], ['8', [11, 'C1'], [49, 'KEEP']],
++    ['D', [11, 'C1'], [1, 'ACC1'], [49, 'OTHER'], [56, 'KEEP']],
++    ['8', [11, 'C1'], [49, 'KEEP'], [56, 'OTHER']],
+   ));
+   const chosen = Object.freeze({ account: 'ACC1', senderCompId: 'KEEP' });
+   const beforeDecoded = structuredClone(decoded);
+   const beforeChosen = structuredClone(chosen);
+   for (let i = 0; i < 2; i++) {
+     expect(filterOptions(decoded)).toStrictEqual({
+-      account: ['ACC1'], senderCompId: ['KEEP', 'OTHER'], senderSubId: [], targetCompId: [], targetSubId: [],
++      account: ['ACC1'], senderCompId: ['KEEP', 'OTHER'], senderSubId: [], targetCompId: ['KEEP', 'OTHER'], targetSubId: [],
+     });
+     expectSelection(applyFilters(decoded, chosen), decoded, 1);
+   }
+@@ -212,3 +214,16 @@ test('test_apply_filters_thousand_order_messages_completes_under_one_second', ()
+   expect(elapsed).toBeLessThan(1000);
+   expectSelection(selected, decoded, ...expectedIndices);
+ });
++
++test('test_apply_filters_account_with_shared_clordid_keeps_only_matching_client_order', () => {
++  const decoded = decodeLog(
++    ['D', [49, 'ALPHA'], [56, 'BRK'], [11, '7'], [1, 'A1']],
++    ['D', [49, 'BETA'], [56, 'BRK'], [11, '7'], [1, 'B1']],
++    ['8', [49, 'BRK'], [56, 'ALPHA'], [37, 'X1'], [11, '7']],
++    ['8', [49, 'BRK'], [56, 'BETA'], [37, 'X2'], [11, '7']],
++    ['F', [49, 'ALPHA'], [56, 'BRK'], [11, '8'], [41, '7'], [37, 'X1']],
++    ['9', [49, 'BRK'], [56, 'ALPHA'], [37, 'X1'], [11, '8'], [41, '7']],
++  );
++  expectSelection(applyFilters(decoded, { account: 'A1' }), decoded, 0, 2, 4, 5);
++  expectSelection(applyFilters(decoded, { account: 'B1' }), decoded, 1, 3);
++});
+diff --git a/test/orders.test.js b/test/orders.test.js
+index 027bf53..32b75d9 100644
+--- a/test/orders.test.js
++++ b/test/orders.test.js
+@@ -142,3 +142,171 @@ test('test_order_groups_thousand_valid_messages_finishes_under_one_second', () =
+   expect(groups).toHaveLength(250);
+   expect(groups.flatMap(group => group.numbers).sort((a, b) => a - b)).toEqual(decoded.map(message => message.number));
+ });
++
++function scopedMessage(type, sender, target, ...ids) {
++  return [type, [49, sender], [56, target], ...ids];
++}
++
++const clientLog = [
++  scopedMessage('D', 'ALPHA', 'BRK', [11, '7']),
++  scopedMessage('D', 'BETA', 'BRK', [11, '7']),
++  scopedMessage('8', 'BRK', 'ALPHA', [37, 'X1'], [11, '7']),
++  scopedMessage('8', 'BRK', 'BETA', [37, 'X2'], [11, '7']),
++  scopedMessage('F', 'ALPHA', 'BRK', [11, '8'], [41, '7'], [37, 'X1']),
++  scopedMessage('9', 'BRK', 'ALPHA', [37, 'X1'], [11, '8'], [41, '7']),
++];
++
++test('test_order_groups_shared_clordid_across_clients_keeps_orders_separate', () => {
++  for (const version of ['FIX.4.4', 'FIX.4.2']) {
++    const text = clientLog.map(([type, ...fields]) =>
++      buildMessage([[8, version], [35, type], ...fields]),
++    ).join('\n');
++    const { decoded, errors } = analyse(text);
++    expect(errors).toEqual([]);
++    deepFreeze(decoded);
++    const snapshot = structuredClone(decoded);
++    const groups = orderGroups(decoded);
++    expect(groups).toStrictEqual([
++      { clOrdIds: ['7', '8'], orderIds: ['X1'], numbers: [1, 3, 5, 6] },
++      { clOrdIds: ['7'], orderIds: ['X2'], numbers: [2, 4] },
++    ]);
++    expect(orderGroups(decoded)).toStrictEqual(groups);
++    expect(decoded).toStrictEqual(snapshot);
++  }
++});
++
++const venueLog = [
++  scopedMessage('D', 'FUND', 'NORTH', [11, 'N1']),
++  scopedMessage('D', 'FUND', 'SOUTH', [11, 'S1']),
++  scopedMessage('8', 'NORTH', 'FUND', [37, '5'], [11, 'N1']),
++  scopedMessage('8', 'SOUTH', 'FUND', [37, '5'], [11, 'S1']),
++];
++
++test('test_order_groups_shared_orderid_across_executors_keeps_orders_separate', () => {
++  expect(groupsFor(...venueLog)).toEqual([
++    { clOrdIds: ['N1'], orderIds: ['5'], numbers: [1, 3] },
++    { clOrdIds: ['S1'], orderIds: ['5'], numbers: [2, 4] },
++  ]);
++});
++
++test('test_order_groups_third_party_report_copy_joins_by_orderid', () => {
++  const copy = scopedMessage('8', 'NORTH', 'DESK', [37, '5'], [11, 'N1']);
++  expect(groupsFor(...venueLog, copy).map(group => group.numbers)).toEqual([[1, 3, 5], [2, 4]]);
++});
++
++test('test_order_groups_cancel_without_origclordid_joins_target_executor', () => {
++  const cancel = scopedMessage('F', 'FUND', 'NORTH', [11, 'N2'], [37, '5']);
++  expect(groupsFor(...venueLog, cancel)).toEqual([
++    { clOrdIds: ['N1', 'N2'], orderIds: ['5'], numbers: [1, 3, 5] },
++    { clOrdIds: ['S1'], orderIds: ['5'], numbers: [2, 4] },
++  ]);
++});
++
++test('test_order_groups_missing_and_empty_parties_share_only_empty_scope', () => {
++  const rows = [['D', [11, 'K1']], ['8', [11, 'K1'], [37, 'Z1']], ['D', [49, 'ALPHA'], [11, 'K1']]];
++  expect(groupsFor(...rows).map(group => group.numbers)).toEqual([[1, 2], [3]]);
++  expect(groupsFor(...rows,
++    scopedMessage('D', '', '', [11, 'K1']),
++    scopedMessage('8', '', '', [37, 'Z1']),
++    scopedMessage('8', 'BRK', '', [37, 'Z1']),
++  ).map(group => group.numbers)).toEqual([[1, 2, 4, 5], [3], [6]]);
++});
++
++test('test_order_groups_repeated_party_tags_use_first_values', () => {
++  for (const [client, executor] of [['CLI', 'VENUE'], ['', '']]) {
++    expect(groupsFor(
++      scopedMessage('D', client, executor, [11, 'C'], [49, 'LATER_CLIENT'], [56, 'LATER_EXECUTOR']),
++      scopedMessage('8', executor, client, [11, 'C'], [49, 'OTHER_EXECUTOR'], [56, 'OTHER_CLIENT']),
++      scopedMessage('F', client, executor, [37, 'O'], [49, 'LATER_CLIENT'], [56, 'LATER_EXECUTOR']),
++      scopedMessage('9', executor, client, [37, 'O'], [49, 'OTHER_EXECUTOR'], [56, 'OTHER_CLIENT']),
++      scopedMessage('D', 'LATER_CLIENT', executor, [11, 'C']),
++      scopedMessage('8', 'OTHER_EXECUTOR', client, [37, 'O']),
++    ).map(group => group.numbers)).toEqual([[1, 2], [3, 4], [5], [6]]);
++  }
++});
++
++test('test_order_groups_delimiter_like_characters_keep_key_parts_distinct', () => {
++  for (const separator of ['/', ':']) {
++    const party = `A${separator}B`;
++    const id = `B${separator}C`;
++    expect(groupsFor(
++      scopedMessage('D', party, 'BRK', [11, 'C']),
++      scopedMessage('D', 'A', 'BRK', [11, id]),
++      scopedMessage('8', party, 'CLI', [37, 'C']),
++      scopedMessage('8', 'A', 'CLI', [37, id]),
++      scopedMessage('D', 'BETA', 'BRK', [11, 'C']),
++      scopedMessage('8', 'SOUTH', 'CLI', [37, 'C']),
++    ).map(group => group.numbers)).toEqual([[1], [2], [3], [4], [5], [6]]);
++  }
++});
++
++test('test_order_groups_party_and_identifier_case_differences_keep_orders_separate', () => {
++  expect(groupsFor(
++    scopedMessage('D', 'CLI', 'BRK', [11, 'ID']),
++    scopedMessage('D', 'cli', 'BRK', [11, 'ID']),
++    scopedMessage('D', 'CLI', 'BRK', [11, 'id']),
++  ).map(group => group.numbers)).toEqual([[1], [2], [3]]);
++});
++
++test('test_order_groups_same_party_and_value_keep_identifier_namespaces_separate', () => {
++  expect(groupsFor(
++    scopedMessage('D', 'SELF', 'SELF', [11, '1']),
++    scopedMessage('8', 'SELF', 'SELF', [37, '1']),
++    scopedMessage('8', 'BRK', 'SELF', [37, '1']),
++  )).toEqual([
++    { clOrdIds: ['1'], orderIds: [], numbers: [1] },
++    { clOrdIds: [], orderIds: ['1'], numbers: [2] },
++    { clOrdIds: [], orderIds: ['1'], numbers: [3] },
++  ]);
++});
++
++const lookupLog = [
++  scopedMessage('D', 'ALPHA', 'BRK', [11, '500']),
++  scopedMessage('D', 'BETA', 'BRK', [11, 'Q9']),
++  scopedMessage('8', 'BRK', 'ALPHA', [37, '12'], [11, '500']),
++  scopedMessage('8', 'BRK', 'BETA', [37, '500'], [11, 'Q9']),
++  ['0'],
++];
++
++test('test_find_order_matching_message_number_takes_precedence_over_identifier', () => {
++  const groups = groupsFor(...lookupLog);
++  expect(groups.map(group => group.numbers)).toEqual([[1, 3], [2, 4]]);
++  expect(findOrder(groups, '500', 4)).toBe(groups[1]);
++  expect(findOrder(groups, 'nope', 4)).toBe(groups[1]);
++  expect(findOrder(groups, '500', 3)).toBe(groups[0]);
++});
++
++test('test_find_order_absent_or_unmatched_message_number_falls_back_to_first_identifier_match', () => {
++  const sameClOrdId = scopedMessage('D', 'BETA', 'BRK', [11, '500']);
++  for (const groups of [groupsFor(...lookupLog), groupsFor(...lookupLog, sameClOrdId)]) {
++    const first = groups[0];
++    expect(first.numbers).toEqual([1, 3]);
++    expect(findOrder(groups, '500')).toBe(first);
++    for (const number of [null, 5, 99]) expect(findOrder(groups, '500', number)).toBe(first);
++    expect(findOrder(groups, 'nope', 99)).toBeNull();
++  }
++});
++
++test('test_order_groups_ten_thousand_messages_from_fifty_clients_finishes_under_one_second', () => {
++  const rows = [];
++  const clients = 50;
++  const ordersPerClient = 100;
++  for (let i = 0; i < clients; i++) {
++    const client = `CLIENT${i}`;
++    for (let j = 0; j < ordersPerClient; j++) {
++      rows.push(scopedMessage('D', client, 'BRK', [11, String(j)]));
++      rows.push(scopedMessage('8', 'BRK', client, [11, String(j)], [37, `O${i}-${j}`]));
++    }
++  }
++  const { decoded, errors } = analyse(log(...rows));
++  expect(errors).toEqual([]);
++  expect(decoded).toHaveLength(10_000);
++
++  const start = performance.now();
++  const groups = orderGroups(decoded);
++  const elapsed = performance.now() - start;
++
++  expect(elapsed).toBeLessThan(1000);
++  expect(groups).toHaveLength(clients * ordersPerClient);
++  expect(groups.every(({ numbers }) => numbers.length === 2)).toBe(true);
++});
+diff --git a/test/page.test.js b/test/page.test.js
+index 6d13f0b..ecb515a 100644
+--- a/test/page.test.js
++++ b/test/page.test.js
+@@ -197,10 +197,13 @@ test('test_page_order_pick_and_clear_reset_pagination_to_first_page', async () =
+   await start();
+   const scroll = vi.fn();
+   get('.results').scrollIntoView = scroll;
++  let outboundSeq = 0;
++  let inboundSeq = 0;
+   decodeFrames(makeFrames(i => {
+     const inOrder = i % 2 === 0 || i >= 400;
+     const type = i === 0 ? 'D' : inOrder ? '8' : '0';
+-    const fields = [[35, type], [49, 'A'], [56, 'B'], [34, i + 1]];
++    const [sender, target, seq] = type === '8' ? ['B', 'A', ++inboundSeq] : ['A', 'B', ++outboundSeq];
++    const fields = [[35, type], [49, sender], [56, target], [34, seq]];
+     if (inOrder) fields.push([11, 'C-A']);
+     if (type === '8') fields.push([37, 'O-A'], [150, '0']);
+     return fields;
+diff --git a/test/render.test.js b/test/render.test.js
+index bd6d35d..284e61b 100644
+--- a/test/render.test.js
++++ b/test/render.test.js
+@@ -15,6 +15,8 @@ beforeEach(() => {
+ const stamp = '20261126-10:00:01.000';
+ const fix = (type, ...fields) => buildMessage([[8, 'FIX.4.4'], [35, type], [49, 'A'], [56, 'B'], ...fields]);
+ const order = (type, clOrdId, ...fields) => fix(type, [11, clOrdId], ...fields);
++const venueMessage = (type, ...fields) => buildMessage([[8, 'FIX.4.4'], [35, type], [49, 'B'], [56, 'A'], ...fields]);
++const report = (clOrdId, ...fields) => venueMessage('8', [11, clOrdId], ...fields);
+ const malformed = fix('0').replace(/10=(\d{3})/, (_, checksum) => `10=${checksum === '000' ? '001' : '000'}`);
+ const select = selector => document.querySelector(selector);
+ const all = selector => [...document.querySelectorAll(selector)];
+@@ -252,7 +254,7 @@ test('test_render_none_and_empty_order_identifiers_are_not_buttons', () => {
+ 
+ test('test_render_selected_order_keeps_only_original_group_numbers', () => {
+   const result = analyseLog(fix('A'), order('D', 'C1'), order('D', 'OTHER'),
+-    order('G', 'C2', [41, 'C1']), fix('0'), order('8', 'C2', [37, 'O1']));
++    order('G', 'C2', [41, 'C1']), fix('0'), report('C2', [37, 'O1']));
+   for (const id of ['O1', 'C1']) {
+     render(result, viewOrder(id));
+     expect(timelineNumbers()).toEqual(['#2', '#4', '#6']);
+@@ -274,13 +276,13 @@ test('test_render_order_story_starts_summary_with_identifiers_and_clear', () =>
+ });
+ 
+ test('test_render_order_terms_choose_source_and_skip_missing_parts', () => {
+-  render(analyseLog(order('8', 'C', [55, 'BEFORE']),
++  render(analyseLog(report('C', [55, 'BEFORE']),
+     order('D', 'C', [54, '1'], [38, '5'], [55, 'FIRST'], [40, '2']),
+     order('D', 'C', [55, 'SECOND'], [44, '71'])), viewOrder('C'));
+   expect(storyText('span.order-terms')).toBe('Buy 5 FIRST Limit');
+ 
+-  const raw = buildMessage([[8, 'FIX.4.1'], [35, 'G'], [11, 'C'], [54, '1'], [44, '9']]);
+-  render(analyseLog(raw, order('8', 'C', [55, 'LATER'])), viewOrder('C'));
++  const raw = buildMessage([[8, 'FIX.4.1'], [35, 'G'], [49, 'A'], [56, 'B'], [11, 'C'], [54, '1'], [44, '9']]);
++  render(analyseLog(raw, report('C', [55, 'LATER'])), viewOrder('C'));
+   expect(storyText('span.order-terms')).toBe('1 @ 9');
+ 
+   render(analyseLog(order('D', 'C', [54, '?'], [40, '~'])), viewOrder('C'));
+@@ -310,8 +312,8 @@ test('test_render_order_state_uses_last_report_and_omits_empty_parts', () => {
+ 
+ test('test_render_fxl15_fix44_order_story_matches_example', () => {
+   const result = analyseLog(order('D', 'C1', [54, '1'], [38, '500'], [55, 'VOD.L'], [44, '71.25'], [40, '2']),
+-    order('8', 'C1', [37, 'O1'], [150, '0'], [39, '0'], [14, '0'], [6, '0']),
+-    order('8', 'C1', [37, 'O1'], [150, 'F'], [39, '2'], [14, '500'], [6, '71.25'], [32, '500'], [31, '71.25']));
++    report('C1', [37, 'O1'], [150, '0'], [39, '0'], [14, '0'], [6, '0']),
++    report('C1', [37, 'O1'], [150, 'F'], [39, '2'], [14, '500'], [6, '71.25'], [32, '500'], [31, '71.25']));
+   render(result, viewOrder('O1'));
+   expect(storyText('strong')).toBe('C1 · O1');
+   expect(storyText('span.order-terms')).toBe('Buy 500 VOD.L @ 71.25 Limit');
+@@ -319,8 +321,8 @@ test('test_render_fxl15_fix44_order_story_matches_example', () => {
+ });
+ 
+ test('test_render_selected_stats_count_visible_messages_gaps_and_orders', () => {
+-  const result = analyseLog(order('D', 'C1', [34, '1']), fix('0', [34, '2']), malformed,
+-    order('8', 'C1', [34, '4']), order('D', 'C2', [34, '6']));
++  const result = analyseLog(order('D', 'C1', [34, '1']), venueMessage('0', [34, '2']), malformed,
++    report('C1', [34, '4']), order('D', 'C2', [34, '6']));
+   expect(result.errors).toHaveLength(1);
+   render(result, viewOrder('C1'));
+   expect(stats()).toEqual(['2 of 5 messages', '1 sequence gap', '1 order']);
+@@ -328,8 +330,10 @@ test('test_render_selected_stats_count_visible_messages_gaps_and_orders', () =>
+ });
+ 
+ test('test_render_selected_timeline_preserves_existing_gaps_without_new_gaps', () => {
++  // The hidden C2 request fills the sequence between the first two shown requests.
+   const result = analyseLog(order('D', 'C1', [34, '1']), order('D', 'C2', [34, '2']),
+-    order('8', 'C1', [34, '3']), order('8', 'C1', [34, '5'], [52, stamp]), order('8', 'C2', [34, '7']));
++    order('G', 'C1-R1', [41, 'C1'], [34, '3']), order('G', 'C1-R2', [41, 'C1-R1'], [34, '5'], [52, stamp]),
++    order('F', 'C2-F', [41, 'C2'], [34, '7']), report('C1-R2', [34, '1']));
+   const gapRows = () => all('#timeline .event.gap');
+   render(result);
+   expect(gapRows()).toHaveLength(2);
+@@ -337,7 +341,7 @@ test('test_render_selected_timeline_preserves_existing_gaps_without_new_gaps', (
+   expect(visible).toEqual(['#4', '10:00:01.000', 'SequenceGap', 'A → B', 'seq 5', 'expected 4, received 5']);
+   render(result, viewOrder('C1'));
+   expect(gapRows().map(row => texts(row.children))).toEqual([visible]);
+-  expect(timelineNumbers()).toEqual(['#1', '#3', '#4', '#4']);
++  expect(timelineNumbers()).toEqual(['#1', '#3', '#4', '#4', '#6']);
+ });
+ 
+ test('test_main_order_selection_resets_on_clear_and_decode_without_storage', async () => {
+@@ -391,7 +395,7 @@ test('test_render_literal_order_and_story_values_leave_attributes_fixed', () =>
+   const shape = () => all('#summary *, #timeline *, #decode *').map(node => [node.localName,
+     Object.fromEntries(node.getAttributeNames().map(name => [name, node.getAttribute(name)]))]);
+   const log = (id, exchange, symbol, state) => analyseLog(order('D', id, [55, symbol]),
+-    order('8', id, [37, exchange], [39, state]));
++    report(id, [37, exchange], [39, state]));
+   render(log('C1', 'O1', 'ABC', '?'), viewOrder('O1'));
+   const fixed = shape();
+   const id = `<p class="marker" data-marker="yes">client's</p>`;
+@@ -449,12 +453,15 @@ const logA = [
+   '35=8 37=O3 11=C4 17=E15 150=0 55=AZN.L 54=1 32=5 31=100',
+ ];
+ 
+-function frame(line, number) {
+-  const [type, ...fields] = line.split(' ').map(field => field.split('='));
+-  return buildMessage([[8, 'FIX.4.4'], type, [49, 'SENDER'], [56, 'TARGET'], [34, number], ...fields]);
++function logAResult() {
++  const bySender = { CLIENT: 0, BROKER: 0 };
++  const frames = logA.map(line => {
++    const [type, ...fields] = line.split(' ').map(field => field.split('='));
++    const [sender, target] = type[1] === '8' ? ['BROKER', 'CLIENT'] : ['CLIENT', 'BROKER'];
++    return buildMessage([[8, 'FIX.4.4'], type, [49, sender], [56, target], [34, ++bySender[sender]], ...fields]);
++  });
++  return analyse(frames.join('\n'));
+ }
+-
+-const logAResult = () => analyse(logA.map((line, index) => frame(line, index + 1)).join('\n'));
+ const fillMessage = (symbol, side, execId, qty, price) => fix('8', [37, `O-${symbol}`], [11, `C-${symbol}`],
+   [17, execId], [150, 'F'], [55, symbol], [54, side], [32, qty], [31, price]);
+ 
+@@ -663,9 +670,9 @@ test('test_render_filtered_empty_decode_p_empty', () => {
+ test('test_render_filter_and_selected_order_apply_together', () => {
+   const result = analyseLog(
+     order('D', 'C1', [1, 'ACC1'], [55, 'VOD.L'], [54, '1']),
+-    order('8', 'C1', [37, 'O1'], [17, 'E1'], [150, 'F'], [55, 'VOD.L'], [54, '1'], [32, '10'], [31, '2']),
++    report('C1', [37, 'O1'], [17, 'E1'], [150, 'F'], [55, 'VOD.L'], [54, '1'], [32, '10'], [31, '2']),
+     order('D', 'C2', [1, 'ACC2'], [55, 'BARC.L'], [54, '2']),
+-    order('8', 'C2', [37, 'O2'], [17, 'E2'], [150, 'F'], [55, 'BARC.L'], [54, '2'], [32, '20'], [31, '3']),
++    report('C2', [37, 'O2'], [17, 'E2'], [150, 'F'], [55, 'BARC.L'], [54, '2'], [32, '20'], [31, '3']),
+   );
+   render(result, { orderId: 'O1', filters: { account: 'ACC1' } });
+   expect(timelineNumbers()).toEqual(['#1', '#2']);
+@@ -680,22 +687,22 @@ test('test_render_filter_and_selected_order_apply_together', () => {
+ });
+ 
+ test('test_render_filtering_preserves_full_log_gaps_and_numbers', () => {
+-  const party = (sender, target, seq, ...fields) =>
+-    buildMessage([[8, 'FIX.4.4'], [35, 'D'], [49, sender], [56, target], [34, seq], ...fields]);
++  const request = (seq, id) => order('D', id, [34, seq], [50, 'DESK'], [55, 'VOD.L'], [54, '1']);
+   const result = analyseLog(
+-    party('CLIENT', 'BROKER', '1', [11, 'C1'], [55, 'VOD.L'], [54, '1']),
+-    party('CLIENT', 'BROKER', '3', [11, 'C2'], [55, 'VOD.L'], [54, '1']),
+-    buildMessage([[8, 'FIX.4.4'], [35, '8'], [49, 'CLIENT'], [56, 'BROKER'], [34, '4'], [37, 'O1'],
+-      [11, 'C1'], [17, 'E1'], [150, 'F'], [55, 'VOD.L'], [54, '1'], [32, '100'], [31, '2']]),
+-    buildMessage([[8, 'FIX.4.4'], [35, '8'], [49, 'BROKER'], [56, 'CLIENT'], [34, '1'], [37, 'O1'],
+-      [11, 'C1'], [17, 'E2'], [19, 'E1'], [150, 'H'], [55, 'VOD.L'], [54, '1'], [32, '0']]),
++    request('1', 'C1'),
++    report('C1', [34, '1'], [50, 'DESK'], [37, 'O1'],
++      [17, 'E1'], [150, 'F'], [55, 'VOD.L'], [54, '1'], [32, '100'], [31, '2']),
++    report('C1', [34, '2'], [50, 'BACKOFFICE'], [37, 'O1'],
++      [17, 'E2'], [19, 'E1'], [150, 'H'], [55, 'VOD.L'], [54, '1'], [32, '0']),
++    request('3', 'C2'),
+   );
+-  render(result, filterView({ senderCompId: 'CLIENT' }));
++  // A sub-ID can hide the cancellation without hiding the fill from the same broker.
++  render(result, filterView({ senderSubId: 'DESK' }));
+   const gaps = all('#timeline .event.gap');
+   expect(gaps.map(row => texts(row.children)))
+-    .toEqual([['#2', '', 'SequenceGap', 'CLIENT → BROKER', 'seq 3', 'expected 2, received 3']]);
+-  expect(timelineNumbers()).toEqual(['#1', '#2', '#2', '#3']);
+-  expect(cardNumbers()).toEqual(['#1', '#2', '#3']);
++    .toEqual([['#4', '', 'SequenceGap', 'A → B', 'seq 3', 'expected 2, received 3']]);
++  expect(timelineNumbers()).toEqual(['#1', '#2', '#4', '#4']);
++  expect(cardNumbers()).toEqual(['#1', '#2', '#4']);
+   expect(stats()).toEqual(['3 of 4 messages', '1 sequence gap', '2 orders']);
+   expect(tradeRows()).toEqual([['VOD.L', '2', '0', '–', '0', '0', '–', '0']]);
+ });
+@@ -762,15 +769,19 @@ const pageLabels = () => texts(all('nav.pager .page-info'));
+ const expectPageLabel = label => expect(pageLabels()).toEqual([label, label]);
+ 
+ // Alternate cohorts for 400 messages, then extend A by 50. Each sender has its own sequence.
+-function interleavedOrderLog() {
++function interleavedOrderLog({ reciprocal = false } = {}) {
+   const numbers = { A: [], B: [] };
+   const frames = Array.from({ length: 450 }, (_, i) => {
+     const party = i < 400 && i % 2 ? 'B' : 'A';
+     const n = numbers[party].push(`#${i + 1}`);
+     const newOrder = n === 1;
+     const fill = n === 2 || n === 250;
+-    const fields = [[8, 'FIX.4.4'], [35, newOrder ? 'D' : '8'], [34, n],
+-      [49, party], [50, `${party}-sender`], [56, `${party}-target`], [57, `${party}-sub`],
++    const reverse = reciprocal && !newOrder;
++    const client = party;
++    const broker = `${party}-target`;
++    const fields = [[8, 'FIX.4.4'], [35, newOrder ? 'D' : '8'], [34, reverse ? n - 1 : n],
++      [49, reverse ? broker : client], [50, `${party}-sender`],
++      [56, reverse ? client : broker], [57, `${party}-sub`],
+       [1, `${party}-account`], [11, `C-${party}`], [55, `SYM-${party}`], [54, '1']];
+     if (newOrder) fields.push([38, 10], [40, '2'], [44, 5]);
+     else {
+@@ -919,7 +930,7 @@ test('test_render_sender_filter_pages_only_matching_original_message_numbers', (
+ });
+ 
+ test('test_render_selected_order_pages_only_order_members', () => {
+-  const { result, numbers } = interleavedOrderLog();
++  const { result, numbers } = interleavedOrderLog({ reciprocal: true });
+   expectNarrowedPages(result, numbers, viewOrder('C-A'), viewOrder('C-B'));
+ });
+ 
+@@ -938,14 +949,14 @@ test('test_render_filtered_summary_panels_stay_constant_across_pages', () => {
+ });
+ 
+ test('test_render_selected_order_summary_and_story_stay_constant_across_pages', () => {
+-  const { result, numbers } = interleavedOrderLog();
++  const { result, numbers } = interleavedOrderLog({ reciprocal: true });
+   const view = viewOrder('C-A');
+   render(result, { ...view, page: 1 });
+   expect(cardNumbers()).toEqual(numbers.A.slice(0, 200));
+   const first = summaryPanels();
+   expect(first.options).toEqual([
+-    ['All', 'A-account', 'B-account'], ['All', 'A', 'B'], ['All', 'A-sender', 'B-sender'],
+-    ['All', 'A-target', 'B-target'], ['All', 'A-sub', 'B-sub'],
++    ['All', 'A-account', 'B-account'], ['All', 'A', 'A-target', 'B', 'B-target'], ['All', 'A-sender', 'B-sender'],
++    ['All', 'A', 'A-target', 'B', 'B-target'], ['All', 'A-sub', 'B-sub'],
+   ]);
+   expect(cells(select('.trade-table tbody tr'))).toEqual(['SYM-A', '1', '10', '5', '0', '0', '–', '+10']);
+   const story = select('div.order-story').textContent;
+-- 
+2.43.0
+
